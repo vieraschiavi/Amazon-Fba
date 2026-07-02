@@ -1,0 +1,6 @@
+streamlit==1.45.1
+pandas
+fastapi
+uvicorn[standard]
+httpx
+# anthropic   # opcional: solo si vas a redactar listings/clasificar con Claude

@@ -1,0 +1,26 @@
+{
+  "name": "FBA - Customer Messages",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "fba-message" },
+      "name": "Webhook mensaje",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [ 260, 300 ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/webhook/message",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"cliente\": \"{{$json.body.cliente}}\", \"texto\": \"{{$json.body.texto}}\" }"
+      },
+      "name": "POST /webhook/message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [ 520, 300 ]
+    }
+  ],
+  "connections": { "Webhook mensaje": { "main": [ [ { "node": "POST /webhook/message", "type": "main", "index": 0 } ] ] } }
+}

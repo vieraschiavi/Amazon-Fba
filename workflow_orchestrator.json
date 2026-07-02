@@ -1,0 +1,26 @@
+{
+  "name": "FBA - Orchestrator (research diario)",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [ { "field": "cronExpression", "expression": "0 9 * * *" } ] } },
+      "name": "Cron 09:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [ 260, 300 ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/run/research",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"categoria\": \"bamboo kitchen utensils\", \"demo\": false }"
+      },
+      "name": "POST /run/research",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [ 520, 300 ]
+    }
+  ],
+  "connections": { "Cron 09:00": { "main": [ [ { "node": "POST /run/research", "type": "main", "index": 0 } ] ] } }
+}

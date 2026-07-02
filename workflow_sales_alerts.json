@@ -1,0 +1,26 @@
+{
+  "name": "FBA - Sales Alerts",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "fba-sale" },
+      "name": "Webhook venta",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [ 260, 300 ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/webhook/sale",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"asin\": \"{{$json.body.asin}}\", \"unidades\": {{$json.body.unidades}}, \"precio\": {{$json.body.precio}}, \"neto_unitario\": {{$json.body.neto_unitario}}, \"pais\": \"{{$json.body.pais}}\", \"segmento\": \"{{$json.body.segmento}}\" }"
+      },
+      "name": "POST /webhook/sale",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [ 520, 300 ]
+    }
+  ],
+  "connections": { "Webhook venta": { "main": [ [ { "node": "POST /webhook/sale", "type": "main", "index": 0 } ] ] } }
+}
