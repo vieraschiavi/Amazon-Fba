@@ -24,6 +24,7 @@ from agents.listing import generar as generar_listing
 from agents.pricing import evaluar as evaluar_precio
 from agents.capital_planner import proyeccion_realista
 from agents import analytics
+from agents import productos
 from data import keepa
 
 db.init()
@@ -74,8 +75,8 @@ st.markdown(ui.header(
            ("Email", bool(config.SMTP_USER and config.SMTP_PASS))]),
     unsafe_allow_html=True)
 
-tabs = st.tabs(["  Investigacion  ", "  Pricing  ", "  Caja  ", "  Ventas  ",
-                "  Inversores  ", "  Portafolio  ", "  Alertas  ", "  Config  "])
+tabs = st.tabs(["  Investigacion  ", "  Pricing  ", "  Portafolio  ", "  Caja  ",
+                "  Ventas  ", "  Inversores  ", "  Plan  ", "  Alertas  ", "  Config  "])
 
 # ============================ 1) INVESTIGACION ============================ #
 with tabs[0]:
@@ -147,9 +148,138 @@ with tabs[1]:
         f"&nbsp;&nbsp;<span style='color:#475569;font-size:13px'>Break-even "
         f"{ui.usd(m['break_even'])} · Neto/unidad {ui.usd(m['neto'])}</span>",
         unsafe_allow_html=True)
+    st.divider()
+    with st.expander("Guardar este producto en el portafolio"):
+        g1, g2, g3 = st.columns(3)
+        g_nombre = g1.text_input("Nombre del producto", key="pr_g_nombre",
+                                 placeholder="Bamboo utensil set 12pc")
+        g_asin = g2.text_input("ASIN (si ya existe)", key="pr_g_asin")
+        g_techo = g3.number_input("Techo de demanda (u/mes)", value=290, min_value=0,
+                                  step=10, key="pr_g_techo")
+        if st.button("Guardar en portafolio", type="primary", key="pr_g_btn"):
+            r = productos.guardar(g_nombre, asin=g_asin, costo=costo, flete=flete,
+                                  arancel_pct=arancel, prep=prep, fba_fee=fba,
+                                  precio_competencia=(comp if comp > 0 else None),
+                                  techo_demanda=int(g_techo))
+            if r["ok"]:
+                st.success(r["mensaje"] + " Velo en la pestana Portafolio.")
+            else:
+                st.error(r["mensaje"])
 
-# ============================ 3) CAJA ============================ #
+# ============================ 3) PORTAFOLIO ============================ #
 with tabs[2]:
+    st.markdown(ui.seccion("Portafolio de productos",
+                           "El negocio producto a producto: proyectado vs real"),
+                unsafe_allow_html=True)
+
+    with st.expander("Agregar producto al portafolio"):
+        with st.form("alta_producto"):
+            a1, a2, a3 = st.columns(3)
+            n_nombre = a1.text_input("Nombre *", key="pf_a_nombre")
+            n_asin = a2.text_input("ASIN", key="pf_a_asin")
+            n_techo = a3.number_input("Techo demanda (u/mes)", value=290, min_value=0,
+                                      step=10, key="pf_a_techo")
+            a4, a5, a6, a7 = st.columns(4)
+            n_costo = a4.number_input("Costo (USD)", value=2.10, min_value=0.0,
+                                      step=0.10, key="pf_a_costo")
+            n_flete = a5.number_input("Flete (USD)", value=0.80, min_value=0.0,
+                                      step=0.10, key="pf_a_flete")
+            n_aran = a6.number_input("Arancel (%)", value=6.0, min_value=0.0,
+                                     step=0.5, key="pf_a_aran")
+            n_prep = a7.number_input("Prep (USD)", value=0.50, min_value=0.0,
+                                     step=0.10, key="pf_a_prep")
+            a8, a9 = st.columns(2)
+            n_fba = a8.number_input("FBA fee (USD)", value=config.FBA_FEE_DEFAULT,
+                                    min_value=0.0, step=0.10, key="pf_a_fba")
+            n_comp = a9.number_input("Precio competencia (USD, 0=sin)", value=0.0,
+                                     min_value=0.0, step=0.50, key="pf_a_comp")
+            alta_ok = st.form_submit_button("Agregar al portafolio", type="primary")
+        if alta_ok:
+            r_alta = productos.guardar(n_nombre, asin=n_asin, costo=n_costo,
+                                       flete=n_flete, arancel_pct=n_aran, prep=n_prep,
+                                       fba_fee=n_fba,
+                                       precio_competencia=(n_comp if n_comp > 0 else None),
+                                       techo_demanda=int(n_techo))
+            (st.success if r_alta["ok"] else st.error)(r_alta["mensaje"])
+
+    rp = productos.resumen_portafolio()
+    if rp["n_productos"] == 0:
+        st.info("Portafolio vacio. Calcula un producto en Pricing y toca "
+                "'Guardar en portafolio', o cargalo con el formulario de arriba.")
+    else:
+        sem = rp["semaforos"]
+        _cols_html([
+            ui.kpi("Productos activos", str(rp["n_productos"]),
+                   f"{sem['verde']} verde / {sem['amarillo']} amarillo / {sem['rojo']} rojo"),
+            ui.kpi("Sueldo meseta proyectado", ui.fmt_money(rp["sueldo_meseta_proyectado"]),
+                   "suma de techo x neto (con devoluciones)", hero=True),
+            ui.kpi("Capital en pipeline", ui.fmt_money(rp["capital_pipeline_total"]),
+                   "~4 meses de stock por producto"),
+            ui.kpi("Ventas reales", ui.fmt_money(rp["ingreso_real"]),
+                   f"neto {ui.usd(rp['neto_real'])}",
+                   tone=("good" if rp["neto_real"] > 0 else "navy")),
+        ])
+        dfp = pd.DataFrame(rp["productos"])[[
+            "id", "nombre", "asin", "landed", "precio", "neto", "margen", "roi",
+            "semaforo", "techo_demanda", "capital_pipeline",
+            "sueldo_meseta_teorico", "ventas_ingreso", "ventas_unidades"]]
+        dfp.columns = ["ID", "Producto", "ASIN", "Landed", "Precio", "Neto/u",
+                       "Margen %", "ROI %", "Semaforo", "Techo u/mes",
+                       "Capital pipeline", "Sueldo meseta", "Ventas USD", "Unid."]
+        st.dataframe(dfp, use_container_width=True, hide_index=True)
+        st.download_button("Exportar portafolio (CSV)",
+                           data=dfp.to_csv(index=False).encode("utf-8"),
+                           file_name="portafolio_fba.csv", mime="text/csv")
+
+        st.divider()
+        st.markdown(ui.seccion("Analisis financiero por producto",
+                               "Unit economics + proyeccion de caja + ventas reales"),
+                    unsafe_allow_html=True)
+        opciones = {f"#{p['id']} — {p['nombre']}": p["id"] for p in rp["productos"]}
+        sel = st.selectbox("Producto", list(opciones.keys()), key="pf_sel")
+        an = productos.analisis(opciones[sel])
+        if an["ok"]:
+            ue, vr = an["unit_economics"], an["ventas_reales"]
+            tono_p = {"verde": "good", "amarillo": "warn", "rojo": "bad"}[ue["semaforo"]]
+            _cols_html([
+                ui.kpi("Precio", ui.fmt_money(ue["precio"]), ue["estrategia"]),
+                ui.kpi("Margen", ui.fmt_pct(ue["margen_pct"]), "neto / precio", tone=tono_p),
+                ui.kpi("ROI", ui.fmt_pct(ue["roi_pct"]), "neto / landed"),
+                ui.kpi("Capital pipeline", ui.fmt_money(an["capital_pipeline"]),
+                       "para sostener el techo"),
+            ])
+            if an["proyeccion"]:
+                res_p = an["proyeccion"]["resumen"]
+                _cols_html([
+                    ui.kpi("Sueldo en meseta", ui.fmt_money(res_p["sueldo_meseta"]),
+                           "proyectado 12 meses", hero=True),
+                    ui.kpi("Caja minima", ui.fmt_money(res_p["caja_minima"]),
+                           "colchon del producto",
+                           tone=("bad" if res_p["caja_minima"] < 0 else "good")),
+                    ui.kpi("Primer cobro", f"mes {res_p['mes_primer_cobro']}",
+                           "lead time + DD+7"),
+                    ui.kpi("Ventas reales", ui.fmt_money(vr["ingreso"]),
+                           f"{ui.fmt_int(vr['unidades'])} unidades en "
+                           f"{ui.fmt_int(vr['ordenes'])} ordenes",
+                           tone=("good" if vr["ingreso"] > 0 else "navy")),
+                ])
+                dfa = pd.DataFrame(an["proyeccion"]["filas"])
+                st.line_chart(dfa.set_index("mes")[["caja", "sueldo"]], height=220,
+                              color=["#1e3a8a", "#8bc34a"])
+            if vr["ordenes"]:
+                st.markdown(ui.seccion("Ultimas ventas del producto"),
+                            unsafe_allow_html=True)
+                st.dataframe(pd.DataFrame(vr["ultimas"]), use_container_width=True,
+                             hide_index=True)
+            else:
+                st.caption("Sin ventas registradas para este ASIN todavia "
+                           "(registralas en Ventas o via API /webhook/sale).")
+            if st.button("Quitar del portafolio (baja logica)", key="pf_del"):
+                productos.desactivar(opciones[sel])
+                st.rerun()
+
+# ============================ 4) CAJA ============================ #
+with tabs[3]:
     st.markdown(ui.seccion("Proyeccion realista de caja",
                            "Con lead time, DD+7, devoluciones y techo de demanda"),
                 unsafe_allow_html=True)
@@ -184,8 +314,8 @@ with tabs[2]:
     st.dataframe(df[["mes", "vendidas", "cobrado", "sueldo", "caja", "capital_atado"]],
                  use_container_width=True, hide_index=True)
 
-# ============================ 4) VENTAS ============================ #
-with tabs[3]:
+# ============================ 5) VENTAS ============================ #
+with tabs[4]:
     st.markdown(ui.seccion("Ventas y KPIs", "Registra una venta y segui el mix"),
                 unsafe_allow_html=True)
     with st.form("venta"):
@@ -225,8 +355,8 @@ with tabs[3]:
     else:
         st.caption("Aun no hay ventas registradas.")
 
-# ============================ 5) INVERSORES ============================ #
-with tabs[4]:
+# ============================ 6) INVERSORES ============================ #
+with tabs[5]:
     from agents.capital_planner import escenario_inversor
     st.markdown(ui.seccion("Escenario con inversor",
                 "Comision = % variable de facturacion sobre la parte que financia su capital"),
@@ -321,8 +451,8 @@ with tabs[4]:
                                                      productos_financia=float(prods_fin)),
                        file_name="pitch_inversor_fba.html", mime="text/html")
 
-# ============================ 6) PORTAFOLIO ============================ #
-with tabs[5]:
+# ============================ 7) PLAN ============================ #
+with tabs[6]:
     from agents.portafolio import interes_compuesto, recomendar_portafolio
 
     st.markdown(ui.seccion("Recomendacion de portafolio",
@@ -404,8 +534,8 @@ with tabs[5]:
                "para ver tu curva real; la exponencial pura solo aplica a instrumentos "
                "financieros sin tope de colocacion.")
 
-# ============================ 7) ALERTAS ============================ #
-with tabs[6]:
+# ============================ 8) ALERTAS ============================ #
+with tabs[7]:
     st.markdown(ui.seccion("Alertas", "Sin SMTP, quedan en dry-run (registradas, no enviadas)"),
                 unsafe_allow_html=True)
     outbox = db.rows("SELECT fecha,asunto,para,enviado FROM alerts_outbox ORDER BY id DESC LIMIT 50")
@@ -417,8 +547,8 @@ with tabs[6]:
     else:
         st.caption("Sin alertas todavia.")
 
-# ============================ 8) CONFIG ============================ #
-with tabs[7]:
+# ============================ 9) CONFIG ============================ #
+with tabs[8]:
     st.markdown(ui.seccion("Configuracion y conexiones",
                            "Estado actual y verificacion en vivo"), unsafe_allow_html=True)
     st.json(config.estado_config())
@@ -433,11 +563,40 @@ with tabs[7]:
                 st.error(f"{f['nombre']}: {f['detalle']}")
             else:
                 st.warning(f"{f['nombre']}: {f['detalle']}")
-    st.markdown(ui.seccion("Para produccion", "Crea un archivo .env en esta carpeta"),
+    st.markdown(ui.seccion("Claves de API",
+                           "Se guardan cifradas por tu sistema de archivos en .env "
+                           "(fuera de git); aca nunca se muestran completas"),
                 unsafe_allow_html=True)
-    st.code("ANTHROPIC_API_KEY=sk-ant-...\nKEEPA_API_KEY=...\n"
-            "SMTP_USER=tucuenta@gmail.com\nSMTP_PASS=app_password_de_gmail\n"
-            "ALERT_TO=vieraschiavi@gmail.com\nCEREBRO_CSV_DIR=data/cerebro_exports",
-            language="bash")
+    st.caption("Estado actual — "
+               f"KEEPA_API_KEY: {config.mask(config.KEEPA_API_KEY)} · "
+               f"ANTHROPIC_API_KEY: {config.mask(config.ANTHROPIC_API_KEY)} · "
+               f"SMTP_USER: {config.mask(config.SMTP_USER)} · "
+               f"SMTP_PASS: {config.mask(config.SMTP_PASS)}")
+    with st.form("form_claves"):
+        k1, k2 = st.columns(2)
+        in_keepa = k1.text_input("KEEPA_API_KEY", type="password",
+                                 help="keepa.com -> Keepa API -> Private API access key")
+        in_anth = k2.text_input("ANTHROPIC_API_KEY", type="password",
+                                help="console.anthropic.com -> API Keys")
+        k3, k4, k5 = st.columns(3)
+        in_su = k3.text_input("SMTP_USER (Gmail)", key="cf_smtp_user")
+        in_sp = k4.text_input("SMTP_PASS (App Password)", type="password",
+                              key="cf_smtp_pass")
+        in_to = k5.text_input("ALERT_TO (destino de alertas)", value=config.ALERT_TO,
+                              key="cf_alert_to")
+        guardar_claves = st.form_submit_button("Guardar claves", type="primary")
+    if guardar_claves:
+        r_env = config.guardar_env(KEEPA_API_KEY=in_keepa, ANTHROPIC_API_KEY=in_anth,
+                                   SMTP_USER=in_su, SMTP_PASS=in_sp,
+                                   ALERT_TO=(in_to if in_to != config.ALERT_TO else ""))
+        if r_env["ok"]:
+            import importlib
+            importlib.reload(config)
+            st.success(r_env["mensaje"] + " (" + ", ".join(r_env["guardadas"]) + "). "
+                       "Solo se sobreescriben los campos que completaste.")
+        else:
+            st.info(r_env["mensaje"] + " Completa al menos un campo.")
+    st.caption(f"Archivo: {config.ENV_PATH} — esta en .gitignore y nunca se sube al "
+               "repositorio. Tambien podes editarlo a mano (plantilla: .env.example).")
     st.caption("Helium 10 no tiene API en Platinum: keywords por CSV de Cerebro. "
                "Keepa es la fuente programatica de precio + BSR.")

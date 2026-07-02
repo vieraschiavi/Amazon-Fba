@@ -28,9 +28,10 @@ from agents.listing import generar as generar_listing
 from agents.pricing import evaluar as evaluar_precio
 from agents import analytics
 from agents import customer_bot
+from agents import productos
 
 db.init()
-app = FastAPI(title="FBA API", version="1.0")
+app = FastAPI(title="FBA API", version="1.1")
 
 
 class MsgIn(BaseModel):
@@ -51,6 +52,19 @@ class SaleIn(BaseModel):
 class ResearchIn(BaseModel):
     categoria: str
     demo: bool = False
+
+
+class ProductoIn(BaseModel):
+    nombre: str
+    asin: str = ""
+    costo: float = 0.0
+    flete: float = 0.0
+    arancel_pct: float = 0.0
+    prep: float = 0.0
+    fba_fee: float | None = None
+    precio_competencia: float | None = None
+    techo_demanda: int = 290
+    notas: str = ""
 
 
 @app.get("/health")
@@ -84,3 +98,22 @@ def run_research(r: ResearchIn):
 @app.get("/dashboard")
 def dashboard():
     return analytics.kpis()
+
+
+@app.get("/portfolio")
+def portfolio():
+    return productos.resumen_portafolio()
+
+
+@app.post("/portfolio/producto")
+def portfolio_alta(p: ProductoIn):
+    return productos.guardar(p.nombre, asin=p.asin, costo=p.costo, flete=p.flete,
+                             arancel_pct=p.arancel_pct, prep=p.prep,
+                             fba_fee=p.fba_fee,
+                             precio_competencia=p.precio_competencia,
+                             techo_demanda=p.techo_demanda, notas=p.notas)
+
+
+@app.get("/portfolio/producto/{pid}")
+def portfolio_analisis(pid: int):
+    return productos.analisis(pid)

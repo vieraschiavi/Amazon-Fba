@@ -84,7 +84,8 @@ WHITELIST_BOT = ["envio", "tiempo_entrega", "garantia", "estado_pedido", "caract
 
 
 def estado_config():
-    """Resumen para el dashboard: que esta conectado y que esta en modo offline."""
+    """Resumen para el dashboard: que esta conectado y que esta en modo offline.
+    NUNCA incluye el valor de una clave (se expone por /health)."""
     return {
         "llm": "Claude" if ANTHROPIC_API_KEY else "offline (mock)",
         "keepa": "conectado" if KEEPA_API_KEY else "sin clave",
@@ -93,3 +94,63 @@ def estado_config():
         "alert_to": ALERT_TO,
         "marketplace": MARKETPLACE,
     }
+
+
+# --------------------------------------------------------------------------- #
+# Guardado seguro de claves (.env) — usado por la pestana Config del panel.
+# --------------------------------------------------------------------------- #
+ENV_PATH = os.path.join(_AQUI, ".env")
+
+# Claves que el panel puede guardar. Nada fuera de esta lista se escribe.
+CLAVES_GUARDABLES = ("ANTHROPIC_API_KEY", "KEEPA_API_KEY", "SMTP_USER",
+                     "SMTP_PASS", "ALERT_TO", "CEREBRO_CSV_DIR")
+
+
+def mask(valor: str) -> str:
+    """Version mostrable de un secreto: solo largo + ultimos 4 caracteres."""
+    v = (valor or "").strip()
+    if not v:
+        return "(vacia)"
+    if len(v) <= 6:
+        return "*" * len(v)
+    return "*" * (len(v) - 4) + v[-4:]
+
+
+def guardar_env(**pares) -> dict:
+    """
+    Actualiza/agrega claves en .env de forma atomica, preservando el resto del
+    archivo (comentarios incluidos). Solo acepta CLAVES_GUARDABLES. Aplica
+    permisos 600 y refresca os.environ para que rija sin reiniciar.
+    Nunca registra ni devuelve el valor de la clave.
+    """
+    pares = {k: (v or "").strip() for k, v in pares.items()
+             if k in CLAVES_GUARDABLES and (v or "").strip()}
+    if not pares:
+        return {"ok": False, "mensaje": "Nada para guardar."}
+    lineas, vistas = [], set()
+    if os.path.isfile(ENV_PATH):
+        with open(ENV_PATH, "r", encoding="utf-8") as f:
+            for ln in f.read().splitlines():
+                cuerpo = ln.strip()
+                if cuerpo and not cuerpo.startswith("#") and "=" in cuerpo:
+                    k = cuerpo.split("=", 1)[0].strip()
+                    if k in pares:
+                        lineas.append(f"{k}={pares[k]}")
+                        vistas.add(k)
+                        continue
+                lineas.append(ln)
+    for k, v in pares.items():
+        if k not in vistas:
+            lineas.append(f"{k}={v}")
+    tmp = ENV_PATH + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write("\n".join(lineas).rstrip("\n") + "\n")
+    try:
+        os.chmod(tmp, 0o600)                 # solo el dueno lee/escribe (POSIX)
+    except OSError:
+        pass                                 # Windows: lo protege el perfil de usuario
+    os.replace(tmp, ENV_PATH)
+    for k, v in pares.items():
+        os.environ[k] = v
+    return {"ok": True, "guardadas": sorted(pares.keys()),
+            "mensaje": f"{len(pares)} clave(s) guardada(s) en .env."}

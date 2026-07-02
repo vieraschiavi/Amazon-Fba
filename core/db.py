@@ -15,9 +15,11 @@ import config  # noqa: E402
 
 ESQUEMA = {
     "products": """CREATE TABLE IF NOT EXISTS products(
-        id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT, costo REAL, flete REAL,
-        arancel_pct REAL, prep REAL, landed REAL, precio REAL, margen REAL, roi REAL,
-        semaforo TEXT, marketplace TEXT, fecha TEXT DEFAULT (datetime('now')))""",
+        id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT, asin TEXT, costo REAL,
+        flete REAL, arancel_pct REAL, prep REAL, fba_fee REAL, landed REAL,
+        precio REAL, neto REAL, margen REAL, roi REAL, semaforo TEXT,
+        techo_demanda INTEGER, marketplace TEXT, notas TEXT,
+        activo INTEGER DEFAULT 1, fecha TEXT DEFAULT (datetime('now')))""",
     "listings": """CREATE TABLE IF NOT EXISTS listings(
         id INTEGER PRIMARY KEY AUTOINCREMENT, product_id INTEGER, titulo TEXT,
         bullets TEXT, descripcion TEXT, banner_brief TEXT,
@@ -54,6 +56,23 @@ def connect():
     return con
 
 
+# Columnas agregadas despues de la primera version del esquema: se migran con
+# ALTER TABLE para no romper bases ya creadas.
+_MIGRACIONES = {
+    "products": {"asin": "TEXT", "fba_fee": "REAL", "neto": "REAL",
+                 "techo_demanda": "INTEGER", "notas": "TEXT",
+                 "activo": "INTEGER DEFAULT 1"},
+}
+
+
+def _migrar(con):
+    for tabla, columnas in _MIGRACIONES.items():
+        existentes = {r[1] for r in con.execute(f"PRAGMA table_info({tabla})")}
+        for col, tipo in columnas.items():
+            if col not in existentes:
+                con.execute(f"ALTER TABLE {tabla} ADD COLUMN {col} {tipo}")
+
+
 def init(reset=False):
     if reset and os.path.isfile(config.DB_PATH):
         os.remove(config.DB_PATH)
@@ -61,7 +80,18 @@ def init(reset=False):
     try:
         for ddl in ESQUEMA.values():
             con.execute(ddl)
+        _migrar(con)
         con.commit()
+    finally:
+        con.close()
+
+
+def execute(sql, params=()):
+    con = connect()
+    try:
+        cur = con.execute(sql, params)
+        con.commit()
+        return cur.rowcount
     finally:
         con.close()
 

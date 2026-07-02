@@ -22,6 +22,8 @@ if defined OCUPADO (
     echo.
     pause & exit /b 0
 )
+"!PYTHON!" -c "import fastapi,uvicorn" >nul 2>&1
+if errorlevel 1 "!PYTHON!" -m pip install --user -r requirements.txt
 "!PYTHON!" core\db.py >nul 2>&1
 echo  API en http://localhost:8000  (Ctrl+C para cortar)
 "!PYTHON!" -m uvicorn app:app --host 0.0.0.0 --port 8000

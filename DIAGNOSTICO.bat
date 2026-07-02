@@ -22,6 +22,10 @@ echo  Carpeta actual: %CD%
 echo  Archivos clave:
 if exist dashboard_app.py (echo   dashboard_app.py OK) else (echo   dashboard_app.py FALTA)
 if exist config.py (echo   config.py OK) else (echo   config.py FALTA)
+if exist core\db.py (echo   core\db.py OK) else (echo   core\db.py FALTA)
+if exist agents\pricing.py (echo   agents\pricing.py OK) else (echo   agents\pricing.py FALTA)
+if exist data\cerebro.py (echo   data\cerebro.py OK) else (echo   data\cerebro.py FALTA)
+if exist .env (echo   .env OK ^(claves configuradas^)) else (echo   .env sin crear ^(el sistema corre igual en modo offline^))
 echo.
 echo  Si streamlit dice NO INSTALADO, corre INICIAR.bat una vez con internet.
 pause
