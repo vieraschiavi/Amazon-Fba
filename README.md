@@ -51,33 +51,41 @@ Amazon-Fba/
 └── n8n/                  3 workflows: research diario, mensajes, alertas de venta
 ```
 
-## El panel (12 pestañas)
+## El panel (13 pestañas)
 
 1. **Investigación** — dos fuentes: el **motor propio embebido** (gratis, sin APIs
    pagas: descubre keywords y nichos reales vía el autocompletado público de Amazon,
    la misma señal que explotan Helium 10/Jungle Scout) o CSV de Cerebro (suma
    volúmenes de búsqueda). Score de nicho → veredicto → listing.
-2. **Pricing** — costos → precio sugerido, margen, ROI, semáforo. Botón
+2. **Mercado** — **productos estrella por rango de precios** (Keepa Product Finder:
+   precio, BSR, ventas estimadas, rating y reseñas de cada competidor; sin clave,
+   links directos a Amazon filtrados por precio), señales de competencia (barrera
+   de reseñas, hueco de calidad), **proveedores mejor rankeados con link directo**
+   (Alibaba Trade Assurance + Verified, RFQ Marketplace, Global Sources…) y el
+   **asesor de probabilidad de éxito**: fórmula auditable (demanda 30 %, barrera de
+   entrada 25 %, hueco de calidad 20 %, precio 15 %, margen 10 %) + análisis
+   razonado con Claude si hay clave.
+3. **Pricing** — costos → precio sugerido, margen, ROI, semáforo. Botón
    **Guardar en portafolio** para pasar del cálculo a la gestión.
-3. **Portafolio** — el corazón de la gestión: todos tus productos persistidos con
+4. **Portafolio** — el corazón de la gestión: todos tus productos persistidos con
    **análisis financiero de cada uno** (unit economics, capital en pipeline, sueldo
    en meseta proyectado, proyección de caja a 12 meses y **ventas reales** cruzadas
    por ASIN). Consolidado del negocio + export CSV.
-4. **Publicar** — el paquete completo para salir a vender: listing (título, bullets,
+5. **Publicar** — el paquete completo para salir a vender: listing (título, bullets,
    descripción, backend keywords), **brief de las 7 fotos** que Amazon espera,
    precio y unit economics, **cantidades** (orden de prueba y primera compra al
    techo), **checklist de proveedor serio + RFQ en inglés** listo para Alibaba, y
    el paso a paso de Seller Central. Descargable como HTML imprimible.
-5. **Caja** — proyección realista con lead time, DD+7, devoluciones y techo de demanda.
-6. **Ventas** — registro de ventas y KPIs (facturación, neto, margen, mix).
-7. **Inversores** — escenarios con capital externo y pitch HTML descargable.
-8. **Plan** — cuántos productos necesitás para tu objetivo de ingreso + reinversión compuesta.
-9. **Alertas** — outbox de emails (dry-run sin SMTP).
-10. **Config** — estado de conexiones, prueba en vivo y **guardado seguro de claves**.
-11. **Asistente IA (Claude)** — chat que responde sobre tus métricas, tu portafolio y
+6. **Caja** — proyección realista con lead time, DD+7, devoluciones y techo de demanda.
+7. **Ventas** — registro de ventas y KPIs (facturación, neto, margen, mix).
+8. **Inversores** — escenarios con capital externo y pitch HTML descargable.
+9. **Plan** — cuántos productos necesitás para tu objetivo de ingreso + reinversión compuesta.
+10. **Alertas** — outbox de emails (dry-run sin SMTP).
+11. **Config** — estado de conexiones, prueba en vivo y **guardado seguro de claves**.
+12. **Asistente IA (Claude)** — chat que responde sobre tus métricas, tu portafolio y
     la estrategia FBA, usando tus **datos reales** como contexto. Con `ANTHROPIC_API_KEY`
     responde Claude; sin clave, modo offline desde el glosario (nunca rompe).
-12. **Ayuda** — guía de inicio en 3 pasos + **glosario** buscable de FBA y finanzas
+13. **Ayuda** — guía de inicio en 3 pasos + **glosario** buscable de FBA y finanzas
     (ROI, BSR, landed cost, techo de demanda, ACoS…).
 
 ## Motor propio vs herramientas pagas (honesto)
@@ -87,6 +95,9 @@ Amazon-Fba/
 | Descubrir keywords y nichos reales | ✅ Autocompletado público de Amazon | Helium 10 Magnet/Cerebro |
 | Volumen de búsqueda numérico | ❌ (solo proxy de interés) | Helium 10 / Jungle Scout, o **Keepa** (~19 EUR/mes, BSR→ventas) |
 | Precio y BSR de un ASIN | Con `KEEPA_API_KEY` | Keepa |
+| Productos estrella por rango de precio (ventas, rating, reseñas) | Con `KEEPA_API_KEY` (Product Finder) o links filtrados gratis | Helium 10 Black Box / JS Product DB |
+| Proveedores mejor rankeados | ✅ Links filtrados (Trade Assurance + Verified) + RFQ | — |
+| Probabilidad de éxito del producto | ✅ Fórmula auditable + Claude | Jungle Scout Opportunity Score |
 | Copy del listing | ✅ (offline o Claude) | — |
 | Publicar en Amazon | ✅ Manual gratis, o **SP-API oficial de Amazon (gratis para sellers)** | — |
 
@@ -132,6 +143,8 @@ La API (`INICIAR.bat` la deja corriendo, o `API.bat`) expone:
 | `POST /assistant` | Asistente IA (Claude) sobre el negocio; offline sin clave. |
 | `GET /motor/keywords?seed=` | Motor propio: keywords y nichos reales, gratis. |
 | `POST /publicar` | Paquete completo de publicación (listing, fotos, RFQ, pasos). |
+| `GET /mercado/estrellas` | Productos estrella por rango de precios + competencia + proveedores. |
+| `GET /exito` | Probabilidad de éxito del producto (fórmula auditable). |
 
 Importá los 3 JSON de `n8n/` en n8n y apuntá la URL base a `http://localhost:8000`.
 

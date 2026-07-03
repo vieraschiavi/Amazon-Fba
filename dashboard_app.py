@@ -28,7 +28,9 @@ from agents import productos
 from agents import asistente
 from agents import glosario
 from agents import publicador
+from agents import exito
 from data import keepa
+from data import mercado
 from data import motor_propio
 
 db.init()
@@ -81,9 +83,9 @@ st.markdown(ui.header(
            ("Email", bool(config.SMTP_USER and config.SMTP_PASS))]),
     unsafe_allow_html=True)
 
-tabs = st.tabs(["  Investigacion  ", "  Pricing  ", "  Portafolio  ", "  Publicar  ",
-                "  Caja  ", "  Ventas  ", "  Inversores  ", "  Plan  ", "  Alertas  ",
-                "  Config  ", "  Asistente IA  ", "  Ayuda  "])
+tabs = st.tabs(["  Investigacion  ", "  Mercado  ", "  Pricing  ", "  Portafolio  ",
+                "  Publicar  ", "  Caja  ", "  Ventas  ", "  Inversores  ", "  Plan  ",
+                "  Alertas  ", "  Config  ", "  Asistente IA  ", "  Ayuda  "])
 
 # ============================ 1) INVESTIGACION ============================ #
 with tabs[0]:
@@ -185,8 +187,131 @@ with tabs[0]:
     elif not usa_motor:
         st.caption("Escribi un nicho y toca Investigar (o subi un CSV de Cerebro).")
 
-# ============================ 2) PRICING ============================ #
+# ============================ 2) MERCADO ============================ #
 with tabs[1]:
+    st.markdown(ui.seccion("Explorador de mercado",
+                           "Productos estrella por rango de precios, competidores, "
+                           "reseñas, proveedores y probabilidad de exito"),
+                unsafe_allow_html=True)
+    m1, m2, m3, m4 = st.columns([3, 1, 1, 1])
+    mk_kw = m1.text_input("Producto / keyword", value="bamboo kitchen utensils",
+                          key="mk_kw")
+    mk_min = m2.number_input("Precio min (USD)", value=10.0, min_value=0.0,
+                             step=1.0, key="mk_min")
+    mk_max = m3.number_input("Precio max (USD)", value=50.0, min_value=1.0,
+                             step=1.0, key="mk_max")
+    mk_go = m4.button("Explorar", type="primary", use_container_width=True,
+                      key="mk_go")
+    if mk_go:
+        with st.spinner("Buscando productos estrella..."):
+            st.session_state["mk_res"] = mercado.productos_estrella(
+                mk_kw, mk_min, mk_max, demo=demo)
+            st.session_state["mk_kw_hecho"] = mk_kw
+    res_mk = st.session_state.get("mk_res")
+    if res_mk:
+        comp = mercado.resumen_competencia(res_mk["productos"])
+        if not res_mk["ok"]:
+            st.warning(res_mk["mensaje"])
+            st.markdown(ui.seccion("Mira los competidores a mano (links directos)"),
+                        unsafe_allow_html=True)
+            for l in res_mk["links_amazon"]:
+                st.markdown(f"- [{l['nombre']}]({l['url']})")
+        else:
+            st.caption(f"Fuente: {res_mk['fuente']} · {res_mk['mensaje']}" +
+                       (f" · costo ~{res_mk['costo_tokens']} tokens Keepa"
+                        if res_mk["costo_tokens"] else ""))
+            if comp.get("ok"):
+                _cols_html([
+                    ui.kpi("Competidores", ui.fmt_int(comp["n_competidores"]),
+                           f"precios USD {comp['precio_min']:.0f}-{comp['precio_max']:.0f}"),
+                    ui.kpi("Ventas estimadas", ui.fmt_int(comp["ventas_estim_total"]) + "/mes",
+                           "suma de lideres (curva BSR)", hero=True),
+                    ui.kpi("Calidad promedio", f"{comp['rating_promedio']}/5"
+                           if comp["rating_promedio"] else "s/d",
+                           "rating de la competencia",
+                           tone=("warn" if (comp["rating_promedio"] or 5) < 4.3 else "navy")),
+                    ui.kpi("Reseñas (mediana)", ui.fmt_int(comp["resenas_mediana"]),
+                           "barrera de entrada",
+                           tone=("bad" if comp["resenas_mediana"] > 1000 else
+                                 "good" if comp["resenas_mediana"] < 300 else "warn")),
+                ])
+            dfe = pd.DataFrame([{
+                "Producto": p["titulo"][:60], "ASIN": p["asin"],
+                "Precio": p["precio"], "BSR": p["bsr"],
+                "Ventas/mes (est.)": p["ventas_estim"], "Rating": p["rating"],
+                "Reseñas": p["resenas"], "Link": p["link"],
+                "Reseñas (link)": p["link_resenas"],
+            } for p in res_mk["productos"]])
+            st.dataframe(dfe, use_container_width=True, hide_index=True,
+                         column_config={
+                             "Link": st.column_config.LinkColumn("Producto ->"),
+                             "Reseñas (link)": st.column_config.LinkColumn("Reseñas ->"),
+                         })
+            st.caption("Calidad de producto: abri las reseñas de 1-3 estrellas del "
+                       "lider (link) y pegalas en el Asistente IA: te resume que "
+                       "arreglar para diferenciarte. El sistema no scrapea reseñas "
+                       "(lo prohiben los terminos de Amazon).")
+
+        st.divider()
+        st.markdown(ui.seccion("Proveedores mejor rankeados",
+                               "Links directos filtrados para contactar en serio"),
+                    unsafe_allow_html=True)
+        for pv in mercado.links_proveedores(st.session_state.get("mk_kw_hecho", mk_kw)):
+            st.markdown(f"**{pv['prioridad']}. [{pv['plataforma']}]({pv['url']})** — "
+                        f"{pv['nota']}")
+        st.caption("Checklist de verificacion + RFQ profesional en ingles: pestana "
+                   "Publicar, seccion Proveedor.")
+
+        st.divider()
+        st.markdown(ui.seccion("Asesor de probabilidad de exito",
+                               "Formula auditable + analisis razonado (Claude si hay clave)"),
+                    unsafe_allow_html=True)
+        e1, e2, e3 = st.columns(3)
+        ex_precio = e1.number_input("Tu precio objetivo (USD)", value=24.0,
+                                    min_value=0.0, step=0.5, key="ex_precio")
+        ex_margen = e2.number_input("Margen calculado % (0 = sin pricing)", value=0.0,
+                                    min_value=0.0, step=0.5, key="ex_margen")
+        ex_go = e3.button("Evaluar exito", type="primary", use_container_width=True,
+                          key="ex_go")
+        if ex_go:
+            ev = exito.evaluar(st.session_state.get("mk_kw_hecho", mk_kw),
+                               competencia=(comp if comp.get("ok") else None),
+                               precio_objetivo=ex_precio,
+                               margen_pct=(ex_margen if ex_margen > 0 else None))
+            tono_ev = {"VERDE": "verde", "AMARILLO": "amarillo", "ROJO": "rojo"}[ev["veredicto"]]
+            _cols_html([
+                ui.kpi("Probabilidad de exito", f"{ev['probabilidad']}/100",
+                       ev["veredicto"], hero=True),
+            ] + [ui.kpi(k.replace("_", " ").title(), f"{v['valor']:.2f}",
+                        f"peso {exito.PESOS[k]:.0%}",
+                        tone=("good" if v["valor"] >= 0.6 else
+                              "bad" if v["valor"] < 0.35 else "warn"))
+                 for k, v in list(ev["factores"].items())[:3]])
+            st.markdown(ui.badge(f"{ev['veredicto']}: {ev['comentario']}", tono_ev),
+                        unsafe_allow_html=True)
+            for k, v in ev["factores"].items():
+                st.markdown(f"- **{k}** (peso {exito.PESOS[k]:.0%}, valor "
+                            f"{v['valor']:.2f}): {v['detalle']}")
+            if ev["datos_faltantes"]:
+                st.info("Datos que mejorarian la estimacion: " +
+                        ", ".join(ev["datos_faltantes"]))
+            st.markdown(ui.seccion("Recomendaciones"), unsafe_allow_html=True)
+            for rc in ev["recomendaciones"]:
+                st.markdown(f"- {rc}")
+            with st.spinner("Analisis razonado..."):
+                nar = exito.narrativa(ev, comp if comp.get("ok") else None)
+            if nar["modo"] == "online":
+                st.markdown(ui.seccion("Analisis del asesor (Claude)"),
+                            unsafe_allow_html=True)
+                st.markdown(nar["texto"])
+            st.warning(ev["caveat"])
+    else:
+        st.caption("Escribi un producto y un rango de precios, y toca Explorar: "
+                   "productos estrella con ventas/reseñas/calidad (Keepa o demo), "
+                   "proveedores verificados con link directo y probabilidad de exito.")
+
+# ============================ 3) PRICING ============================ #
+with tabs[2]:
     st.markdown(ui.seccion("Pricing", "Costo desembarcado -> precio -> margen -> ROI"),
                 unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
@@ -229,8 +354,8 @@ with tabs[1]:
             else:
                 st.error(r["mensaje"])
 
-# ============================ 3) PORTAFOLIO ============================ #
-with tabs[2]:
+# ============================ 4) PORTAFOLIO ============================ #
+with tabs[3]:
     st.markdown(ui.seccion("Portafolio de productos",
                            "El negocio producto a producto: proyectado vs real"),
                 unsafe_allow_html=True)
@@ -341,8 +466,8 @@ with tabs[2]:
                 productos.desactivar(opciones[sel])
                 st.rerun()
 
-# ============================ 4) PUBLICAR ============================ #
-with tabs[3]:
+# ============================ 5) PUBLICAR ============================ #
+with tabs[4]:
     st.markdown(ui.seccion("Publicar en Amazon — paquete completo",
                            "Listing + fotos + precio + cantidades + proveedor + "
                            "checklist Seller Central, en un solo documento"),
@@ -442,8 +567,8 @@ with tabs[3]:
                    "'Armar paquete': sale todo listo para publicar, con fotos, "
                    "precio, cantidades y proveedor.")
 
-# ============================ 5) CAJA ============================ #
-with tabs[4]:
+# ============================ 6) CAJA ============================ #
+with tabs[5]:
     st.markdown(ui.seccion("Proyeccion realista de caja",
                            "Con lead time, DD+7, devoluciones y techo de demanda"),
                 unsafe_allow_html=True)
@@ -478,8 +603,8 @@ with tabs[4]:
     st.dataframe(df[["mes", "vendidas", "cobrado", "sueldo", "caja", "capital_atado"]],
                  use_container_width=True, hide_index=True)
 
-# ============================ 6) VENTAS ============================ #
-with tabs[5]:
+# ============================ 7) VENTAS ============================ #
+with tabs[6]:
     st.markdown(ui.seccion("Ventas y KPIs", "Registra una venta y segui el mix"),
                 unsafe_allow_html=True)
     with st.form("venta"):
@@ -519,8 +644,8 @@ with tabs[5]:
     else:
         st.caption("Aun no hay ventas registradas.")
 
-# ============================ 7) INVERSORES ============================ #
-with tabs[6]:
+# ============================ 8) INVERSORES ============================ #
+with tabs[7]:
     from agents.capital_planner import escenario_inversor
     st.markdown(ui.seccion("Escenario con inversor",
                 "Comision = % variable de facturacion sobre la parte que financia su capital"),
@@ -615,8 +740,8 @@ with tabs[6]:
                                                      productos_financia=float(prods_fin)),
                        file_name="pitch_inversor_fba.html", mime="text/html")
 
-# ============================ 8) PLAN ============================ #
-with tabs[7]:
+# ============================ 9) PLAN ============================ #
+with tabs[8]:
     from agents.portafolio import interes_compuesto, recomendar_portafolio
 
     st.markdown(ui.seccion("Recomendacion de portafolio",
@@ -698,8 +823,8 @@ with tabs[7]:
                "para ver tu curva real; la exponencial pura solo aplica a instrumentos "
                "financieros sin tope de colocacion.")
 
-# ============================ 9) ALERTAS ============================ #
-with tabs[8]:
+# ============================ 10) ALERTAS ============================ #
+with tabs[9]:
     st.markdown(ui.seccion("Alertas", "Sin SMTP, quedan en dry-run (registradas, no enviadas)"),
                 unsafe_allow_html=True)
     outbox = db.rows("SELECT fecha,asunto,para,enviado FROM alerts_outbox ORDER BY id DESC LIMIT 50")
@@ -711,8 +836,8 @@ with tabs[8]:
     else:
         st.caption("Sin alertas todavia.")
 
-# ============================ 10) CONFIG ============================ #
-with tabs[9]:
+# ============================ 11) CONFIG ============================ #
+with tabs[10]:
     st.markdown(ui.seccion("Configuracion y conexiones",
                            "Estado actual y verificacion en vivo"), unsafe_allow_html=True)
     st.json(config.estado_config())
@@ -765,8 +890,8 @@ with tabs[9]:
     st.caption("Helium 10 no tiene API en Platinum: keywords por CSV de Cerebro. "
                "Keepa es la fuente programatica de precio + BSR.")
 
-# ============================ 11) ASISTENTE IA ============================ #
-with tabs[10]:
+# ============================ 12) ASISTENTE IA ============================ #
+with tabs[11]:
     st.markdown(ui.seccion("Asistente IA (Claude)",
                            "Pregunta sobre tus metricas, tu portafolio o la estrategia FBA"),
                 unsafe_allow_html=True)
@@ -811,8 +936,8 @@ with tabs[10]:
                "respeta los principios honestos del sistema. No es consejo financiero "
                "garantizado: el retorno FBA es variable.")
 
-# ============================ 12) AYUDA ============================ #
-with tabs[11]:
+# ============================ 13) AYUDA ============================ #
+with tabs[12]:
     st.markdown(ui.seccion("Ayuda y glosario",
                            "Los conceptos de FBA y finanzas que usa el sistema, en criollo"),
                 unsafe_allow_html=True)

@@ -32,6 +32,8 @@ from agents import customer_bot
 from agents import productos
 from agents import asistente
 from agents import publicador
+from agents import exito
+from data import mercado
 from data import motor_propio
 
 db.init()
@@ -130,6 +132,30 @@ def assistant(a: AsistenteIn):
 @app.get("/motor/keywords")
 def motor_keywords(seed: str, demo: bool = False):
     return motor_propio.investigar(seed, demo=demo)
+
+
+@app.get("/mercado/estrellas")
+def mercado_estrellas(keyword: str, precio_min: float = 10.0,
+                      precio_max: float = 50.0, demo: bool = False):
+    r = mercado.productos_estrella(keyword, precio_min, precio_max, demo=demo)
+    r["competencia"] = mercado.resumen_competencia(r["productos"])
+    r["proveedores"] = mercado.links_proveedores(keyword)
+    return r
+
+
+@app.get("/exito")
+def exito_eval(keyword: str, precio: float | None = None,
+               margen_pct: float | None = None, demo: bool = False):
+    comp = None
+    if demo:
+        r = mercado.productos_estrella(keyword, 10, 50, demo=True)
+        comp = mercado.resumen_competencia(r["productos"])
+    elif config.KEEPA_API_KEY:
+        r = mercado.productos_estrella(keyword, 10, 50)
+        if r["ok"]:
+            comp = mercado.resumen_competencia(r["productos"])
+    return exito.evaluar(keyword, competencia=comp, precio_objetivo=precio,
+                         margen_pct=margen_pct)
 
 
 @app.post("/publicar")
