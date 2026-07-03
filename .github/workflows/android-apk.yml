@@ -1,0 +1,40 @@
+# Compila el APK nativo de MV Amazon FBA IA en cada push que toque la app
+# Android o la UI movil, y lo publica como artifact descargable en la pestana
+# Actions. Los runners de GitHub ya traen el Android SDK preinstalado.
+name: Android APK
+
+on:
+  push:
+    paths:
+      - "android/**"
+      - "mobile/**"
+      - ".github/workflows/android-apk.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.3"
+
+      - name: Compilar APK (debug)
+        run: gradle -p android assembleDebug
+
+      - name: Publicar APK como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MV-Amazon-FBA-IA-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

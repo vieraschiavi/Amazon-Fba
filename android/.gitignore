@@ -1,0 +1,7 @@
+# Generado por el build — nunca commitear
+.gradle/
+build/
+app/build/
+local.properties
+# assets/www se copia desde ../mobile en cada build (syncWebAssets)
+app/src/main/assets/
