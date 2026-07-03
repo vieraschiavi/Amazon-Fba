@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 chcp 65001 >nul 2>&1
-title FBA - API (n8n)
+title MV Amazon FBA IA - API (n8n)
 set "PYTHON="
 if exist "C:\ProgramData\Anaconda3\python.exe" set "PYTHON=C:\ProgramData\Anaconda3\python.exe"
 if not defined PYTHON if exist "%USERPROFILE%\anaconda3\python.exe" set "PYTHON=%USERPROFILE%\anaconda3\python.exe"
@@ -22,6 +22,8 @@ if defined OCUPADO (
     echo.
     pause & exit /b 0
 )
+"!PYTHON!" -c "import fastapi,uvicorn" >nul 2>&1
+if errorlevel 1 "!PYTHON!" -m pip install --user -r requirements.txt
 "!PYTHON!" core\db.py >nul 2>&1
 echo  API en http://localhost:8000  (Ctrl+C para cortar)
 "!PYTHON!" -m uvicorn app:app --host 0.0.0.0 --port 8000

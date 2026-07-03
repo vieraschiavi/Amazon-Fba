@@ -98,10 +98,6 @@ def main(argv=None):
     return 0
 
 
-if __name__ == "__main__":
-    main()
-
-
 def escenario_inversor(capital_propio, n_productos, techo, precio, net_unit, landed,
                        capital_inversor=0, pct_facturacion=10, pipeline_meses=4):
     """
@@ -143,3 +139,7 @@ def escenario_inversor(capital_propio, n_productos, techo, precio, net_unit, lan
         "inv_share_pct": round(inv_share * 100, 1),
         "retorno_inversor_mes_pct": round(ret_inv_mes, 1),
     }
+
+
+if __name__ == "__main__":
+    main()

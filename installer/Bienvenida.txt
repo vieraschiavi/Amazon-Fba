@@ -1,0 +1,19 @@
+MV AMAZON FBA IA — Cockpit inteligente para tu negocio Amazon FBA
+
+Este instalador deja todo listo con un clic:
+  - El panel de control (investigacion, pricing, portafolio, publicacion,
+    caja, ventas, asistente IA con Claude y mas).
+  - La API local para automatizar con n8n.
+  - Accesos directos en el Escritorio y el Menu Inicio.
+
+Requisitos:
+  - Windows 10/11 (64 bits).
+  - Python 3.10 o superior (si no lo tenes, el instalador te ofrece el link
+    de descarga; es gratis y tarda 2 minutos).
+  - Conexion a internet la PRIMERA vez que lo abrís (instala las librerias
+    necesarias una sola vez).
+
+Tus datos y tus claves (Keepa, Claude, email) quedan SIEMPRE en tu equipo,
+en un archivo .env local que nunca se comparte ni se sube a ningun lado.
+
+Toca Siguiente para continuar.

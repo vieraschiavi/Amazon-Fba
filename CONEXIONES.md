@@ -1,7 +1,12 @@
 # Conectar el sistema (paso a paso)
 
-Copiá `.env.example` a `.env` (o corré `CONECTAR.bat`, que lo crea solo la primera vez) y
-pegá las claves que tengas. Después corré **`CONECTAR.bat`** para ver verde/rojo en cada una.
+La via mas simple: abri el panel (`INICIAR.bat`) → pestaña **Config** → **Claves de API**.
+Los campos son tipo contraseña, se guardan en `.env` local (fuera de git, con permisos
+restringidos) y nunca se muestran completos.
+
+Alternativa manual: copiá `.env.example` a `.env` (o corré `CONECTAR.bat`, que lo crea solo
+la primera vez) y pegá las claves que tengas. Después corré **`CONECTAR.bat`** para ver
+verde/rojo en cada una.
 
 El sistema funciona sin ninguna clave (listing offline, alertas en dry-run, keywords por CSV).
 Cada conexión suma capacidad; ninguna es obligatoria salvo que quieras ese dato puntual.

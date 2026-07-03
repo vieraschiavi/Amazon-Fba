@@ -1,16 +1,43 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-styles.py — Sistema de diseño del panel FBA (cockpit BI).
+styles.py — Sistema de diseño de MV Amazon FBA IA (cockpit BI).
 Paleta navy #1e3a8a + verde #8bc34a, tipografia Inter/Segoe UI, KPI cards con
 sombra y acento, semaforos como estado real (verde/amarillo/rojo). Sin emojis.
+La marca (nombre, tagline, logo) esta centralizada aca para todo el sistema.
 """
+
+# --- Identidad de marca (fuente unica) ---
+BRAND = "MV Amazon FBA IA"
+BRAND_PREFIX = "MV Amazon FBA"          # se muestra en tinta normal
+BRAND_ACCENT = "IA"                     # se resalta en verde
+TAGLINE = "Cockpit inteligente para tu negocio Amazon FBA"
 
 NAVY = "#1e3a8a"
 NAVY_DEEP = "#152a63"
 GREEN = "#8bc34a"
 AMBER = "#d97706"
 RED = "#dc2626"
+
+
+def logo(size=34, on_dark=True):
+    """Monograma 'MV' en SVG inline (sin dependencias). on_dark: para el header navy."""
+    borde = "rgba(255,255,255,.25)" if on_dark else "rgba(30,58,138,.18)"
+    tinta = "#ffffff" if on_dark else NAVY
+    return (
+        f'<svg width="{size}" height="{size}" viewBox="0 0 44 44" fill="none" '
+        f'style="flex:0 0 auto">'
+        f'<rect x="1.5" y="1.5" width="41" height="41" rx="11" '
+        f'fill="url(#mvg)" stroke="{borde}" stroke-width="1.5"/>'
+        f'<defs><linearGradient id="mvg" x1="0" y1="0" x2="44" y2="44" '
+        f'gradientUnits="userSpaceOnUse">'
+        f'<stop stop-color="#2b4fb0"/><stop offset="1" stop-color="{NAVY_DEEP}"/>'
+        f'</linearGradient></defs>'
+        f'<path d="M9 31V14l7 10 7-10v17" stroke="{tinta}" stroke-width="2.6" '
+        f'stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
+        f'<path d="M27 14l5 13 5-13" stroke="{GREEN}" stroke-width="2.6" '
+        f'stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
+        f'</svg>')
 
 _TONOS = {
     "navy": NAVY, "green": "#3f9142", "verde": "#3f9142",
@@ -43,14 +70,21 @@ html, body, [class*="css"], .stApp{
 
 /* ---- Brand header ---- */
 .brandbar{
-  background:linear-gradient(135deg,var(--navy),var(--navy-deep));
-  border-radius:16px; padding:20px 24px; color:#fff; margin-bottom:18px;
-  box-shadow:0 18px 40px -20px rgba(30,58,138,.7);
+  position:relative; overflow:hidden;
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(139,195,74,.18) 0%, rgba(139,195,74,0) 42%),
+    linear-gradient(135deg,var(--navy),var(--navy-deep));
+  border-radius:18px; padding:22px 26px; color:#fff; margin-bottom:18px;
+  box-shadow:0 22px 46px -22px rgba(30,58,138,.75);
   display:flex; justify-content:space-between; align-items:center; gap:16px;
 }
-.brandbar .title{ font-size:22px; font-weight:800; letter-spacing:-.01em; line-height:1.1; }
+.brandbar::after{ content:""; position:absolute; right:-40px; top:-60px; width:200px;
+  height:200px; border-radius:50%; background:radial-gradient(circle,rgba(139,195,74,.16),transparent 70%); }
+.brandbar .idwrap{ display:flex; align-items:center; gap:14px; position:relative; z-index:1; }
+.brandbar .title{ font-size:23px; font-weight:800; letter-spacing:-.015em; line-height:1.1; }
 .brandbar .title b{ color:var(--green); font-weight:800; }
 .brandbar .sub{ font-size:13px; color:#c7d2fe; margin-top:3px; font-weight:500; }
+.brandbar .chips{ position:relative; z-index:1; }
 .brandbar .chips{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
 .chip{ background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.18);
   color:#e2e8f0; font-size:11px; font-weight:600; padding:5px 10px; border-radius:999px;
@@ -109,13 +143,18 @@ hr{ margin:.8rem 0; border-color:var(--line); }
 """
 
 
-def header(titulo="FBA Operations", subtitulo="", chips=None):
+def header(titulo=None, subtitulo="", chips=None):
+    """Header de marca con logo monograma. Sin titulo -> usa la marca oficial."""
+    if titulo is None:
+        titulo = f'{BRAND_PREFIX} <b>{BRAND_ACCENT}</b>'
+    subtitulo = subtitulo or TAGLINE
     chip_html = ""
     for txt, on in (chips or []):
         cls = "chip" if on else "chip off"
         chip_html += f'<span class="{cls}"><span class="dot"></span>{txt}</span>'
-    return (f'<div class="brandbar"><div><div class="title">{titulo}</div>'
-            f'<div class="sub">{subtitulo}</div></div>'
+    return (f'<div class="brandbar"><div class="idwrap">{logo(38)}'
+            f'<div><div class="title">{titulo}</div>'
+            f'<div class="sub">{subtitulo}</div></div></div>'
             f'<div class="chips">{chip_html}</div></div>')
 
 

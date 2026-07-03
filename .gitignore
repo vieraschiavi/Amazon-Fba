@@ -1,0 +1,25 @@
+# Claves y secretos — NUNCA subir al repositorio
+.env
+*.env.local
+
+# Base de datos local (se regenera sola con core/db.py)
+fba.db
+*.db
+*.sqlite3
+
+# Exports reales de Cerebro (datos propios del negocio)
+data/cerebro_exports/*.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Instalador de Windows compilado (se genera localmente con Inno Setup)
+installer/Output/

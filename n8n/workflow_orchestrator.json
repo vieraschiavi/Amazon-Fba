@@ -1,5 +1,5 @@
 {
-  "name": "FBA - Orchestrator (research diario)",
+  "name": "MV Amazon FBA IA - Orchestrator (research diario)",
   "nodes": [
     {
       "parameters": { "rule": { "interval": [ { "field": "cronExpression", "expression": "0 9 * * *" } ] } },
