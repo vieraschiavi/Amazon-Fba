@@ -51,7 +51,7 @@ Amazon-Fba/
 └── n8n/                  3 workflows: research diario, mensajes, alertas de venta
 ```
 
-## El panel (9 pestañas)
+## El panel (11 pestañas)
 
 1. **Investigación** — keyword o CSV de Cerebro → score de nicho → veredicto → listing.
 2. **Pricing** — costos → precio sugerido, margen, ROI, semáforo. Botón
@@ -66,6 +66,11 @@ Amazon-Fba/
 7. **Plan** — cuántos productos necesitás para tu objetivo de ingreso + reinversión compuesta.
 8. **Alertas** — outbox de emails (dry-run sin SMTP).
 9. **Config** — estado de conexiones, prueba en vivo y **guardado seguro de claves**.
+10. **Asistente IA (Claude)** — chat que responde sobre tus métricas, tu portafolio y
+    la estrategia FBA, usando tus **datos reales** como contexto. Con `ANTHROPIC_API_KEY`
+    responde Claude; sin clave, modo offline desde el glosario (nunca rompe).
+11. **Ayuda** — guía de inicio en 3 pasos + **glosario** buscable de FBA y finanzas
+    (ROI, BSR, landed cost, techo de demanda, ACoS…).
 
 ## Seguridad de las claves (API keys)
 
@@ -102,6 +107,7 @@ La API (`INICIAR.bat` la deja corriendo, o `API.bat`) expone:
 | `GET /portfolio` | Consolidado del portafolio (proyectado vs real). |
 | `POST /portfolio/producto` | Alta de producto con métricas calculadas. |
 | `GET /portfolio/producto/{id}` | Análisis financiero completo de un producto. |
+| `POST /assistant` | Asistente IA (Claude) sobre el negocio; offline sin clave. |
 
 Importá los 3 JSON de `n8n/` en n8n y apuntá la URL base a `http://localhost:8000`.
 

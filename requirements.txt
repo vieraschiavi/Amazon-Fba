@@ -3,4 +3,4 @@ pandas
 fastapi
 uvicorn[standard]
 httpx
-# anthropic   # opcional: solo si vas a redactar listings/clasificar con Claude
+anthropic     # asistente IA + redaccion de listings con Claude (modo offline si no hay clave)

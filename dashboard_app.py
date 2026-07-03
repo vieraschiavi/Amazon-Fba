@@ -25,6 +25,8 @@ from agents.pricing import evaluar as evaluar_precio
 from agents.capital_planner import proyeccion_realista
 from agents import analytics
 from agents import productos
+from agents import asistente
+from agents import glosario
 from data import keepa
 
 db.init()
@@ -78,7 +80,8 @@ st.markdown(ui.header(
     unsafe_allow_html=True)
 
 tabs = st.tabs(["  Investigacion  ", "  Pricing  ", "  Portafolio  ", "  Caja  ",
-                "  Ventas  ", "  Inversores  ", "  Plan  ", "  Alertas  ", "  Config  "])
+                "  Ventas  ", "  Inversores  ", "  Plan  ", "  Alertas  ", "  Config  ",
+                "  Asistente IA  ", "  Ayuda  "])
 
 # ============================ 1) INVESTIGACION ============================ #
 with tabs[0]:
@@ -602,3 +605,91 @@ with tabs[8]:
                "repositorio. Tambien podes editarlo a mano (plantilla: .env.example).")
     st.caption("Helium 10 no tiene API en Platinum: keywords por CSV de Cerebro. "
                "Keepa es la fuente programatica de precio + BSR.")
+
+# ============================ 10) ASISTENTE IA ============================ #
+with tabs[9]:
+    st.markdown(ui.seccion("Asistente IA (Claude)",
+                           "Pregunta sobre tus metricas, tu portafolio o la estrategia FBA"),
+                unsafe_allow_html=True)
+    est = asistente.estado()
+    st.markdown(ui.badge("Claude conectado" if est["ok"] else "Modo offline (glosario)",
+                         "verde" if est["ok"] else "amarillo"), unsafe_allow_html=True)
+    st.caption(est["mensaje"])
+
+    if "chat_hist" not in st.session_state:
+        st.session_state.chat_hist = []
+
+    ej1, ej2, ej3 = st.columns(3)
+    sugerencias = ["Como venia mi negocio segun mis ventas?",
+                   "Que producto de mi portafolio conviene escalar?",
+                   "Que es el techo de demanda y por que importa?"]
+    disparo = None
+    for col, txt in zip((ej1, ej2, ej3), sugerencias):
+        if col.button(txt, use_container_width=True, key="sug_" + txt[:10]):
+            disparo = txt
+
+    for m in st.session_state.chat_hist:
+        with st.chat_message(m["role"]):
+            st.markdown(m["content"])
+
+    pregunta = st.chat_input("Escribi tu pregunta sobre el negocio...")
+    pregunta = pregunta or disparo
+    if pregunta:
+        st.session_state.chat_hist.append({"role": "user", "content": pregunta})
+        with st.chat_message("user"):
+            st.markdown(pregunta)
+        with st.chat_message("assistant"):
+            with st.spinner("Pensando..."):
+                r = asistente.responder(pregunta, st.session_state.chat_hist[:-1])
+            st.markdown(r["texto"])
+        st.session_state.chat_hist.append({"role": "assistant", "content": r["texto"]})
+
+    if st.session_state.chat_hist:
+        if st.button("Limpiar conversacion", key="chat_clear"):
+            st.session_state.chat_hist = []
+            st.rerun()
+    st.caption("El asistente usa tus datos reales (ventas, portafolio) como contexto y "
+               "respeta los principios honestos del sistema. No es consejo financiero "
+               "garantizado: el retorno FBA es variable.")
+
+# ============================ 11) AYUDA ============================ #
+with tabs[10]:
+    st.markdown(ui.seccion("Ayuda y glosario",
+                           "Los conceptos de FBA y finanzas que usa el sistema, en criollo"),
+                unsafe_allow_html=True)
+
+    st.markdown(ui.seccion("Como empezar (3 pasos)"), unsafe_allow_html=True)
+    st.markdown(
+        "1. **Investiga** un nicho (o subi un CSV de Cerebro) y mira el score y el veredicto.\n"
+        "2. **Calcula el pricing** con tus costos reales y **guarda el producto** en el portafolio.\n"
+        "3. **Segui el negocio**: registra ventas, revisa el analisis por producto y "
+        "proyecta la caja. Conecta tus claves en **Config** para datos reales y el asistente IA.")
+    st.info("Modo DEMO (toggle del sidebar) muestra datos ilustrativos para ver el "
+            "flujo sin gastar nada. Apagalo para produccion: el sistema no inventa datos.")
+
+    st.divider()
+    q = st.text_input("Buscar un termino", placeholder="ej: ROI, techo, BSR, landed...")
+    if q.strip():
+        hits = glosario.buscar(q)
+        if hits:
+            for termino, definicion, cat in hits:
+                st.markdown(f"**{termino}** · _{cat}_  \n{definicion}")
+        else:
+            st.caption("Sin coincidencias. Proba con otra palabra.")
+    else:
+        for cat, items in glosario.por_categoria().items():
+            with st.expander(f"{cat}  ({len(items)} terminos)"):
+                for termino, definicion in items:
+                    st.markdown(f"**{termino}** — {definicion}")
+
+    st.divider()
+    st.markdown(ui.seccion("Verdades que el sistema respeta"), unsafe_allow_html=True)
+    st.markdown(
+        "- **Helium 10 no tiene API en Platinum**: keywords por CSV de Cerebro; Keepa es la "
+        "alternativa programatica (precio + BSR).\n"
+        "- **El bot no auto-responde texto libre** (lo prohibe Amazon): solo FAQs de la "
+        "whitelist; el resto queda para tu aprobacion.\n"
+        "- **La proyeccion de caja tiene techo de demanda**: sin el, el sueldo 'explota' y "
+        "miente. Con techo, se estabiliza en meseta (~techo x neto).\n"
+        "- **El score mide ganabilidad, no margen.** Nada reemplaza la orden de prueba "
+        "(USD 1.000-2.000) antes de escalar.")

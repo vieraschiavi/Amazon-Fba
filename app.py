@@ -30,6 +30,7 @@ from agents.pricing import evaluar as evaluar_precio
 from agents import analytics
 from agents import customer_bot
 from agents import productos
+from agents import asistente
 
 db.init()
 app = FastAPI(title="MV Amazon FBA IA — API", version="1.1")
@@ -53,6 +54,11 @@ class SaleIn(BaseModel):
 class ResearchIn(BaseModel):
     categoria: str
     demo: bool = False
+
+
+class AsistenteIn(BaseModel):
+    pregunta: str
+    historial: list[dict] | None = None
 
 
 class ProductoIn(BaseModel):
@@ -99,6 +105,11 @@ def run_research(r: ResearchIn):
 @app.get("/dashboard")
 def dashboard():
     return analytics.kpis()
+
+
+@app.post("/assistant")
+def assistant(a: AsistenteIn):
+    return asistente.responder(a.pregunta, a.historial)
 
 
 @app.get("/portfolio")
