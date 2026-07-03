@@ -1,0 +1,50 @@
+// app/build.gradle — MV Amazon FBA IA (app Android nativa).
+//
+// Sin dependencias externas: usa el WebView del framework y android.app.Activity
+// a proposito — build rapido, APK chico (~1-2 MB) y cero librerias que mantener.
+// La interfaz (mobile/) se embebe como assets en el APK via syncWebAssets, asi
+// la app funciona aunque el telefono no tenga acceso al hosting de la PWA:
+// solo necesita alcanzar la API del negocio (Config dentro de la app).
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.mv.amazonfbaia'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.mv.amazonfbaia"
+        minSdk 24            // Android 7.0+ (~98% de los dispositivos activos)
+        targetSdk 34
+        versionCode 1
+        versionName "1.0.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            // Para publicar en Play Store hace falta firmar con tu keystore:
+            // crea uno con keytool y configura signingConfigs aca.
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+// La UI web (mobile/) es la unica fuente de verdad: se copia dentro del APK
+// en cada build, nunca se edita a mano en assets/.
+tasks.register('syncWebAssets', Copy) {
+    from("${rootProject.projectDir}/../mobile") {
+        exclude 'README.md'
+    }
+    into "${projectDir}/src/main/assets/www"
+}
+preBuild.dependsOn syncWebAssets
+
+clean {
+    delete "${projectDir}/src/main/assets/www"
+}

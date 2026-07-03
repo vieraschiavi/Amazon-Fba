@@ -62,10 +62,22 @@ Amazon-Fba/
 │   └── cerebro_exports/  Dejá acá tus CSV de Cerebro
 ├── n8n/                  3 workflows: research diario, mensajes, alertas de venta
 ├── installer/            Instalador Windows (Inno Setup) — ver COMO_COMPILAR.md
-└── mobile/                App Android/iOS responsive (PWA) — ver mobile/README.md
+├── mobile/                UI móvil responsive (PWA) — ver mobile/README.md
+└── android/               App Android NATIVA (Gradle/Java, WebView con la UI
+                          embebida en el APK) — ver android/README.md
 ```
 
-## App móvil (Android/iOS) — carpeta `mobile/`
+## App Android nativa — carpeta `android/`
+
+Proyecto Android **nativo** (Gradle + Java, sin frameworks): la interfaz móvil
+viaja **dentro del APK** (~80 KB), con ícono adaptativo de marca, splash navy y
+links externos que abren en el navegador. El APK debug compilado es instalable
+directo en cualquier Android 7+ ("instalar apps desconocidas"); además,
+`.github/workflows/android-apk.yml` lo **recompila automáticamente en GitHub**
+en cada push y lo deja descargable en la pestaña Actions. Detalles, compilación
+local y camino a Play Store: `android/README.md`.
+
+## UI móvil (PWA) — carpeta `mobile/`
 
 Versión responsive para **gerentes y compradores**: resumen ejecutivo, portafolio,
 simulador de ganancias, mercado y el asistente IA, adaptados a pantalla táctil,
