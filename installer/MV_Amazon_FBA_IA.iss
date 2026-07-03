@@ -1,4 +1,4 @@
-; MV_Amazon_FBA_IA.iss — Instalador profesional (Inno Setup) de MV Amazon FBA IA.
+﻿; MV_Amazon_FBA_IA.iss — Instalador profesional (Inno Setup) de MV Amazon FBA IA.
 ;
 ; Como compilar (en Windows, con Inno Setup 6 — gratis, jrsoftware.org/isinfo.php):
 ;   1. Instala Inno Setup 6.
@@ -24,7 +24,9 @@ DefaultDirName={localappdata}\Programs\MV Amazon FBA IA
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
-ArchitecturesInstallIn64BitMode=x64compatible
+; (sin ArchitecturesInstallIn64BitMode: el contenido es Python/HTML, independiente
+; de arquitectura, y se instala en {localappdata} — asi el script compila igual
+; en cualquier Inno Setup 6.x)
 OutputBaseFilename=MV_Amazon_FBA_IA_Setup
 OutputDir=Output
 SetupIconFile=assets\icon.ico
@@ -44,7 +46,22 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "Crear un acceso directo en el Escritorio"; GroupDescription: "Accesos directos:"
 
 [Files]
-Source: "..\*"; DestDir: "{app}"; Excludes: ".git\*,__pycache__\*,*\__pycache__\*,.env,fba.db,installer\*,mobile\*,*.pyc,.pytest_cache\*"; Flags: recursesubdirs createallsubdirs ignoreversion
+; Lista EXPLICITA de inclusion (no un "todo menos..."): en Inno los patrones de
+; Excludes sin barra solo matchean el nombre de archivo y con barra solo el
+; final de la ruta — no son recursivos — asi que un exclude de carpetas anidadas
+; se cuela silenciosamente. Con la lista explicita, nada que no deba
+; distribuirse (installer/, mobile/, android/, .git/, .env, fba.db) puede
+; terminar dentro del instalador por accidente.
+Source: "..\*.py"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\*.bat"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\*.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\requirements.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\.env.example"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\pitch_inversor_fba.html"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\agents\*"; DestDir: "{app}\agents"; Excludes: "*.pyc"; Flags: recursesubdirs ignoreversion
+Source: "..\core\*"; DestDir: "{app}\core"; Excludes: "*.pyc"; Flags: recursesubdirs ignoreversion
+Source: "..\data\*"; DestDir: "{app}\data"; Excludes: "*.pyc,*.csv"; Flags: recursesubdirs ignoreversion
+Source: "..\n8n\*"; DestDir: "{app}\n8n"; Flags: recursesubdirs ignoreversion
 Source: "assets\icon.ico"; DestDir: "{app}\assets"; Flags: ignoreversion
 Source: "Iniciar_Silencioso.vbs"; DestDir: "{app}"; Flags: ignoreversion
 
@@ -80,11 +97,13 @@ begin
   begin
     if not PythonEncontrado() then
     begin
+      { OJO: ninguna linea de este bloque puede EMPEZAR con #13#10 — el
+        preprocesador ISPP interpreta el '#' inicial como directiva y aborta. }
       if MsgBox('No se detecto Python en este equipo.' + #13#10 +
                 'MV Amazon FBA IA necesita Python 3.10 o superior para funcionar.' + #13#10 + #13#10 +
                 'Se recomienda instalarlo ahora (tildá "Add python.exe to PATH" ' +
-                'durante su instalacion) y despues abrir MV Amazon FBA IA normalmente.' +
-                #13#10 + #13#10 + 'Queres abrir la pagina de descarga de Python?',
+                'durante su instalacion) y despues abrir MV Amazon FBA IA normalmente.' + #13#10 + #13#10 +
+                'Queres abrir la pagina de descarga de Python?',
                 mbConfirmation, MB_YESNO) = IDYES then
         ShellExec('open', 'https://www.python.org/downloads/', '', '', SW_SHOWNORMAL,
                   ewNoWait, ResultCode);

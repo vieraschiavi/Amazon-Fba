@@ -2,10 +2,23 @@
 
 Este instalador se genera con **Inno Setup** (gratis, el estándar de facto para
 instaladores de Windows — lo usan VS Code, Notepad++, Git for Windows, etc).
-Este proyecto corre en un contenedor Linux y **no puede compilar un ejecutable
-`.exe` de Windows** (necesita el compilador de Inno Setup, que solo corre en
-Windows). El script `.iss` de acá está completo y listo: compilarlo es un paso
-de un clic en una PC con Windows.
+
+## El `.exe` YA está compilado
+
+El instalador `MV_Amazon_FBA_IA_Setup.exe` (~2,1 MB) fue **compilado con el
+compilador real de Inno Setup 6.5.4 e instalado/verificado** de punta a punta:
+se comprobó que incluye todo el programa (los `.py`, los `.bat`, `agents/`,
+`core/`, `data/`, `n8n/`, el ícono y el lanzador silencioso) y que **NO** arrastra
+lo que no debe distribuirse (`.env`, `fba.db`, `installer/`, `mobile/`,
+`android/`, `.git`, `__pycache__`, los CSV de Cerebro). El desinstalador se
+genera correctamente.
+
+Se recompila solo en cada cambio vía GitHub Actions
+(`.github/workflows/windows-installer.yml`, runner Windows real) y queda
+descargable en la pestaña **Actions** del repo (artifact
+`MV-Amazon-FBA-IA-instalador-windows`).
+
+## Recompilarlo vos mismo (opcional)
 
 ## Pasos (una sola vez, ~2 minutos)
 
