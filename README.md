@@ -20,6 +20,18 @@ FastAPI, etc.); después abre en segundos.
 | `CONECTAR.bat` | Crea `.env` desde la plantilla y valida cada conexión (verde/rojo). |
 | `DIAGNOSTICO.bat` | Chequeo rápido si algo no arranca. |
 
+### Instalador de Windows (con wizard, para distribuir/vender)
+
+`installer/MV_Amazon_FBA_IA.iss` es un instalador profesional con **Inno Setup**
+(el estándar gratuito que usan VS Code, Git for Windows, etc.): asistente con
+licencia, accesos directos en Escritorio/Menú Inicio, detección de Python y
+desinstalador. Se instala en la carpeta del usuario (sin pedir admin/UAC).
+
+Este proyecto corre en un contenedor Linux y **no puede compilar el `.exe`
+final** (Inno Setup solo compila en Windows). El script está completo y listo:
+compilarlo es un paso de un clic en Windows — instrucciones en
+`installer/COMO_COMPILAR.md`.
+
 ## Estructura del proyecto
 
 ```
@@ -48,8 +60,19 @@ Amazon-Fba/
 │   ├── cerebro.py        Keywords desde CSV de Helium 10 Cerebro + scoring
 │   ├── keepa.py          Precio + BSR vía Keepa API (sin clave → estado vacío)
 │   └── cerebro_exports/  Dejá acá tus CSV de Cerebro
-└── n8n/                  3 workflows: research diario, mensajes, alertas de venta
+├── n8n/                  3 workflows: research diario, mensajes, alertas de venta
+├── installer/            Instalador Windows (Inno Setup) — ver COMO_COMPILAR.md
+└── mobile/                App Android/iOS responsive (PWA) — ver mobile/README.md
 ```
+
+## App móvil (Android/iOS) — carpeta `mobile/`
+
+Versión responsive para **gerentes y compradores**: resumen ejecutivo, portafolio,
+simulador de ganancias, mercado y el asistente IA, adaptados a pantalla táctil,
+instalable en la pantalla de inicio del celular (PWA — sin pasar por ninguna
+tienda de apps). Consume la misma API que el panel de escritorio (`app.py`),
+que ahora tiene CORS habilitado para esto. Ver `mobile/README.md` para probarla
+en 2 minutos.
 
 ## El panel (13 pestañas)
 

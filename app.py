@@ -20,6 +20,7 @@ if _AQUI not in sys.path:
     sys.path.insert(0, _AQUI)
 
 from fastapi import FastAPI, Response
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 import config
@@ -41,6 +42,13 @@ from data import motor_propio
 
 db.init()
 app = FastAPI(title="MV Amazon FBA IA — API", version="1.1")
+
+# CORS abierto: la API corre en localhost y la consumen n8n y la app movil
+# (mobile/), que sirve desde otro origen (otro puerto o el navegador del
+# celular). No hay cookies/sesion de por medio (sin auth), asi que abrir el
+# origen no expone datos de otros usuarios.
+app.add_middleware(
+    CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
 class MsgIn(BaseModel):

@@ -20,3 +20,6 @@ venv/
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Instalador de Windows compilado (se genera localmente con Inno Setup)
+installer/Output/

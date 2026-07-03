@@ -175,6 +175,69 @@ def generar_infografia(bullets, size=(1200, 1200)):
     return buf.getvalue()
 
 
+def generar_icono_app(size=512, con_fondo=True):
+    """
+    Icono de la app (monograma MV) para el instalador de escritorio y la PWA.
+    Cuadrado, esquinas redondeadas, gradiente navy + trazo verde en la V/IA.
+    """
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    r = size * 0.22
+    if con_fondo:
+        grad = _gradiente_diagonal(size, size, NAVY, NAVY_DEEP).convert("RGBA")
+        mask = Image.new("L", (size, size), 0)
+        mdraw = ImageDraw.Draw(mask)
+        mdraw.rounded_rectangle([0, 0, size - 1, size - 1], radius=r, fill=255)
+        img.paste(grad, (0, 0), mask)
+
+    # trazo "M" en blanco (dos picos) y "V" en verde, estilo monograma del logo
+    lw = max(6, int(size * 0.052))
+    m_pts = [(size * 0.20, size * 0.68), (size * 0.20, size * 0.32),
+              (size * 0.36, size * 0.58), (size * 0.52, size * 0.32)]
+    draw.line(m_pts, fill=WHITE, width=lw, joint="curve")
+    for p in (m_pts[0], m_pts[-1]):
+        draw.ellipse([p[0] - lw / 2, p[1] - lw / 2, p[0] + lw / 2, p[1] + lw / 2],
+                     fill=WHITE)
+    v_pts = [(size * 0.60, size * 0.32), (size * 0.72, size * 0.68),
+             (size * 0.84, size * 0.32)]
+    draw.line(v_pts, fill=GREEN, width=lw, joint="curve")
+    for p in (v_pts[0], v_pts[-1]):
+        draw.ellipse([p[0] - lw / 2, p[1] - lw / 2, p[0] + lw / 2, p[1] + lw / 2],
+                     fill=GREEN)
+    return img
+
+
+def guardar_iconos(destino_ico=None, destino_png_dir=None):
+    """
+    Genera y guarda: un .ico multi-tamano (Windows) y PNG 192/512 (PWA/Android),
+    incluida una variante 'maskable' con relleno de seguridad para Android.
+    """
+    rutas = {}
+    if destino_ico:
+        img = generar_icono_app(256)
+        tamanos = [(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)]
+        img.save(destino_ico, format="ICO", sizes=tamanos)
+        rutas["ico"] = destino_ico
+    if destino_png_dir:
+        os.makedirs(destino_png_dir, exist_ok=True)
+        for tam in (192, 512):
+            p = os.path.join(destino_png_dir, f"icon-{tam}.png")
+            generar_icono_app(tam).save(p, format="PNG")
+            rutas[f"png{tam}"] = p
+        # maskable: mismo diseño pero con ~20% de margen de seguridad (Android
+        # puede recortar en circulo/redondeado y no debe cortar el monograma)
+        tam = 512
+        safe = Image.new("RGBA", (tam, tam), (0, 0, 0, 0))
+        base = generar_icono_app(int(tam * 0.6))
+        safe.paste(_gradiente_diagonal(tam, tam, NAVY, NAVY_DEEP).convert("RGBA"),
+                  (0, 0))
+        safe.paste(base, (int(tam * 0.2), int(tam * 0.2)), base)
+        p = os.path.join(destino_png_dir, "icon-512-maskable.png")
+        safe.save(p, format="PNG")
+        rutas["maskable"] = p
+    return rutas
+
+
 def kit_creativo(titulo, bullets):
     """Devuelve {banner_png, infografia_png} listos para descargar/mostrar."""
     return {

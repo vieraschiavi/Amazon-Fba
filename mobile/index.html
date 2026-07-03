@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MV Amazon FBA IA</title>
+<meta name="description" content="Cockpit ejecutivo para tu negocio Amazon FBA — KPIs, portafolio, mercado y asistente IA en tu celular.">
+<meta name="theme-color" content="#1e3a8a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MV FBA IA">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+<div id="app">
+
+  <header class="topbar">
+    <div class="marca">
+      <img src="icons/icon-192.png" alt="" class="logo">
+      <div class="marca-txt">
+        <div class="nombre">MV Amazon FBA <b>IA</b></div>
+        <div class="tag">Cockpit ejecutivo</div>
+      </div>
+    </div>
+    <button id="btn-estado" class="estado-dot" title="Estado de conexion" aria-label="Estado de conexion">
+      <span class="dot"></span>
+    </button>
+  </header>
+
+  <main id="views">
+
+    <!-- ================= INICIO (resumen ejecutivo) ================= -->
+    <section id="view-inicio" class="view activa">
+      <h1 class="titulo-vista">Resumen ejecutivo</h1>
+      <p class="sub-vista">El estado del negocio, de un vistazo</p>
+
+      <div id="inicio-kpis" class="grid-kpi">
+        <div class="kpi skeleton"></div>
+        <div class="kpi skeleton"></div>
+        <div class="kpi skeleton"></div>
+        <div class="kpi skeleton"></div>
+      </div>
+
+      <h2 class="titulo-seccion">Portafolio</h2>
+      <div id="inicio-portafolio" class="card lista-vacia">Cargando…</div>
+
+      <h2 class="titulo-seccion">Accesos rapidos</h2>
+      <div class="accesos-rapidos">
+        <button class="acceso" data-ir="ganancias">
+          <span class="acceso-ic" data-icon="dinero"></span>
+          <span>¿Cuanto puedo ganar?</span>
+        </button>
+        <button class="acceso" data-ir="mercado">
+          <span class="acceso-ic" data-icon="lupa"></span>
+          <span>Evaluar un producto</span>
+        </button>
+        <button class="acceso" data-ir="asistente">
+          <span class="acceso-ic" data-icon="chat"></span>
+          <span>Preguntarle al asistente</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ================= PORTAFOLIO ================= -->
+    <section id="view-portafolio" class="view">
+      <h1 class="titulo-vista">Portafolio</h1>
+      <p class="sub-vista">Todos tus productos, proyectado vs. real</p>
+      <div id="portafolio-kpis" class="grid-kpi"></div>
+      <div id="portafolio-lista" class="lista-productos"></div>
+    </section>
+
+    <!-- ================= GANANCIAS ================= -->
+    <section id="view-ganancias" class="view">
+      <h1 class="titulo-vista">¿Cuanto podrias ganar?</h1>
+      <p class="sub-vista">Invertis X plata (o comprás X unidades): desglose completo</p>
+      <form id="form-ganancias" class="formulario">
+        <div class="campo-toggle">
+          <label><input type="radio" name="modo_g" value="inversion" checked> Por inversion (USD)</label>
+          <label><input type="radio" name="modo_g" value="unidades"> Por unidades</label>
+        </div>
+        <div class="grid-form">
+          <label>Inversion (USD)<input type="number" id="g_inversion" value="3000" min="0" step="50"></label>
+          <label>Unidades<input type="number" id="g_unidades" value="500" min="0" step="10" disabled></label>
+          <label>Costo unitario (USD)<input type="number" id="g_costo" value="2.10" min="0" step="0.10"></label>
+          <label>Flete unitario (USD)<input type="number" id="g_flete" value="0.80" min="0" step="0.10"></label>
+          <label>Arancel (%)<input type="number" id="g_arancel" value="6" min="0" step="0.5"></label>
+          <label>Prep (USD)<input type="number" id="g_prep" value="0.50" min="0" step="0.10"></label>
+          <label>Precio venta (USD, 0=sugerido)<input type="number" id="g_precio" value="24" min="0" step="0.5"></label>
+          <label>Techo demanda (u/mes)<input type="number" id="g_techo" value="290" min="10" step="10"></label>
+        </div>
+        <button type="submit" class="btn-primario">Calcular ganancia potencial</button>
+      </form>
+      <div id="ganancias-resultado"></div>
+    </section>
+
+    <!-- ================= MERCADO ================= -->
+    <section id="view-mercado" class="view">
+      <h1 class="titulo-vista">Mercado</h1>
+      <p class="sub-vista">Productos estrella, competencia y probabilidad de exito</p>
+      <form id="form-mercado" class="formulario">
+        <div class="grid-form">
+          <label class="col-2">Producto / keyword<input type="text" id="m_keyword" value="bamboo kitchen utensils"></label>
+          <label>Precio min (USD)<input type="number" id="m_min" value="10" min="0" step="1"></label>
+          <label>Precio max (USD)<input type="number" id="m_max" value="50" min="1" step="1"></label>
+        </div>
+        <label class="campo-check"><input type="checkbox" id="m_demo" checked> Modo demo (datos ilustrativos)</label>
+        <button type="submit" class="btn-primario">Explorar mercado</button>
+      </form>
+      <div id="mercado-resultado"></div>
+    </section>
+
+    <!-- ================= ASISTENTE ================= -->
+    <section id="view-asistente" class="view vista-chat">
+      <h1 class="titulo-vista">Asistente IA</h1>
+      <p class="sub-vista">Preguntale sobre tus metricas, tu portafolio y la estrategia FBA</p>
+      <div id="chat-historial" class="chat-historial"></div>
+      <form id="form-chat" class="chat-form">
+        <input type="text" id="chat-input" placeholder="Escribi tu pregunta..." autocomplete="off">
+        <button type="submit" class="btn-primario btn-enviar">Enviar</button>
+      </form>
+    </section>
+
+    <!-- ================= CONFIG ================= -->
+    <section id="view-config" class="view">
+      <h1 class="titulo-vista">Config</h1>
+      <p class="sub-vista">Direccion de la API de tu MV Amazon FBA IA</p>
+      <form id="form-config" class="formulario">
+        <label>URL de la API<input type="url" id="cfg-url" placeholder="http://192.168.0.10:8000"></label>
+        <button type="submit" class="btn-primario">Guardar y probar conexion</button>
+      </form>
+      <div id="config-estado"></div>
+      <p class="ayuda-config">
+        Corré <code>API.bat</code> (o dejá <code>INICIAR.bat</code> abierto) en la PC
+        donde vive tu MV Amazon FBA IA, anotá su IP local (ej. <code>192.168.0.10</code>)
+        y escribila acá con el puerto <code>:8000</code>. El celular tiene que estar
+        en la misma red WiFi.
+      </p>
+    </section>
+
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn activa" data-vista="inicio"><span class="nav-ic" data-icon="inicio"></span><span>Inicio</span></button>
+    <button class="nav-btn" data-vista="portafolio"><span class="nav-ic" data-icon="portafolio"></span><span>Portafolio</span></button>
+    <button class="nav-btn" data-vista="ganancias"><span class="nav-ic" data-icon="dinero"></span><span>Ganancias</span></button>
+    <button class="nav-btn" data-vista="mercado"><span class="nav-ic" data-icon="lupa"></span><span>Mercado</span></button>
+    <button class="nav-btn" data-vista="asistente"><span class="nav-ic" data-icon="chat"></span><span>Asistente</span></button>
+    <button class="nav-btn" data-vista="config"><span class="nav-ic" data-icon="config"></span><span>Config</span></button>
+  </nav>
+
+</div>
+<script src="js/app.js"></script>
+</body>
+</html>

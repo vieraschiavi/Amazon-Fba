@@ -1,0 +1,24 @@
+MV AMAZON FBA IA — TERMINOS DE USO
+
+Este software se entrega "tal cual" (as-is), sin garantias de ningun tipo,
+expresas o implicitas, incluyendo pero no limitado a garantias de
+comerciabilidad o aptitud para un proposito particular.
+
+MV Amazon FBA IA es una herramienta de apoyo a la gestion de un negocio Amazon
+FBA: investigacion de nicho, pricing, portafolio, proyeccion de caja, listing
+y publicacion. Ninguna estimacion, proyeccion, score de exito o proyeccion de
+ganancia que muestra el sistema constituye una promesa ni un consejo
+financiero garantizado. El resultado real de un negocio Amazon FBA depende de
+factores que el software no controla: la calidad del producto, el proveedor,
+la ejecucion del listing, la competencia y las condiciones del mercado.
+
+El usuario es responsable de:
+  - Verificar el cumplimiento de los Terminos de Servicio de Amazon Seller
+    Central antes de publicar productos.
+  - Validar cualquier producto con una orden de prueba antes de escalar
+    capital.
+  - Resguardar sus propias claves de API (Keepa, Anthropic/Claude, SMTP) --
+    el software las guarda localmente en su equipo y nunca las transmite a
+    terceros distintos de los proveedores de esas mismas APIs.
+
+Al instalar este software, el usuario acepta estos terminos.

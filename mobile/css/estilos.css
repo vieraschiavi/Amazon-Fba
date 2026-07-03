@@ -1,0 +1,217 @@
+/* estilos.css — MV Amazon FBA IA (mobile). Misma paleta que el panel Streamlit
+   (navy #1e3a8a / verde #8bc34a), adaptada a movil con bottom nav tipo app. */
+
+:root {
+  --navy: #1e3a8a;
+  --navy-deep: #152a63;
+  --green: #8bc34a;
+  --green-ink: #3f9142;
+  --amber: #d97706;
+  --red: #dc2626;
+  --ink: #0f172a;
+  --slate: #475569;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --surface: #ffffff;
+  --bg: #eef2f7;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #f1f5f9;
+    --slate: #cbd5e1;
+    --muted: #94a3b8;
+    --line: #2a3a52;
+    --surface: #101a2c;
+    --bg: #0b1220;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; overflow-x: hidden; }
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Inter, system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+#app { display: flex; flex-direction: column; min-height: 100vh; }
+button { font-family: inherit; cursor: pointer; }
+input { font-family: inherit; }
+a { color: inherit; }
+
+/* ---- Topbar ---- */
+.topbar {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: calc(10px + var(--safe-top)) 16px 10px;
+  background: linear-gradient(135deg, var(--navy), var(--navy-deep));
+  color: #fff;
+  box-shadow: 0 6px 18px -10px rgba(15, 23, 42, .5);
+}
+.marca { display: flex; align-items: center; gap: 10px; }
+.logo { width: 34px; height: 34px; border-radius: 9px; }
+.marca-txt .nombre { font-weight: 800; font-size: 15px; line-height: 1.1; }
+.marca-txt .nombre b { color: var(--green); }
+.marca-txt .tag { font-size: 11px; color: #c7d2fe; margin-top: 1px; }
+.estado-dot {
+  width: 34px; height: 34px; border-radius: 50%; border: 0;
+  background: rgba(255, 255, 255, .12); display: flex; align-items: center;
+  justify-content: center;
+}
+.estado-dot .dot {
+  width: 10px; height: 10px; border-radius: 50%; background: var(--muted);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, .08);
+}
+.estado-dot.ok .dot { background: var(--green); }
+.estado-dot.mal .dot { background: var(--red); }
+
+/* ---- Views ---- */
+#views { flex: 1; overflow-y: auto; padding: 16px 16px calc(96px + var(--safe-bottom)); }
+.view { display: none; animation: aparecer .18s ease; }
+.view.activa { display: block; }
+@keyframes aparecer { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.titulo-vista { font-size: 21px; font-weight: 800; margin: 4px 0 2px; }
+.sub-vista { font-size: 13px; color: var(--muted); margin: 0 0 16px; }
+.titulo-seccion { font-size: 15px; font-weight: 700; margin: 22px 0 10px; }
+
+/* ---- KPI cards ---- */
+.grid-kpi { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.kpi {
+  background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--navy);
+  border-radius: 14px; padding: 12px 14px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .05);
+}
+.kpi .lab { font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.kpi .val { font-family: 'Roboto Mono', ui-monospace, monospace; font-size: 20px; font-weight: 700; color: var(--navy); margin-top: 2px; }
+.kpi .sub { font-size: 11px; color: var(--slate); margin-top: 1px; }
+.kpi.hero { background: linear-gradient(135deg, var(--navy), var(--navy-deep)); border: 0; grid-column: span 2; }
+.kpi.hero .lab { color: #c7d2fe; } .kpi.hero .val { color: #fff; font-size: 26px; } .kpi.hero .sub { color: #c7d2fe; }
+.kpi.good { border-left-color: var(--green); } .kpi.good .val { color: var(--green-ink); }
+.kpi.warn { border-left-color: var(--amber); } .kpi.warn .val { color: #b45309; }
+.kpi.bad { border-left-color: var(--red); } .kpi.bad .val { color: var(--red); }
+.kpi.skeleton { min-height: 64px; background: linear-gradient(90deg, var(--line) 25%, var(--bg) 37%, var(--line) 63%); background-size: 400% 100%; animation: brillo 1.4s ease infinite; border: 0; }
+@keyframes brillo { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
+/* ---- Cards / lists ---- */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.lista-vacia { color: var(--muted); font-size: 13px; }
+.lista-productos { display: flex; flex-direction: column; gap: 10px; }
+.producto-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+.producto-card .fila-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.producto-card .nombre { font-weight: 700; font-size: 13.5px; }
+.producto-card .metricas { display: flex; gap: 14px; margin-top: 8px; flex-wrap: wrap; font-size: 12px; color: var(--slate); }
+.producto-card .metricas b { color: var(--ink); }
+
+/* ---- Badge / semaforo ---- */
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
+.badge .dot { width: 7px; height: 7px; border-radius: 50%; }
+.badge.verde { background: rgba(63, 145, 66, .12); color: var(--green-ink); } .badge.verde .dot { background: var(--green-ink); }
+.badge.amarillo { background: rgba(217, 119, 6, .12); color: #b45309; } .badge.amarillo .dot { background: var(--amber); }
+.badge.rojo { background: rgba(220, 38, 38, .12); color: var(--red); } .badge.rojo .dot { background: var(--red); }
+.badge.navy { background: rgba(30, 58, 138, .1); color: var(--navy); } .badge.navy .dot { background: var(--navy); }
+
+/* ---- Accesos rapidos (inicio) ---- */
+.accesos-rapidos { display: flex; flex-direction: column; gap: 8px; }
+.acceso {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  padding: 13px 14px; font-size: 13.5px; font-weight: 600; color: var(--ink);
+}
+.acceso-ic { width: 30px; height: 30px; border-radius: 9px; background: rgba(30, 58, 138, .1); flex: none; }
+
+/* ---- Forms ---- */
+.formulario { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+.grid-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid-form label, .formulario label {
+  display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--slate); font-weight: 600;
+  min-width: 0; /* evita el "grid blowout": sin esto, el ancho intrinseco del
+                   <input> hace que la columna crezca mas alla de su 1fr */
+}
+.grid-form label.col-2 { grid-column: span 2; }
+.formulario input[type="text"], .formulario input[type="number"], .formulario input[type="url"] {
+  width: 100%; min-width: 0;
+  padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px;
+  background: var(--surface); color: var(--ink);
+}
+.campo-toggle { display: flex; gap: 16px; font-size: 13px; color: var(--ink); font-weight: 500; }
+.campo-toggle label, .campo-check { display: flex; flex-direction: row; align-items: center; gap: 6px; }
+.btn-primario {
+  background: var(--navy); color: #fff; border: 0; border-radius: 11px; font-weight: 700;
+  padding: 13px 16px; font-size: 14.5px; transition: filter .15s ease;
+}
+.btn-primario:active { filter: brightness(1.15); }
+
+/* ---- Chat ---- */
+/* .view.vista-chat.activa (mas especifico que .view.activa) para que la vista
+   del chat use flex-column en vez de block, y SOLO cuando esta activa: si se
+   deja "display:flex" sin condicionar a .activa, gana por orden de cascada a
+   ".view{display:none}" (misma especificidad) y el chat queda visible siempre. */
+.view.vista-chat.activa { display: flex; flex-direction: column; height: calc(100vh - 260px); }
+.chat-historial { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-bottom: 8px; }
+.msg { max-width: 85%; padding: 10px 13px; border-radius: 14px; font-size: 13.5px; line-height: 1.45; white-space: pre-wrap; }
+.msg.user { align-self: flex-end; background: var(--navy); color: #fff; border-bottom-right-radius: 4px; }
+.msg.assistant { align-self: flex-start; background: var(--surface); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+.chat-form { display: flex; gap: 8px; margin-top: 10px; }
+.chat-form input { flex: 1; padding: 12px 14px; border: 1px solid var(--line); border-radius: 999px; font-size: 14px; background: var(--surface); color: var(--ink); }
+.btn-enviar { border-radius: 999px; padding: 12px 20px; }
+
+/* ---- Tabla de costos (ganancias) ---- */
+.tabla-costos { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+.tabla-costos td { padding: 8px 6px; border-bottom: 1px solid var(--line); }
+.tabla-costos td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+.tabla-costos tr.total td { font-weight: 800; border-top: 2px solid var(--ink); border-bottom: none; }
+.tabla-costos tr.ingreso td { font-weight: 700; }
+
+/* ---- Bottom nav ---- */
+.bottom-nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+  display: flex; justify-content: space-around;
+  background: var(--surface); border-top: 1px solid var(--line);
+  padding: 8px 4px calc(8px + var(--safe-bottom));
+  box-shadow: 0 -6px 18px -12px rgba(15, 23, 42, .3);
+}
+.nav-btn {
+  background: none; border: 0; display: flex; flex-direction: column; align-items: center;
+  gap: 3px; color: var(--muted); font-size: 10px; font-weight: 600; padding: 4px 6px;
+  min-width: 44px; min-height: 44px; border-radius: 10px;
+}
+.nav-btn.activa { color: var(--navy); }
+.nav-ic { width: 20px; height: 20px; display: inline-block; }
+
+/* Iconos: geometricos simples via CSS (sin emojis, sin libreria externa) */
+.nav-ic, .acceso-ic[data-icon] { position: relative; border-radius: 5px; }
+.nav-ic::before, .acceso-ic[data-icon]::before {
+  content: ""; position: absolute; inset: 4px; border: 2.4px solid currentColor; border-radius: 4px;
+}
+.nav-btn .nav-ic { color: var(--muted); background: none; }
+.nav-btn.activa .nav-ic { color: var(--navy); }
+.nav-ic[data-icon="inicio"]::before { border-radius: 4px 4px 0 0; inset: 6px 4px 4px; }
+.nav-ic[data-icon="portafolio"]::before { border-radius: 3px; }
+.nav-ic[data-icon="dinero"]::before, .acceso-ic[data-icon="dinero"]::before { border-radius: 50%; }
+.nav-ic[data-icon="lupa"]::before, .acceso-ic[data-icon="lupa"]::before { border-radius: 50% 50% 50% 4px; inset: 5px 7px 7px 5px; }
+.nav-ic[data-icon="chat"]::before, .acceso-ic[data-icon="chat"]::before { border-radius: 10px 10px 10px 2px; }
+.nav-ic[data-icon="config"]::before { border-radius: 50%; }
+.acceso-ic[data-icon] { color: var(--navy); }
+
+/* ---- Toast ---- */
+.toast {
+  position: fixed; left: 16px; right: 16px; bottom: calc(76px + var(--safe-bottom));
+  background: var(--ink); color: #fff; padding: 12px 16px; border-radius: 12px;
+  font-size: 13px; z-index: 20; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, .5);
+  opacity: 0; transform: translateY(8px); transition: all .2s ease; pointer-events: none;
+}
+.toast.mostrar { opacity: 1; transform: none; }
+
+.ayuda-config { font-size: 12px; color: var(--muted); line-height: 1.6; margin-top: 10px; }
+.ayuda-config code { background: var(--bg); padding: 1px 5px; border-radius: 4px; }
+
+/* Tablet / desktop: contenedor centrado, no se estira el bottom nav */
+@media (min-width: 640px) {
+  #app { max-width: 480px; margin: 0 auto; box-shadow: 0 0 40px rgba(0,0,0,.08); min-height: 100vh; }
+  .bottom-nav { max-width: 480px; left: 50%; transform: translateX(-50%); }
+}
