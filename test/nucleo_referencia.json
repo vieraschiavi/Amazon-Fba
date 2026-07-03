@@ -1,0 +1,532 @@
+{
+  "inputs": {
+    "pricing": {
+      "prod": {
+        "costo": 2.1,
+        "flete": 0.8,
+        "arancel_pct": 6,
+        "prep": 0.5
+      },
+      "precio_competencia": 19.99
+    },
+    "ganancias": {
+      "inversion": 3000,
+      "costo": 2.1,
+      "flete": 0.8,
+      "arancel_pct": 6,
+      "prep": 0.5,
+      "precio": 24,
+      "techo_demanda": 290
+    },
+    "exito": {
+      "keyword": "bamboo",
+      "competencia": {
+        "ventas_estim_total": 1890,
+        "n_competidores": 8,
+        "resenas_mediana": 1200,
+        "rating_promedio": 4.336,
+        "precio_mediana": 24.0
+      },
+      "interes_kw": 70,
+      "precio_objetivo": 24.0,
+      "margen_pct": 24.9
+    },
+    "dedicacion": {
+      "n_op": 3,
+      "lanzando": true
+    },
+    "caja": {
+      "budget": 3000,
+      "precio": 24,
+      "techo_demanda": 290
+    }
+  },
+  "esperado": {
+    "pricing": {
+      "precio": 18.99,
+      "referral": 2.85,
+      "fba_fee": 3.65,
+      "ads": 1.9,
+      "landed": 3.57,
+      "neto": 7.02,
+      "margen_pct": 37.0,
+      "roi_pct": 196.4,
+      "semaforo": "verde",
+      "estrategia": "competitivo (-5% vs lider)",
+      "precio_objetivo": 14.45,
+      "break_even": 9.63,
+      "precio_competencia": 19.99,
+      "margen_objetivo": 25.0
+    },
+    "ganancias": {
+      "ok": true,
+      "entrada": "USD 3,000 de inversion",
+      "unit_economics": {
+        "landed": 3.57,
+        "precio_venta": 24.0,
+        "precio_es_sugerido": false,
+        "referral_unidad": 3.6,
+        "fba_fee": 3.65,
+        "publicidad_unidad": 2.4,
+        "neto_unidad": 10.78,
+        "semaforo": "verde"
+      },
+      "lote": {
+        "unidades_compradas": 839,
+        "inversion_usada": 2998.59,
+        "unidades_vendidas_netas": 797.0,
+        "devoluciones_pct": 5.0,
+        "ingreso_bruto": 19129.2,
+        "costos": {
+          "producto": 1761.9,
+          "flete": 671.2,
+          "arancel": 145.99,
+          "prep": 419.5,
+          "comision_amazon_referral": 2869.38,
+          "fba_fee": 2909.23,
+          "publicidad_acos": 1912.92
+        },
+        "total_costos": 10690.12,
+        "ganancia_neta": 8439.08,
+        "ganancia_por_unidad": 10.78,
+        "margen_pct": 44.1,
+        "roi_inversion_pct": 281.4,
+        "meses_para_venderlo": 3,
+        "ganancia_por_mes_promedio": 2813.03
+      },
+      "reciclado": {
+        "sueldo_meseta_mensual": 2098.98,
+        "ganancia_12m_estimada": 21965.52,
+        "caja_minima": 0.0,
+        "mes_primer_cobro": 3,
+        "alerta": "ok",
+        "filas": [
+          {
+            "mes": 1,
+            "llegan": 0,
+            "vendidas": 0,
+            "ingreso": 0.0,
+            "cobrado": 0.0,
+            "repuso_unid": 0,
+            "sueldo": 0.0,
+            "caja": 0.0,
+            "capital_atado": 2998.59,
+            "disponible": 0
+          },
+          {
+            "mes": 2,
+            "llegan": 839,
+            "vendidas": 290,
+            "ingreso": 6612.0,
+            "cobrado": 0.0,
+            "repuso_unid": 0,
+            "sueldo": 0.0,
+            "caja": 0.0,
+            "capital_atado": 1962.13,
+            "disponible": 549
+          },
+          {
+            "mes": 3,
+            "llegan": 0,
+            "vendidas": 274,
+            "ingreso": 6247.2,
+            "cobrado": 6612.0,
+            "repuso_unid": 289,
+            "sueldo": 2920.54,
+            "caja": 0.0,
+            "capital_atado": 2015.74,
+            "disponible": 275
+          },
+          {
+            "mes": 4,
+            "llegan": 0,
+            "vendidas": 138,
+            "ingreso": 3146.4,
+            "cobrado": 6247.2,
+            "repuso_unid": 273,
+            "sueldo": 2759.6,
+            "caja": 0.0,
+            "capital_atado": 2498.23,
+            "disponible": 137
+          },
+          {
+            "mes": 5,
+            "llegan": 289,
+            "vendidas": 213,
+            "ingreso": 4856.4,
+            "cobrado": 3146.4,
+            "repuso_unid": 138,
+            "sueldo": 1388.07,
+            "caja": 0.0,
+            "capital_atado": 2230.18,
+            "disponible": 213
+          },
+          {
+            "mes": 6,
+            "llegan": 273,
+            "vendidas": 243,
+            "ingreso": 5540.4,
+            "cobrado": 4856.4,
+            "repuso_unid": 212,
+            "sueldo": 2146.03,
+            "caja": 0.0,
+            "capital_atado": 2119.38,
+            "disponible": 243
+          },
+          {
+            "mes": 7,
+            "llegan": 138,
+            "vendidas": 190,
+            "ingreso": 4332.0,
+            "cobrado": 5540.4,
+            "repuso_unid": 243,
+            "sueldo": 2444.22,
+            "caja": 0.0,
+            "capital_atado": 2308.8,
+            "disponible": 191
+          },
+          {
+            "mes": 8,
+            "llegan": 212,
+            "vendidas": 202,
+            "ingreso": 4605.6,
+            "cobrado": 4332.0,
+            "repuso_unid": 190,
+            "sueldo": 1911.12,
+            "caja": 0.0,
+            "capital_atado": 2265.92,
+            "disponible": 201
+          },
+          {
+            "mes": 9,
+            "llegan": 243,
+            "vendidas": 222,
+            "ingreso": 5061.6,
+            "cobrado": 4605.6,
+            "repuso_unid": 202,
+            "sueldo": 2031.82,
+            "caja": 0.0,
+            "capital_atado": 2194.44,
+            "disponible": 222
+          },
+          {
+            "mes": 10,
+            "llegan": 190,
+            "vendidas": 206,
+            "ingreso": 4696.8,
+            "cobrado": 5061.6,
+            "repuso_unid": 222,
+            "sueldo": 2232.99,
+            "caja": 0.0,
+            "capital_atado": 2251.62,
+            "disponible": 206
+          },
+          {
+            "mes": 11,
+            "llegan": 202,
+            "vendidas": 204,
+            "ingreso": 4651.2,
+            "cobrado": 4696.8,
+            "repuso_unid": 205,
+            "sueldo": 2075.62,
+            "caja": 0.0,
+            "capital_atado": 2255.19,
+            "disponible": 204
+          },
+          {
+            "mes": 12,
+            "llegan": 222,
+            "vendidas": 213,
+            "ingreso": 4856.4,
+            "cobrado": 4651.2,
+            "repuso_unid": 203,
+            "sueldo": 2055.51,
+            "caja": 0.0,
+            "capital_atado": 2219.45,
+            "disponible": 213
+          }
+        ]
+      },
+      "caveat": "Proyeccion, no promesa: asume que vendes al precio indicado y al ritmo del techo de demanda; el resultado real depende del ranking, el PPC y la calidad del producto. Si la ganancia por unidad es negativa, NO compres: estarias pagando por vender."
+    },
+    "exito": {
+      "ok": true,
+      "keyword": "bamboo",
+      "probabilidad": 52,
+      "veredicto": "AMARILLO",
+      "comentario": "Marginal: solo avanzar con una diferenciacion clara (mejor producto, bundle, nicho mas fino).",
+      "factores": {
+        "demanda": {
+          "valor": 0.63,
+          "detalle": "~1,890 ventas/mes estimadas entre los lideres"
+        },
+        "entrada": {
+          "valor": 0.2,
+          "detalle": "mediana de 1,200 reseñas entre 8 competidores — nicho muy defendido"
+        },
+        "calidad_gap": {
+          "valor": 0.22,
+          "detalle": "rating promedio 4.336/5 de la competencia — competencia muy bien calificada, diferenciarse cuesta"
+        },
+        "precio": {
+          "valor": 1.0,
+          "detalle": "USD 24.00 en el sweet spot FBA (15-45)"
+        },
+        "margen": {
+          "valor": 0.83,
+          "detalle": "margen calculado 24.9% (verde >= 25%)"
+        }
+      },
+      "pesos": {
+        "demanda": 0.3,
+        "entrada": 0.25,
+        "calidad_gap": 0.2,
+        "precio": 0.15,
+        "margen": 0.1
+      },
+      "datos_faltantes": [],
+      "recomendaciones": [
+        "Nicho defendido por reseñas: apunta a un sub-nicho long-tail (del motor propio) en vez del head keyword."
+      ],
+      "caveat": "Estimacion para ordenar candidatos, NO una garantia: el exito real depende del proveedor, el listing y la ejecucion. Ninguna probabilidad reemplaza la orden de prueba (USD 1.000-2.000)."
+    },
+    "dedicacion": {
+      "n_productos_operacion": 3,
+      "lanzando_producto": true,
+      "horas_semana_min": 10.5,
+      "horas_semana_max": 17.2,
+      "desglose": [
+        {
+          "tarea": "Investigar nicho y keywords (motor propio / Cerebro)",
+          "horas_min": 1.0,
+          "horas_max": 1.7,
+          "frecuencia": "una vez",
+          "fase": "lanzamiento"
+        },
+        {
+          "tarea": "Evaluar y contactar proveedores + RFQ + negociar + pedir muestra",
+          "horas_min": 1.3,
+          "horas_max": 2.0,
+          "frecuencia": "una vez",
+          "fase": "lanzamiento"
+        },
+        {
+          "tarea": "Armar listing + coordinar/organizar las 7 fotos",
+          "horas_min": 1.0,
+          "horas_max": 1.3,
+          "frecuencia": "una vez",
+          "fase": "lanzamiento"
+        },
+        {
+          "tarea": "Configurar Seller Central + primer envio a Amazon (FBA)",
+          "horas_min": 0.7,
+          "horas_max": 1.0,
+          "frecuencia": "una vez",
+          "fase": "lanzamiento"
+        },
+        {
+          "tarea": "Monitorear PPC y precio la primera semana tras lanzar",
+          "horas_min": 2,
+          "horas_max": 3,
+          "frecuencia": "por semana, primer mes",
+          "fase": "lanzamiento"
+        },
+        {
+          "tarea": "Revisar PPC, precio y stock (x3 producto/s)",
+          "horas_min": 1.5,
+          "horas_max": 3.0,
+          "frecuencia": "por semana",
+          "fase": "operacion"
+        },
+        {
+          "tarea": "Atender casos que el bot deriva (no son FAQ) (x3 producto/s)",
+          "horas_min": 1.5,
+          "horas_max": 3.0,
+          "frecuencia": "por semana",
+          "fase": "operacion"
+        },
+        {
+          "tarea": "Seguimiento de reposicion con el proveedor (x3 producto/s)",
+          "horas_min": 0.8,
+          "horas_max": 1.5,
+          "frecuencia": "por semana",
+          "fase": "operacion"
+        },
+        {
+          "tarea": "Leer KPIs y alertas (ya automatizadas) (x3 producto/s)",
+          "horas_min": 0.8,
+          "horas_max": 0.8,
+          "frecuencia": "por semana",
+          "fase": "operacion"
+        }
+      ],
+      "automatizado_por_el_sistema": [
+        "Clasificar y responder consultas FAQ (envio, garantia, estado de pedido...)",
+        "Registrar ventas, calcular KPIs y margen global",
+        "Enviar alertas por email de cada venta/consulta",
+        "Calcular pricing, proyeccion de caja y semaforo de margen",
+        "Investigar keywords con el motor propio (corre solo, vos revisas el resultado)"
+      ],
+      "caveat": "Rangos de referencia. Un producto con problemas de calidad, reclamos o guerra de precios exige mas horas que estas; un producto sano con proveedor solido puede exigir menos."
+    },
+    "caja": {
+      "filas": [
+        {
+          "mes": 1,
+          "llegan": 0,
+          "vendidas": 0,
+          "ingreso": 0.0,
+          "cobrado": 0.0,
+          "repuso_unid": 0,
+          "sueldo": 0.0,
+          "caja": 1.41,
+          "capital_atado": 2998.59,
+          "disponible": 0
+        },
+        {
+          "mes": 2,
+          "llegan": 839,
+          "vendidas": 290,
+          "ingreso": 6612.0,
+          "cobrado": 0.0,
+          "repuso_unid": 0,
+          "sueldo": 0.0,
+          "caja": 1.41,
+          "capital_atado": 1962.13,
+          "disponible": 549
+        },
+        {
+          "mes": 3,
+          "llegan": 0,
+          "vendidas": 274,
+          "ingreso": 6247.2,
+          "cobrado": 6612.0,
+          "repuso_unid": 289,
+          "sueldo": 2920.54,
+          "caja": 1.41,
+          "capital_atado": 2015.74,
+          "disponible": 275
+        },
+        {
+          "mes": 4,
+          "llegan": 0,
+          "vendidas": 138,
+          "ingreso": 3146.4,
+          "cobrado": 6247.2,
+          "repuso_unid": 273,
+          "sueldo": 2759.6,
+          "caja": 1.41,
+          "capital_atado": 2498.23,
+          "disponible": 137
+        },
+        {
+          "mes": 5,
+          "llegan": 289,
+          "vendidas": 213,
+          "ingreso": 4856.4,
+          "cobrado": 3146.4,
+          "repuso_unid": 138,
+          "sueldo": 1388.07,
+          "caja": 1.41,
+          "capital_atado": 2230.18,
+          "disponible": 213
+        },
+        {
+          "mes": 6,
+          "llegan": 273,
+          "vendidas": 243,
+          "ingreso": 5540.4,
+          "cobrado": 4856.4,
+          "repuso_unid": 212,
+          "sueldo": 2146.03,
+          "caja": 1.41,
+          "capital_atado": 2119.38,
+          "disponible": 243
+        },
+        {
+          "mes": 7,
+          "llegan": 138,
+          "vendidas": 190,
+          "ingreso": 4332.0,
+          "cobrado": 5540.4,
+          "repuso_unid": 243,
+          "sueldo": 2444.22,
+          "caja": 1.41,
+          "capital_atado": 2308.8,
+          "disponible": 191
+        },
+        {
+          "mes": 8,
+          "llegan": 212,
+          "vendidas": 202,
+          "ingreso": 4605.6,
+          "cobrado": 4332.0,
+          "repuso_unid": 190,
+          "sueldo": 1911.12,
+          "caja": 1.41,
+          "capital_atado": 2265.92,
+          "disponible": 201
+        },
+        {
+          "mes": 9,
+          "llegan": 243,
+          "vendidas": 222,
+          "ingreso": 5061.6,
+          "cobrado": 4605.6,
+          "repuso_unid": 202,
+          "sueldo": 2031.82,
+          "caja": 1.41,
+          "capital_atado": 2194.44,
+          "disponible": 222
+        },
+        {
+          "mes": 10,
+          "llegan": 190,
+          "vendidas": 206,
+          "ingreso": 4696.8,
+          "cobrado": 5061.6,
+          "repuso_unid": 222,
+          "sueldo": 2232.99,
+          "caja": 1.41,
+          "capital_atado": 2251.62,
+          "disponible": 206
+        },
+        {
+          "mes": 11,
+          "llegan": 202,
+          "vendidas": 204,
+          "ingreso": 4651.2,
+          "cobrado": 4696.8,
+          "repuso_unid": 205,
+          "sueldo": 2075.62,
+          "caja": 1.41,
+          "capital_atado": 2255.19,
+          "disponible": 204
+        },
+        {
+          "mes": 12,
+          "llegan": 222,
+          "vendidas": 213,
+          "ingreso": 4856.4,
+          "cobrado": 4651.2,
+          "repuso_unid": 203,
+          "sueldo": 2055.51,
+          "caja": 1.41,
+          "capital_atado": 2219.45,
+          "disponible": 213
+        }
+      ],
+      "resumen": {
+        "unidades_compra": 839,
+        "inversion": 2998.59,
+        "caja_minima": 1.41,
+        "sueldo_meseta": 2098.98,
+        "sueldo_ultimo": 2055.51,
+        "mes_primer_cobro": 3,
+        "caja_final": 1.41,
+        "techo_demanda": 290,
+        "alerta": "ok"
+      }
+    }
+  }
+}

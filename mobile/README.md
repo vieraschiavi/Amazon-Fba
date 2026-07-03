@@ -1,54 +1,76 @@
-# MV Amazon FBA IA — App móvil (Android/iOS, PWA responsive)
+# MV Amazon FBA IA — App móvil NATIVA (corre en el teléfono, sin PC)
 
-App web progresiva (PWA), pensada para **gerentes y compradores**: chequeás el
-estado del negocio, evaluás un producto o le preguntás al asistente IA desde el
-celular, sin instalar nada de una tienda de apps. Consume la misma API
-(`app.py`) que ya usa el panel de escritorio — no duplica lógica de negocio,
-solo la muestra de forma responsive y táctil.
+App autocontenida para **gerentes y compradores**: administrás tu negocio Amazon
+FBA entero desde el celular — portafolio, ganancias, mercado y asistente — **sin
+depender de ninguna PC y sin internet** para lo esencial.
+
+Toda la matemática del negocio corre **en el teléfono** (`js/nucleo.js`, un port
+fiel del motor Python, validado campo a campo contra el original) y tus datos
+viven en `localStorage` del propio dispositivo. Lo único que usa internet son dos
+funciones opcionales (keywords reales de Amazon y el asistente Claude abierto), y
+usan los **datos móviles del celular**, nunca una PC.
 
 ## Qué incluye
 
-- **Inicio** — resumen ejecutivo: facturación, neto, margen, semáforo del
-  portafolio.
-- **Portafolio** — cada producto con su margen, ROI y ventas reales.
-- **Ganancias** — el simulador "¿cuánto podría ganar?" con desglose completo.
-- **Mercado** — productos estrella, competencia y probabilidad de éxito.
-- **Asistente IA** — el mismo chat con Claude (u offline) del panel.
-- **Config** — la IP/puerto de tu API (se guarda en el celular).
+- **Inicio** — resumen ejecutivo: facturación, neto, margen y semáforo del
+  portafolio, calculado a partir de tus productos y ventas.
+- **Portafolio** — cargás cada producto (costo, flete, arancel, prep, precio,
+  competencia, techo de demanda) y ves margen, ROI, neto/unidad y semáforo al
+  instante. Registrás ventas reales por producto. Todo persiste en el teléfono.
+- **Ganancias** — el simulador "¿cuánto podría ganar?" con desglose completo de
+  costos, ROI, meses de venta y sueldo en meseta reciclando capital 12 meses.
+- **Mercado** — probabilidad de éxito de un nicho (demanda, barrera de entrada,
+  hueco de calidad, precio, margen), productos estrella ilustrativos y, si hay
+  internet, las keywords reales del autocompletado público de Amazon.
+- **Asistente IA** — responde desde tus datos (sueldo meseta, portafolio,
+  margen/ROI/ACOS, dedicación) **offline**. Con una clave de Claude cargada en
+  Config y con internet, responde cualquier consulta abierta.
+- **Config** — claves opcionales (Keepa, Claude), backup exportar/importar,
+  cargar datos de ejemplo y borrar todo. Nada sale del teléfono sin tu acción.
 
-Instalable en la pantalla de inicio de Android ("Agregar a pantalla de
-inicio") e iOS ("Compartir → Agregar a inicio"): abre a pantalla completa,
-como una app nativa, con ícono propio.
+## Cómo se usa
 
-## Cómo probarlo
+1. Abrí la app (APK de Android, o esta carpeta servida como PWA en el navegador).
+2. La primera vez, la bienvenida te lleva a cargar tu primer producto (o probar
+   con datos de ejemplo).
+3. Listo: margen, ROI, ganancias, mercado y asistente funcionan **sin conectar
+   nada**. Si querés keywords en vivo de Amazon o el asistente abierto, cargá las
+   claves en Config y usá los datos/WiFi del celular.
 
-1. Corré la API en tu PC: doble clic en `API.bat` (o dejá `INICIAR.bat`
-   abierto) — queda escuchando en el puerto `8000`.
-2. Serví esta carpeta como sitio estático. Ejemplos:
-   - `python -m http.server 8090` parado en `mobile/`
-   - o cualquier hosting estático (Netlify, GitHub Pages, Vercel — la carpeta
-     no tiene build step, se sube tal cual).
-3. Abrí la URL en el navegador del celular (Chrome/Android o Safari/iOS).
-4. Entrá a **Config** y escribí la URL de la API — si el celular está en la
-   misma red WiFi que la PC, usá la IP local de la PC (ej.
-   `http://192.168.0.10:8000`), no `localhost` (ese apuntaría al celular).
-5. Guardá — si conecta bien, ya podés usar todas las pestañas.
+## Android nativo (APK)
 
-## CORS
+El proyecto Gradle en `../android/` empaqueta esta carpeta como assets dentro de
+un APK y la hospeda en un `WebView`. La app es nativa y autocontenida: abre
+offline y no le pide nada a ninguna PC. Las llamadas online opcionales pasan por
+un **puente nativo** (`MainActivity.java` → `PuenteNativo.httpRequest`) que hace
+el HTTP en Java para esquivar el bloqueo CORS del origen `file://`. En JS, ese
+puente se usa transparentemente desde `pedirHTTP()` (si no está —p. ej. en el
+navegador durante desarrollo— cae a `fetch` directo).
 
-`app.py` ya tiene `CORSMiddleware` habilitado con `allow_origins=["*"]` para
-que esta app (servida desde otro origen/puerto) pueda llamarla sin bloqueos
-del navegador. Como la API no maneja sesiones ni cookies, abrir el origen no
-expone datos de otros usuarios — solo hace que cualquier front-end pueda
-consumirla (igual que ya hacía n8n).
+## Probar como PWA (desarrollo)
 
-## Qué NO es
+No tiene build step: serví la carpeta como sitio estático y abrila en el
+navegador del celular o de la PC.
 
-No es una app nativa de Android (no usa Kotlin/Java ni pasa por Google Play).
-Es una PWA: HTML/CSS/JS puro, sin dependencias ni paso de build, que corre en
-cualquier navegador moderno y se "instala" como acceso directo con ícono
-propio. Es el camino más liviano y mantenible para tener una versión móvil
-real sin duplicar todo el desarrollo en un lenguaje distinto.
+```
+python -m http.server 8090   # parado en mobile/
+```
+
+Se puede "instalar" a la pantalla de inicio (Android: *Agregar a pantalla de
+inicio*; iOS: *Compartir → Agregar a inicio*): abre a pantalla completa con ícono
+propio y funciona offline gracias al service worker.
+
+## Validación del motor
+
+`../test/verificar_nucleo.js` corre el motor JavaScript con los mismos inputs que
+el motor Python (`../agents/*`) y compara **cada campo** contra la referencia
+(`../test/nucleo_referencia.json`). Deben dar idéntico: hasta el centavo, la
+unidad y la redacción. Regenerá la referencia con
+`python ../test/generar_referencia.py` si cambian las fórmulas en `agents/`.
+
+```
+node ../test/verificar_nucleo.js   # OK = motor JS idéntico al Python
+```
 
 ## Estructura
 
@@ -56,8 +78,9 @@ real sin duplicar todo el desarrollo en un lenguaje distinto.
 mobile/
 ├── index.html          Shell de la app (una sola pagina, 6 vistas por tab)
 ├── manifest.json        Metadata de instalacion (nombre, iconos, colores)
-├── service-worker.js     Cache del shell estatico (los datos SIEMPRE se piden en vivo)
-├── css/estilos.css       Diseño responsive, misma paleta navy/verde del panel
-├── js/app.js             Logica: navegacion, fetch a la API, render de cada vista
+├── service-worker.js     Cache del shell para abrir/operar 100% offline
+├── css/estilos.css       Diseño responsive, paleta navy/verde de marca
+├── js/nucleo.js          Motor de negocio (port fiel del Python) — corre en el telefono
+├── js/app.js             UI, navegacion, persistencia en localStorage, puente de red
 └── icons/                Icono de la app (192/512/512-maskable)
 ```
