@@ -31,6 +31,8 @@ from agents import analytics
 from agents import customer_bot
 from agents import productos
 from agents import asistente
+from agents import publicador
+from data import motor_propio
 
 db.init()
 app = FastAPI(title="MV Amazon FBA IA — API", version="1.1")
@@ -59,6 +61,19 @@ class ResearchIn(BaseModel):
 class AsistenteIn(BaseModel):
     pregunta: str
     historial: list[dict] | None = None
+
+
+class PublicarIn(BaseModel):
+    nombre: str
+    costo: float = 0.0
+    flete: float = 0.0
+    arancel_pct: float = 0.0
+    prep: float = 0.0
+    fba_fee: float | None = None
+    precio_competencia: float | None = None
+    techo_demanda: int = 290
+    usar_motor_propio: bool = True
+    demo: bool = False
 
 
 class ProductoIn(BaseModel):
@@ -110,6 +125,26 @@ def dashboard():
 @app.post("/assistant")
 def assistant(a: AsistenteIn):
     return asistente.responder(a.pregunta, a.historial)
+
+
+@app.get("/motor/keywords")
+def motor_keywords(seed: str, demo: bool = False):
+    return motor_propio.investigar(seed, demo=demo)
+
+
+@app.post("/publicar")
+def publicar(p: PublicarIn):
+    kws = None
+    if p.usar_motor_propio:
+        res = motor_propio.investigar(p.nombre, demo=p.demo)
+        if res["ok"]:
+            kws = motor_propio.keywords_cerebro(res)
+    return publicador.paquete(p.nombre, costo=p.costo, flete=p.flete,
+                              arancel_pct=p.arancel_pct, prep=p.prep,
+                              fba_fee=p.fba_fee,
+                              precio_competencia=p.precio_competencia,
+                              techo_demanda=p.techo_demanda, keywords=kws,
+                              demo=p.demo)
 
 
 @app.get("/portfolio")

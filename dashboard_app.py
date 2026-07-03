@@ -27,7 +27,9 @@ from agents import analytics
 from agents import productos
 from agents import asistente
 from agents import glosario
+from agents import publicador
 from data import keepa
+from data import motor_propio
 
 db.init()
 
@@ -79,28 +81,84 @@ st.markdown(ui.header(
            ("Email", bool(config.SMTP_USER and config.SMTP_PASS))]),
     unsafe_allow_html=True)
 
-tabs = st.tabs(["  Investigacion  ", "  Pricing  ", "  Portafolio  ", "  Caja  ",
-                "  Ventas  ", "  Inversores  ", "  Plan  ", "  Alertas  ", "  Config  ",
-                "  Asistente IA  ", "  Ayuda  "])
+tabs = st.tabs(["  Investigacion  ", "  Pricing  ", "  Portafolio  ", "  Publicar  ",
+                "  Caja  ", "  Ventas  ", "  Inversores  ", "  Plan  ", "  Alertas  ",
+                "  Config  ", "  Asistente IA  ", "  Ayuda  "])
 
 # ============================ 1) INVESTIGACION ============================ #
 with tabs[0]:
     st.markdown(ui.seccion("Investigacion de nicho",
-                           "Cerebro -> score de nicho -> veredicto -> listing"),
+                           "Motor propio gratis o CSV de Cerebro -> score -> listing"),
                 unsafe_allow_html=True)
+    fuente_kw = st.radio("Fuente de keywords",
+                         ["Motor propio (gratis, autocompletado Amazon)",
+                          "CSV de Helium 10 Cerebro"],
+                         horizontal=True, key="inv_fuente",
+                         help="El motor propio descubre keywords y nichos reales sin "
+                              "pagar APIs; el CSV de Cerebro suma volumenes de busqueda.")
+    usa_motor = fuente_kw.startswith("Motor propio")
     c1, c2 = st.columns([3, 1])
     keyword = c1.text_input("Nicho / keyword principal", value="bamboo kitchen utensils")
     correr = c2.button("Investigar", type="primary", use_container_width=True)
-    up = st.file_uploader("O subi un export CSV de Helium 10 Cerebro", type=["csv"])
     csv_path = None
-    if up is not None:
-        os.makedirs(config.CEREBRO_CSV_DIR, exist_ok=True)
-        csv_path = os.path.join(config.CEREBRO_CSV_DIR, up.name)
-        with open(csv_path, "wb") as f:
-            f.write(up.getbuffer())
-        st.success(f"CSV recibido: {up.name}")
+    if not usa_motor:
+        up = st.file_uploader("Subi un export CSV de Helium 10 Cerebro", type=["csv"])
+        if up is not None:
+            os.makedirs(config.CEREBRO_CSV_DIR, exist_ok=True)
+            csv_path = os.path.join(config.CEREBRO_CSV_DIR, up.name)
+            with open(csv_path, "wb") as f:
+                f.write(up.getbuffer())
+            st.success(f"CSV recibido: {up.name}")
+    else:
+        up = None
 
-    if correr or up is not None:
+    if usa_motor and correr:
+        with st.spinner("Consultando el autocompletado de Amazon (gratis)..."):
+            res_m = motor_propio.investigar(keyword, demo=demo)
+        if not res_m["ok"]:
+            st.info(res_m["mensaje"])
+        else:
+            top_kw = res_m["keywords"]
+            _cols_html([
+                ui.kpi("Keywords reales", ui.fmt_int(len(top_kw)),
+                       f"{res_m['requests']} consultas gratis", hero=True),
+                ui.kpi("Nichos candidatos", ui.fmt_int(len(res_m["nichos"])),
+                       "por modificador long-tail"),
+                ui.kpi("Interes maximo", f"{top_kw[0]['interes']}/100" if top_kw else "0",
+                       "proxy de autocompletado"),
+                ui.kpi("Costo", "$0", "sin APIs pagas", tone="good"),
+            ])
+            st.warning(res_m["nota_honesta"])
+            cA, cB = st.columns(2)
+            cA.markdown(ui.seccion("Top keywords (interes real de Amazon)"),
+                        unsafe_allow_html=True)
+            dfk = pd.DataFrame(top_kw[:20])[["keyword", "interes", "mejor_rank",
+                                             "apariciones"]]
+            dfk.columns = ["Keyword", "Interes /100", "Mejor rank", "Apariciones"]
+            cA.dataframe(dfk, use_container_width=True, hide_index=True)
+            cB.markdown(ui.seccion("Nichos candidatos"), unsafe_allow_html=True)
+            dfn = pd.DataFrame([{"Nicho": n["nicho"], "Keywords": len(n["keywords"]),
+                                 "Interes max": n["interes_max"]}
+                                for n in res_m["nichos"][:12]])
+            cB.dataframe(dfn, use_container_width=True, hide_index=True)
+            st.divider()
+            st.markdown(ui.seccion("Listing sugerido con estas keywords",
+                                   "Copy en ingles (mercado US)"), unsafe_allow_html=True)
+            li = generar_listing(keyword, config.MARKETPLACE,
+                                 keywords=motor_propio.keywords_cerebro(res_m))
+            st.text_input("Titulo", value=li["titulo"], key="mo_li_tit")
+            for i, b in enumerate(li["bullets"], 1):
+                st.markdown(f"**{i}.** {b}")
+            st.text_area("Descripcion", value=li["descripcion"], height=120,
+                         key="mo_li_desc")
+            st.caption(f"Motor: {li['_motor']} · Para score de nicho con demanda "
+                       "numerica, usa CSV de Cerebro o conecta Keepa.")
+    elif usa_motor:
+        st.caption("Escribi un seed (ej: 'bamboo kitchen') y toca Investigar. "
+                   "El motor consulta el autocompletado publico de Amazon: keywords "
+                   "y nichos reales, gratis.")
+
+    if (not usa_motor) and (correr or up is not None):
         mi = market_intel(keyword, config.MARKETPLACE, csv_path=csv_path, demo=demo)
         if not mi["ok"]:
             st.info(mi["comentario"])
@@ -124,7 +182,7 @@ with tabs[0]:
                 st.markdown(f"**{i}.** {b}")
             st.text_area("Descripcion", value=li["descripcion"], height=120, key="li_desc")
             st.caption(f"Banner brief: {li['banner_brief']}  ·  Motor: {li['_motor']}")
-    else:
+    elif not usa_motor:
         st.caption("Escribi un nicho y toca Investigar (o subi un CSV de Cerebro).")
 
 # ============================ 2) PRICING ============================ #
@@ -283,8 +341,109 @@ with tabs[2]:
                 productos.desactivar(opciones[sel])
                 st.rerun()
 
-# ============================ 4) CAJA ============================ #
+# ============================ 4) PUBLICAR ============================ #
 with tabs[3]:
+    st.markdown(ui.seccion("Publicar en Amazon — paquete completo",
+                           "Listing + fotos + precio + cantidades + proveedor + "
+                           "checklist Seller Central, en un solo documento"),
+                unsafe_allow_html=True)
+    prods_pub = productos.listar(solo_activos=True)
+    opciones_pub = {"(cargar a mano)": None}
+    opciones_pub.update({f"#{p['id']} — {p['nombre']}": p for p in prods_pub})
+    sel_pub = st.selectbox("Producto del portafolio (o carga manual)",
+                           list(opciones_pub.keys()), key="pub_sel")
+    base = opciones_pub[sel_pub]
+    b1, b2, b3, b4 = st.columns(4)
+    p_nombre = b1.text_input("Nombre *", value=(base or {}).get("nombre", ""),
+                             key="pub_nombre")
+    p_costo = b2.number_input("Costo (USD)", value=float((base or {}).get("costo") or 2.10),
+                              min_value=0.0, step=0.10, key="pub_costo")
+    p_flete = b3.number_input("Flete (USD)", value=float((base or {}).get("flete") or 0.80),
+                              min_value=0.0, step=0.10, key="pub_flete")
+    p_aran = b4.number_input("Arancel (%)", value=float((base or {}).get("arancel_pct") or 6.0),
+                             min_value=0.0, step=0.5, key="pub_aran")
+    b5, b6, b7, b8 = st.columns(4)
+    p_prep = b5.number_input("Prep (USD)", value=float((base or {}).get("prep") or 0.50),
+                             min_value=0.0, step=0.10, key="pub_prep")
+    p_fba = b6.number_input("FBA fee (USD)",
+                            value=float((base or {}).get("fba_fee") or config.FBA_FEE_DEFAULT),
+                            min_value=0.0, step=0.10, key="pub_fba")
+    p_comp = b7.number_input("Precio competencia (0=sin)", value=19.99, min_value=0.0,
+                             step=0.50, key="pub_comp")
+    p_techo = b8.number_input("Techo demanda (u/mes)",
+                              value=int((base or {}).get("techo_demanda") or 290),
+                              min_value=0, step=10, key="pub_techo")
+    fuente_pub = st.radio("Keywords para el listing",
+                          ["Motor propio (gratis)", "CSV Cerebro / DEMO"],
+                          horizontal=True, key="pub_fuente")
+    if st.button("Armar paquete de publicacion", type="primary", key="pub_btn"):
+        kws_pub = None
+        if fuente_pub.startswith("Motor propio") and p_nombre.strip():
+            with st.spinner("Investigando keywords con el motor propio..."):
+                res_pub = motor_propio.investigar(p_nombre, demo=demo)
+            if res_pub["ok"]:
+                kws_pub = motor_propio.keywords_cerebro(res_pub)
+        with st.spinner("Armando el paquete..."):
+            paq = publicador.paquete(
+                p_nombre, costo=p_costo, flete=p_flete, arancel_pct=p_aran,
+                prep=p_prep, fba_fee=p_fba,
+                precio_competencia=(p_comp if p_comp > 0 else None),
+                techo_demanda=int(p_techo), keywords=kws_pub, demo=demo)
+        if not paq["ok"]:
+            st.error(paq["mensaje"])
+        else:
+            st.session_state["paq_pub"] = paq
+    paq = st.session_state.get("paq_pub")
+    if paq and paq.get("ok"):
+        mq, qq = paq["pricing"], paq["cantidades"]
+        _cols_html([
+            ui.kpi("Precio sugerido", ui.fmt_money(mq["precio"]), mq["estrategia"],
+                   hero=True),
+            ui.kpi("Margen", ui.fmt_pct(mq["margen_pct"]), "neto / precio",
+                   tone={"verde": "good", "amarillo": "warn", "rojo": "bad"}[mq["semaforo"]]),
+            ui.kpi("Orden de prueba", f"{qq['orden_prueba']} u",
+                   f"USD {qq['orden_prueba_usd']:,.0f} — validar primero"),
+            ui.kpi("1ra compra al techo", f"{qq['primera_compra_techo']} u",
+                   f"USD {qq['primera_compra_usd']:,.0f} — tras validar"),
+        ])
+        t_list, t_fotos, t_prov, t_pasos = st.tabs(
+            ["Listing", "Fotos (7 tomas)", "Proveedor + RFQ", "Publicar paso a paso"])
+        with t_list:
+            st.text_input("Titulo", value=paq["listing"]["titulo"], key="pub_li_tit")
+            for i, b in enumerate(paq["listing"]["bullets"], 1):
+                st.markdown(f"**{i}.** {b}")
+            st.text_area("Descripcion", value=paq["listing"]["descripcion"],
+                         height=110, key="pub_li_desc")
+            st.text_area("Backend keywords (Search Terms)",
+                         value=paq["listing"]["backend_keywords"], height=70,
+                         key="pub_li_bk")
+            st.caption(f"Motor: {paq['listing']['motor']} · Keywords: "
+                       f"{paq['listing']['fuente_keywords']}")
+        with t_fotos:
+            for f in paq["fotos"]:
+                st.markdown(f"**{f['toma']}** — {f['guion']}")
+            st.caption("Banner/A+: " + paq["listing"]["banner_brief"])
+        with t_prov:
+            for c in paq["proveedor"]["checklist"]:
+                st.markdown(f"- {c}")
+            st.text_area("RFQ listo para Alibaba (ingles)",
+                         value=paq["proveedor"]["rfq"], height=260, key="pub_rfq")
+        with t_pasos:
+            for i, c in enumerate(paq["checklist_seller_central"], 1):
+                st.markdown(f"**{i}.** {c}")
+        st.warning(paq["nota_honesta"])
+        st.download_button(
+            "Descargar paquete completo (HTML imprimible)",
+            data=publicador.html_paquete(paq),
+            file_name=f"paquete_publicacion_{paq['producto'][:30].replace(' ', '_')}.html",
+            mime="text/html", key="pub_dl")
+    else:
+        st.caption("Elegi un producto del portafolio (o carga los datos) y toca "
+                   "'Armar paquete': sale todo listo para publicar, con fotos, "
+                   "precio, cantidades y proveedor.")
+
+# ============================ 5) CAJA ============================ #
+with tabs[4]:
     st.markdown(ui.seccion("Proyeccion realista de caja",
                            "Con lead time, DD+7, devoluciones y techo de demanda"),
                 unsafe_allow_html=True)
@@ -319,8 +478,8 @@ with tabs[3]:
     st.dataframe(df[["mes", "vendidas", "cobrado", "sueldo", "caja", "capital_atado"]],
                  use_container_width=True, hide_index=True)
 
-# ============================ 5) VENTAS ============================ #
-with tabs[4]:
+# ============================ 6) VENTAS ============================ #
+with tabs[5]:
     st.markdown(ui.seccion("Ventas y KPIs", "Registra una venta y segui el mix"),
                 unsafe_allow_html=True)
     with st.form("venta"):
@@ -360,8 +519,8 @@ with tabs[4]:
     else:
         st.caption("Aun no hay ventas registradas.")
 
-# ============================ 6) INVERSORES ============================ #
-with tabs[5]:
+# ============================ 7) INVERSORES ============================ #
+with tabs[6]:
     from agents.capital_planner import escenario_inversor
     st.markdown(ui.seccion("Escenario con inversor",
                 "Comision = % variable de facturacion sobre la parte que financia su capital"),
@@ -456,8 +615,8 @@ with tabs[5]:
                                                      productos_financia=float(prods_fin)),
                        file_name="pitch_inversor_fba.html", mime="text/html")
 
-# ============================ 7) PLAN ============================ #
-with tabs[6]:
+# ============================ 8) PLAN ============================ #
+with tabs[7]:
     from agents.portafolio import interes_compuesto, recomendar_portafolio
 
     st.markdown(ui.seccion("Recomendacion de portafolio",
@@ -539,8 +698,8 @@ with tabs[6]:
                "para ver tu curva real; la exponencial pura solo aplica a instrumentos "
                "financieros sin tope de colocacion.")
 
-# ============================ 8) ALERTAS ============================ #
-with tabs[7]:
+# ============================ 9) ALERTAS ============================ #
+with tabs[8]:
     st.markdown(ui.seccion("Alertas", "Sin SMTP, quedan en dry-run (registradas, no enviadas)"),
                 unsafe_allow_html=True)
     outbox = db.rows("SELECT fecha,asunto,para,enviado FROM alerts_outbox ORDER BY id DESC LIMIT 50")
@@ -552,8 +711,8 @@ with tabs[7]:
     else:
         st.caption("Sin alertas todavia.")
 
-# ============================ 9) CONFIG ============================ #
-with tabs[8]:
+# ============================ 10) CONFIG ============================ #
+with tabs[9]:
     st.markdown(ui.seccion("Configuracion y conexiones",
                            "Estado actual y verificacion en vivo"), unsafe_allow_html=True)
     st.json(config.estado_config())
@@ -606,8 +765,8 @@ with tabs[8]:
     st.caption("Helium 10 no tiene API en Platinum: keywords por CSV de Cerebro. "
                "Keepa es la fuente programatica de precio + BSR.")
 
-# ============================ 10) ASISTENTE IA ============================ #
-with tabs[9]:
+# ============================ 11) ASISTENTE IA ============================ #
+with tabs[10]:
     st.markdown(ui.seccion("Asistente IA (Claude)",
                            "Pregunta sobre tus metricas, tu portafolio o la estrategia FBA"),
                 unsafe_allow_html=True)
@@ -652,8 +811,8 @@ with tabs[9]:
                "respeta los principios honestos del sistema. No es consejo financiero "
                "garantizado: el retorno FBA es variable.")
 
-# ============================ 11) AYUDA ============================ #
-with tabs[10]:
+# ============================ 12) AYUDA ============================ #
+with tabs[11]:
     st.markdown(ui.seccion("Ayuda y glosario",
                            "Los conceptos de FBA y finanzas que usa el sistema, en criollo"),
                 unsafe_allow_html=True)

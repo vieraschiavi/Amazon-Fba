@@ -133,9 +133,12 @@ def _banner_offline(producto: str, kw: dict) -> str:
     )
 
 
-def generar(producto, mercado: str = "US", csv_path: str = None, demo: bool = False) -> dict:
+def generar(producto, mercado: str = "US", csv_path: str = None, demo: bool = False,
+            keywords: list = None) -> dict:
     """
     producto: str (nicho/keyword) o dict con clave 'nicho'/'nombre'.
+    keywords: lista opcional de data.cerebro.Keyword ya investigadas (p.ej. del
+    motor propio embebido); si se pasa, no consulta Cerebro.
     Devuelve {titulo, bullets[5], descripcion, banner_brief, _motor, _fuente_kw}.
     """
     if isinstance(producto, dict):
@@ -143,7 +146,10 @@ def generar(producto, mercado: str = "US", csv_path: str = None, demo: bool = Fa
     else:
         nombre = str(producto)
 
-    kws, estado = cerebro_con_estado(categoria=nombre, csv_path=csv_path, demo=demo)
+    if keywords:
+        kws, estado = keywords, {"fuente": "motor_propio"}
+    else:
+        kws, estado = cerebro_con_estado(categoria=nombre, csv_path=csv_path, demo=demo)
     kw = keywords_para_listing(kws)
 
     # 1) intento con Claude; 2) si no, offline deterministico
