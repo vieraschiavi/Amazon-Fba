@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-app.py — API FastAPI (puente con n8n) del sistema FBA.
-Endpoints: /health, /webhook/message, /webhook/sale, /run/research, /dashboard.
+app.py — API FastAPI de MV Amazon FBA IA (puente con n8n).
+Endpoints: /health, /webhook/message, /webhook/sale, /run/research, /dashboard,
+/portfolio, /portfolio/producto, /portfolio/producto/{id}.
 Correr: uvicorn app:app --host 0.0.0.0 --port 8000   (o API.bat)
 """
 import os
@@ -31,7 +32,7 @@ from agents import customer_bot
 from agents import productos
 
 db.init()
-app = FastAPI(title="FBA API", version="1.1")
+app = FastAPI(title="MV Amazon FBA IA — API", version="1.1")
 
 
 class MsgIn(BaseModel):

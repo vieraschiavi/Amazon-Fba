@@ -1,4 +1,4 @@
-# FBA Operations — sistema completo de gestión Amazon FBA
+# MV Amazon FBA IA — cockpit inteligente de gestión Amazon FBA
 
 Sistema **end to end** para operar un negocio Amazon FBA: investigación de nicho
 (Cerebro), pricing, **portafolio de productos con análisis financiero por producto**,

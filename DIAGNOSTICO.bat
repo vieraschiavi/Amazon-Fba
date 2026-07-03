@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 chcp 65001 >nul 2>&1
-title FBA - Diagnostico
+title MV Amazon FBA IA - Diagnostico
 echo ============================================================
 echo  DIAGNOSTICO
 echo ============================================================

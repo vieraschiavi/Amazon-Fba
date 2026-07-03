@@ -1,5 +1,5 @@
 {
-  "name": "FBA - Customer Messages",
+  "name": "MV Amazon FBA IA - Customer Messages",
   "nodes": [
     {
       "parameters": { "httpMethod": "POST", "path": "fba-message" },

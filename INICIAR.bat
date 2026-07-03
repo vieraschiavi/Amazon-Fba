@@ -2,11 +2,11 @@
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 chcp 65001 >nul 2>&1
-title FBA Operations
+title MV Amazon FBA IA
 
 echo.
 echo  ============================================================
-echo    FBA OPERATIONS - Sistema de gestion Amazon FBA
+echo    MV AMAZON FBA IA - Cockpit inteligente Amazon FBA
 echo    Panel + API + base de datos, todo con un doble clic.
 echo  ============================================================
 echo.

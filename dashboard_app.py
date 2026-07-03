@@ -29,7 +29,8 @@ from data import keepa
 
 db.init()
 
-st.set_page_config(page_title="FBA Operations", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="MV Amazon FBA IA", page_icon="📊", layout="wide",
+                   initial_sidebar_state="expanded")
 st.markdown(ui.CSS, unsafe_allow_html=True)
 
 
@@ -42,10 +43,12 @@ def _cols_html(items):
 
 # --- Sidebar ---
 with st.sidebar:
-    st.markdown(f"<div style='font-weight:800;color:{ui.NAVY};font-size:18px'>FBA "
-                f"<span style='color:{ui.GREEN}'>Operations</span></div>",
-                unsafe_allow_html=True)
-    st.caption("Cockpit de arbitraje Amazon FBA")
+    st.markdown(
+        f"<div style='display:flex;align-items:center;gap:10px'>{ui.logo(30, on_dark=False)}"
+        f"<div style='font-weight:800;color:{ui.NAVY};font-size:17px;line-height:1.1'>"
+        f"{ui.BRAND_PREFIX} <span style='color:{ui.GREEN}'>{ui.BRAND_ACCENT}</span></div></div>",
+        unsafe_allow_html=True)
+    st.caption(ui.TAGLINE)
     st.divider()
     demo = st.toggle("Modo DEMO", value=True,
                      help="Datos [DEMO] ilustrativos. Apagar para usar CSV real de Cerebro.")
@@ -67,8 +70,7 @@ with st.sidebar:
 
 # --- Brand header ---
 st.markdown(ui.header(
-    "FBA Operations",
-    "Investigacion, pricing y caja para Amazon FBA — mercado US",
+    subtitulo="Investigacion, pricing, portafolio y caja para Amazon FBA — mercado US",
     chips=[("DEMO" if demo else "Produccion", not demo),
            ("Keepa", bool(config.KEEPA_API_KEY)),
            ("Claude", bool(config.ANTHROPIC_API_KEY)),

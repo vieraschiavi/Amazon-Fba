@@ -64,7 +64,7 @@ def html_pitch(ticket=1000, pct=10.0, techo=290, precio=24.0, landed=5.5,
            "En este horizonte su capital no llega a saturar el techo.")
     return f"""<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Propuesta de inversion — FBA Operations</title>
+<title>Propuesta de inversion — MV Amazon FBA IA</title>
 <style>
  body{{font-family:'Segoe UI',Inter,system-ui,sans-serif;color:#0f172a;background:#f1f5f9;
       margin:0;padding:24px}}
@@ -92,7 +92,7 @@ def html_pitch(ticket=1000, pct=10.0, techo=290, precio=24.0, landed=5.5,
  @media print{{body{{background:#fff}} .card{{box-shadow:none}}}}
 </style></head><body><div class="wrap">
  <div class="hero">
-  <h1>FBA <span class="g">Operations</span> — Propuesta de inversion</h1>
+  <h1>MV Amazon FBA <span class="g">IA</span> — Propuesta de inversion</h1>
   <p>Negocio Amazon FBA (mercado US, cocina eco). Ticket unico, retorno variable
      sobre facturacion del lote que financia su capital.</p>
   <div class="kpis">
@@ -131,7 +131,7 @@ def html_pitch(ticket=1000, pct=10.0, techo=290, precio=24.0, landed=5.5,
   <li><b>Reporte mensual</b> de ventas exportado de Amazon Seller Central.</li>
   <li>Certificacion FDA del producto verificada antes de pagar al proveedor.</li>
  </ul></div>
- <div class="pie">Generado por FBA Operations — mismos numeros y mismo motor que el panel de control.</div>
+ <div class="pie">Generado por MV Amazon FBA IA — mismos numeros y mismo motor que el panel de control.</div>
 </div></body></html>"""
 
 
