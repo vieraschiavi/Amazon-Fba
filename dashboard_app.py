@@ -29,6 +29,7 @@ from agents import asistente
 from agents import glosario
 from agents import publicador
 from agents import exito
+from agents import ganancias
 from data import keepa
 from data import mercado
 from data import motor_propio
@@ -305,10 +306,104 @@ with tabs[1]:
                             unsafe_allow_html=True)
                 st.markdown(nar["texto"])
             st.warning(ev["caveat"])
+
+        st.divider()
+        st.markdown(ui.seccion("¿Cuanto podrias ganar?",
+                               "Invertis X plata (o compras X unidades): desglose "
+                               "de costos y ganancia neta para vos"),
+                    unsafe_allow_html=True)
+        g1, g2, g3 = st.columns(3)
+        modo_g = g1.radio("Simular por", ["Inversion (USD)", "Cantidad (unidades)"],
+                          horizontal=True, key="ga_modo")
+        ga_inv = g2.number_input("Inversion (USD)", value=3000.0, min_value=0.0,
+                                 step=250.0, key="ga_inv",
+                                 disabled=not modo_g.startswith("Inversion"))
+        ga_uni = g3.number_input("Unidades a comprar", value=500, min_value=0,
+                                 step=50, key="ga_uni",
+                                 disabled=modo_g.startswith("Inversion"))
+        g4, g5, g6, g7 = st.columns(4)
+        ga_costo = g4.number_input("Costo unitario (USD)", value=2.10, min_value=0.0,
+                                   step=0.10, key="ga_costo")
+        ga_flete = g5.number_input("Flete unitario (USD)", value=0.80, min_value=0.0,
+                                   step=0.10, key="ga_flete")
+        ga_aran = g6.number_input("Arancel (%)", value=6.0, min_value=0.0,
+                                  step=0.5, key="ga_aran")
+        ga_prep = g7.number_input("Prep (USD)", value=0.50, min_value=0.0,
+                                  step=0.10, key="ga_prep")
+        g8, g9, g10 = st.columns(3)
+        ga_fba = g8.number_input("FBA fee (USD)", value=config.FBA_FEE_DEFAULT,
+                                 min_value=0.0, step=0.10, key="ga_fba")
+        ga_precio = g9.number_input("Precio de venta (USD, 0 = sugerido)",
+                                    value=float(st.session_state.get("ex_precio", 24.0)),
+                                    min_value=0.0, step=0.50, key="ga_precio")
+        ga_techo = g10.number_input("Techo demanda (u/mes)", value=290, min_value=1,
+                                    step=10, key="ga_techo")
+        if st.button("Calcular ganancia potencial", type="primary", key="ga_btn"):
+            sim = ganancias.simular(
+                inversion=(ga_inv if modo_g.startswith("Inversion") else None),
+                unidades=(int(ga_uni) if not modo_g.startswith("Inversion") else None),
+                costo=ga_costo, flete=ga_flete, arancel_pct=ga_aran, prep=ga_prep,
+                fba_fee=ga_fba, precio=(ga_precio if ga_precio > 0 else None),
+                techo_demanda=int(ga_techo))
+            if not sim["ok"]:
+                st.error(sim["mensaje"])
+            else:
+                st.session_state["ga_sim"] = sim
+        sim = st.session_state.get("ga_sim")
+        if sim and sim.get("ok"):
+            ue_g, lo_g, re_g = sim["unit_economics"], sim["lote"], sim["reciclado"]
+            gan_tone = "good" if lo_g["ganancia_neta"] > 0 else "bad"
+            _cols_html([
+                ui.kpi("Ganancia neta del lote", ui.fmt_money(lo_g["ganancia_neta"]),
+                       f"{sim['entrada']} -> {ui.fmt_int(lo_g['unidades_compradas'])} u",
+                       hero=(lo_g["ganancia_neta"] > 0), tone=gan_tone),
+                ui.kpi("ROI de tu inversion", ui.fmt_pct(lo_g["roi_inversion_pct"]),
+                       f"sobre USD {lo_g['inversion_usada']:,.0f}", tone=gan_tone),
+                ui.kpi("Ganancia por unidad", ui.fmt_money(lo_g["ganancia_por_unidad"]),
+                       f"precio USD {ue_g['precio_venta']:.2f}"
+                       + (" (sugerido)" if ue_g["precio_es_sugerido"] else ""),
+                       tone={"verde": "good", "amarillo": "warn",
+                             "rojo": "bad"}[ue_g["semaforo"]]),
+                ui.kpi("Tiempo de venta", f"~{lo_g['meses_para_venderlo']} meses",
+                       f"USD {lo_g['ganancia_por_mes_promedio']:,.0f}/mes al techo"
+                       if lo_g["ganancia_por_mes_promedio"] else ""),
+            ])
+            cg1, cg2 = st.columns(2)
+            cg1.markdown(ui.seccion("Desglose: a donde va cada dolar"),
+                         unsafe_allow_html=True)
+            etiquetas = {"producto": "Producto (fabrica)", "flete": "Flete",
+                         "arancel": "Arancel", "prep": "Prep",
+                         "comision_amazon_referral": "Comision Amazon (referral)",
+                         "fba_fee": "FBA fee (logistica)",
+                         "publicidad_acos": "Publicidad (ACoS)"}
+            df_c = pd.DataFrame(
+                [{"Concepto": "Ingreso bruto (post devoluciones)",
+                  "USD": lo_g["ingreso_bruto"]}] +
+                [{"Concepto": f"- {etiquetas[k]}", "USD": -v}
+                 for k, v in lo_g["costos"].items()] +
+                [{"Concepto": "= GANANCIA NETA PARA VOS", "USD": lo_g["ganancia_neta"]}])
+            cg1.dataframe(df_c, use_container_width=True, hide_index=True,
+                          column_config={"USD": st.column_config.NumberColumn(
+                              format="$%.2f")})
+            cg2.markdown(ui.seccion("Escenario sostenido: reciclando capital 12 meses",
+                                    "El landed repone stock, el neto se retira"),
+                         unsafe_allow_html=True)
+            cg2.markdown(
+                ui.kpi("Sueldo en meseta", ui.fmt_money(re_g["sueldo_meseta_mensual"]),
+                       "por mes, sostenido", hero=True) +
+                ui.kpi("Ganancia acumulada 12m", ui.fmt_money(re_g["ganancia_12m_estimada"]),
+                       f"primer cobro mes {re_g['mes_primer_cobro']}",
+                       tone="good" if re_g["ganancia_12m_estimada"] > 0 else "bad"),
+                unsafe_allow_html=True)
+            df_g = pd.DataFrame(re_g["filas"])
+            cg2.line_chart(df_g.set_index("mes")[["sueldo", "caja"]], height=200,
+                           color=["#8bc34a", "#1e3a8a"])
+            st.warning(sim["caveat"])
     else:
         st.caption("Escribi un producto y un rango de precios, y toca Explorar: "
                    "productos estrella con ventas/reseñas/calidad (Keepa o demo), "
-                   "proveedores verificados con link directo y probabilidad de exito.")
+                   "proveedores verificados con link directo, probabilidad de exito "
+                   "y cuanto podrias ganar con tu inversion.")
 
 # ============================ 3) PRICING ============================ #
 with tabs[2]:

@@ -33,6 +33,7 @@ from agents import productos
 from agents import asistente
 from agents import publicador
 from agents import exito
+from agents import ganancias
 from data import mercado
 from data import motor_propio
 
@@ -63,6 +64,19 @@ class ResearchIn(BaseModel):
 class AsistenteIn(BaseModel):
     pregunta: str
     historial: list[dict] | None = None
+
+
+class GananciasIn(BaseModel):
+    inversion: float | None = None
+    unidades: int | None = None
+    costo: float = 2.10
+    flete: float = 0.80
+    arancel_pct: float = 6.0
+    prep: float = 0.50
+    fba_fee: float | None = None
+    precio: float | None = None
+    precio_competencia: float | None = None
+    techo_demanda: int = 290
 
 
 class PublicarIn(BaseModel):
@@ -141,6 +155,16 @@ def mercado_estrellas(keyword: str, precio_min: float = 10.0,
     r["competencia"] = mercado.resumen_competencia(r["productos"])
     r["proveedores"] = mercado.links_proveedores(keyword)
     return r
+
+
+@app.post("/ganancias")
+def ganancias_sim(g: GananciasIn):
+    return ganancias.simular(inversion=g.inversion, unidades=g.unidades,
+                             costo=g.costo, flete=g.flete,
+                             arancel_pct=g.arancel_pct, prep=g.prep,
+                             fba_fee=g.fba_fee, precio=g.precio,
+                             precio_competencia=g.precio_competencia,
+                             techo_demanda=g.techo_demanda)
 
 
 @app.get("/exito")

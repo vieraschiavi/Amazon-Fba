@@ -64,7 +64,11 @@ Amazon-Fba/
    (Alibaba Trade Assurance + Verified, RFQ Marketplace, Global Sources…) y el
    **asesor de probabilidad de éxito**: fórmula auditable (demanda 30 %, barrera de
    entrada 25 %, hueco de calidad 20 %, precio 15 %, margen 10 %) + análisis
-   razonado con Claude si hay clave.
+   razonado con Claude si hay clave. Cierra con **¿Cuánto podrías ganar?**: invertís
+   X plata (o comprás X unidades) y te desglosa cada costo (producto, flete,
+   arancel, prep, comisión Amazon, FBA fee, publicidad) hasta la **ganancia neta
+   para vos**, con ROI, tiempo de venta al techo y el escenario sostenido a 12
+   meses reciclando capital.
 3. **Pricing** — costos → precio sugerido, margen, ROI, semáforo. Botón
    **Guardar en portafolio** para pasar del cálculo a la gestión.
 4. **Portafolio** — el corazón de la gestión: todos tus productos persistidos con
@@ -145,6 +149,7 @@ La API (`INICIAR.bat` la deja corriendo, o `API.bat`) expone:
 | `POST /publicar` | Paquete completo de publicación (listing, fotos, RFQ, pasos). |
 | `GET /mercado/estrellas` | Productos estrella por rango de precios + competencia + proveedores. |
 | `GET /exito` | Probabilidad de éxito del producto (fórmula auditable). |
+| `POST /ganancias` | Ganancia potencial: desglose de costos y neto para X inversión o unidades. |
 
 Importá los 3 JSON de `n8n/` en n8n y apuntá la URL base a `http://localhost:8000`.
 
