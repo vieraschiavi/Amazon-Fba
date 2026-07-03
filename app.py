@@ -19,7 +19,7 @@ _AQUI = os.path.dirname(os.path.abspath(__file__))
 if _AQUI not in sys.path:
     sys.path.insert(0, _AQUI)
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from pydantic import BaseModel
 
 import config
@@ -34,6 +34,8 @@ from agents import asistente
 from agents import publicador
 from agents import exito
 from agents import ganancias
+from agents import dedicacion
+from agents import creativos
 from data import mercado
 from data import motor_propio
 
@@ -165,6 +167,26 @@ def ganancias_sim(g: GananciasIn):
                              fba_fee=g.fba_fee, precio=g.precio,
                              precio_competencia=g.precio_competencia,
                              techo_demanda=g.techo_demanda)
+
+
+@app.get("/dedicacion")
+def dedicacion_estimar(productos: int = 1, lanzando: bool = False):
+    return dedicacion.estimar(n_productos_operacion=productos,
+                              lanzando_producto=lanzando)
+
+
+@app.get("/creativos/banner")
+def creativos_banner(titulo: str, badges: str = ""):
+    lista = [b.strip() for b in badges.split(",") if b.strip()][:3]
+    png = creativos.generar_banner(titulo, badges=lista)
+    return Response(content=png, media_type="image/png")
+
+
+@app.get("/creativos/infografia")
+def creativos_infografia(bullets: str):
+    lista = [b.strip() for b in bullets.split("|") if b.strip()]
+    png = creativos.generar_infografia(lista)
+    return Response(content=png, media_type="image/png")
 
 
 @app.get("/exito")

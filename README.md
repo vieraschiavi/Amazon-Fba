@@ -77,13 +77,17 @@ Amazon-Fba/
    por ASIN). Consolidado del negocio + export CSV.
 5. **Publicar** — el paquete completo para salir a vender: listing (título, bullets,
    descripción, backend keywords), **brief de las 7 fotos** que Amazon espera,
-   precio y unit economics, **cantidades** (orden de prueba y primera compra al
-   techo), **checklist de proveedor serio + RFQ en inglés** listo para Alibaba, y
-   el paso a paso de Seller Central. Descargable como HTML imprimible.
+   **banner hero + infografía de beneficios generados como imagen PNG real**
+   (Pillow, sin costo ni API — paleta de marca, descargables), precio y unit
+   economics, **cantidades** (orden de prueba y primera compra al techo),
+   **checklist de proveedor serio + RFQ en inglés** listo para Alibaba, y el paso
+   a paso de Seller Central. Descargable como HTML imprimible.
 6. **Caja** — proyección realista con lead time, DD+7, devoluciones y techo de demanda.
 7. **Ventas** — registro de ventas y KPIs (facturación, neto, margen, mix).
 8. **Inversores** — escenarios con capital externo y pitch HTML descargable.
-9. **Plan** — cuántos productos necesitás para tu objetivo de ingreso + reinversión compuesta.
+9. **Plan** — cuántos productos necesitás para tu objetivo de ingreso, **cuántas horas por
+   semana necesitás REALMENTE** (desglosado por tarea, distinguiendo lo que el bot y las
+   alertas ya automatizan) + reinversión compuesta.
 10. **Alertas** — outbox de emails (dry-run sin SMTP).
 11. **Config** — estado de conexiones, prueba en vivo y **guardado seguro de claves**.
 12. **Asistente IA (Claude)** — chat que responde sobre tus métricas, tu portafolio y
@@ -150,6 +154,9 @@ La API (`INICIAR.bat` la deja corriendo, o `API.bat`) expone:
 | `GET /mercado/estrellas` | Productos estrella por rango de precios + competencia + proveedores. |
 | `GET /exito` | Probabilidad de éxito del producto (fórmula auditable). |
 | `POST /ganancias` | Ganancia potencial: desglose de costos y neto para X inversión o unidades. |
+| `GET /dedicacion` | Horas por semana necesarias, por tarea (lanzamiento vs operación). |
+| `GET /creativos/banner` | Banner hero PNG (marca, título, badges). |
+| `GET /creativos/infografia` | Infografía de beneficios PNG. |
 
 Importá los 3 JSON de `n8n/` en n8n y apuntá la URL base a `http://localhost:8000`.
 

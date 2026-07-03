@@ -30,6 +30,8 @@ from agents import glosario
 from agents import publicador
 from agents import exito
 from agents import ganancias
+from agents import dedicacion
+from agents import creativos
 from data import keepa
 from data import mercado
 from data import motor_propio
@@ -626,8 +628,9 @@ with tabs[4]:
             ui.kpi("1ra compra al techo", f"{qq['primera_compra_techo']} u",
                    f"USD {qq['primera_compra_usd']:,.0f} — tras validar"),
         ])
-        t_list, t_fotos, t_prov, t_pasos = st.tabs(
-            ["Listing", "Fotos (7 tomas)", "Proveedor + RFQ", "Publicar paso a paso"])
+        t_list, t_fotos, t_img, t_prov, t_pasos = st.tabs(
+            ["Listing", "Fotos (7 tomas)", "Imagenes (banner + infografia)",
+             "Proveedor + RFQ", "Publicar paso a paso"])
         with t_list:
             st.text_input("Titulo", value=paq["listing"]["titulo"], key="pub_li_tit")
             for i, b in enumerate(paq["listing"]["bullets"], 1):
@@ -643,6 +646,23 @@ with tabs[4]:
             for f in paq["fotos"]:
                 st.markdown(f"**{f['toma']}** — {f['guion']}")
             st.caption("Banner/A+: " + paq["listing"]["banner_brief"])
+        with t_img:
+            st.caption("Generadas localmente (sin costo ni API paga) con la paleta "
+                       "de marca. Usalas como imagen secundaria/A+ o de referencia "
+                       "de estilo — NO reemplazan la foto principal real que exige Amazon.")
+            kit = creativos.kit_creativo(paq["listing"]["titulo"], paq["listing"]["bullets"])
+            ci1, ci2 = st.columns(2)
+            ci1.image(kit["banner_png"], caption="Banner hero (A+ / redes)",
+                      use_container_width=True)
+            ci1.download_button("Descargar banner (PNG)", data=kit["banner_png"],
+                                file_name="banner_hero.png", mime="image/png",
+                                key="dl_banner")
+            ci2.image(kit["infografia_png"], caption="Infografia de beneficios",
+                      use_container_width=True)
+            ci2.download_button("Descargar infografia (PNG)", data=kit["infografia_png"],
+                                file_name="infografia_beneficios.png", mime="image/png",
+                                key="dl_info")
+            st.caption(kit["nota"])
         with t_prov:
             for c in paq["proveedor"]["checklist"]:
                 st.markdown(f"- {c}")
@@ -877,6 +897,28 @@ with tabs[8]:
                        "Sueldo que aporta", "Mes meseta", "Ingreso acumulado"]
         st.dataframe(dfp, use_container_width=True, hide_index=True)
         st.caption(rp["advertencia"])
+
+    st.divider()
+    st.markdown(ui.seccion("¿Cuantas horas por semana necesito REALMENTE?",
+                           "Desglosado por tarea; distingue lo que el sistema ya automatiza"),
+                unsafe_allow_html=True)
+    d1, d2 = st.columns(2)
+    ded_prod = d1.number_input("Productos ya en meseta (operacion)", value=1,
+                               min_value=0, step=1, key="ded_prod")
+    ded_lanz = d2.toggle("Estoy lanzando/validando un producto nuevo ahora", value=True,
+                        key="ded_lanz")
+    ded = dedicacion.estimar(n_productos_operacion=ded_prod, lanzando_producto=ded_lanz)
+    _cols_html([
+        ui.kpi("Horas por semana", f"{ded['horas_semana_min']:.0f}-{ded['horas_semana_max']:.0f}",
+               "lanzamiento + operacion" if ded_lanz else "solo operacion", hero=True),
+    ])
+    df_ded = pd.DataFrame(ded["desglose"])
+    df_ded.columns = ["Tarea", "Hs min", "Hs max", "Frecuencia", "Fase"]
+    st.dataframe(df_ded, use_container_width=True, hide_index=True)
+    with st.expander("Lo que el sistema ya hace por vos (automatizado)"):
+        for a in ded["automatizado_por_el_sistema"]:
+            st.markdown(f"- {a}")
+    st.caption(ded["caveat"])
 
     st.divider()
     st.markdown(ui.seccion("Calculadora de reinversion compuesta",

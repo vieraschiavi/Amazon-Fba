@@ -4,3 +4,4 @@ fastapi
 uvicorn[standard]
 httpx
 anthropic     # asistente IA + redaccion de listings con Claude (modo offline si no hay clave)
+pillow        # generador de creatividades (banner + infografia), sin costo ni API
