@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Splash de marca: fondo navy con el monograma centrado mientras carga
-         el WebView (es instantaneo, pero evita el flash blanco al abrir). -->
+    <!-- Fondo navy solido mientras carga el WebView. windowBackground apunta a
+         un COLOR, no a un drawable con bitmap: asi no hay nada que inflar al
+         abrir y se descarta cualquier crash de arranque por el splash. -->
     <style name="Theme.MvFbaIa" parent="@android:style/Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">@drawable/splash</item>
+        <item name="android:windowBackground">@color/navy_deep</item>
         <item name="android:statusBarColor">@color/navy_deep</item>
         <item name="android:navigationBarColor">@android:color/white</item>
     </style>
