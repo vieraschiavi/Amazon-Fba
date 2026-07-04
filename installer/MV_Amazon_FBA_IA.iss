@@ -62,6 +62,7 @@ Source: "..\agents\*"; DestDir: "{app}\agents"; Excludes: "*.pyc"; Flags: recurs
 Source: "..\core\*"; DestDir: "{app}\core"; Excludes: "*.pyc"; Flags: recursesubdirs ignoreversion
 Source: "..\data\*"; DestDir: "{app}\data"; Excludes: "*.pyc,*.csv"; Flags: recursesubdirs ignoreversion
 Source: "..\n8n\*"; DestDir: "{app}\n8n"; Flags: recursesubdirs ignoreversion
+Source: "..\.streamlit\*"; DestDir: "{app}\.streamlit"; Flags: recursesubdirs ignoreversion
 Source: "assets\icon.ico"; DestDir: "{app}\assets"; Flags: ignoreversion
 Source: "Iniciar_Silencioso.vbs"; DestDir: "{app}"; Flags: ignoreversion
 Source: "App_Escritorio.vbs"; DestDir: "{app}"; Flags: ignoreversion
