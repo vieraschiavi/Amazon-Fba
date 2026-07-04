@@ -90,6 +90,38 @@ tabs = st.tabs(["  Investigacion  ", "  Mercado  ", "  Pricing  ", "  Portafolio
                 "  Publicar  ", "  Caja  ", "  Ventas  ", "  Inversores  ", "  Plan  ",
                 "  Alertas  ", "  Config  ", "  Asistente IA  ", "  Ayuda  "])
 
+# ==================== PRODUCTO ACTIVO (compartido entre pestañas) ==================== #
+# Elegís un producto del portafolio UNA vez y sus datos (costo, flete, precio, neto,
+# ASIN, techo...) se replican como valores por defecto en Pricing, Caja y Ventas, en
+# vez de cargarlos a mano en cada pestaña. Soporta multiples productos: cambiás el
+# seleccionado y todo se actualiza.
+try:
+    _cartera = productos.listar()
+except Exception:
+    _cartera = []
+_opc_activo = {"— Manual (sin producto) —": None}
+for _p in _cartera:
+    _opc_activo[f"{_p['nombre']} · {(_p.get('asin') or 's/ASIN')}"] = _p
+st.sidebar.markdown("### 🎯 Producto activo")
+_sel_activo = st.sidebar.selectbox(
+    "Sus datos se replican en Pricing, Caja y Ventas",
+    list(_opc_activo.keys()), key="sb_prod_activo")
+ACTIVO = _opc_activo.get(_sel_activo) or {}
+if ACTIVO:
+    st.sidebar.caption(
+        f"Costo {ui.usd(ACTIVO.get('costo'))} · Precio {ui.usd(ACTIVO.get('precio'))} · "
+        f"Neto/u {ui.usd(ACTIVO.get('neto'))} · Techo {ACTIVO.get('techo_demanda') or '—'} u/mes")
+    st.sidebar.caption("Los campos de las pestañas vienen precargados; podés ajustarlos igual.")
+else:
+    st.sidebar.caption("Cargá productos en **Portafolio** para elegirlos acá y no "
+                       "reescribir sus datos en cada pestaña.")
+
+
+def A(campo, defecto):
+    """Valor del producto activo para 'campo', o el 'defecto' si no hay activo/valor."""
+    v = ACTIVO.get(campo)
+    return v if v not in (None, "") else defecto
+
 # ============================ 1) INVESTIGACION ============================ #
 with tabs[0]:
     st.markdown(ui.seccion("Investigacion de nicho",
@@ -102,6 +134,22 @@ with tabs[0]:
                          help="El motor propio descubre keywords y nichos reales sin "
                               "pagar APIs; el CSV de Cerebro suma volumenes de busqueda.")
     usa_motor = fuente_kw.startswith("Motor propio")
+    # Idioma/marketplace: el buscador trae las keywords localizadas por API (no a
+    # mano). Con clave de Claude, ademas traduce el seed al idioma del pais.
+    _mkts = motor_propio.MARKETPLACES
+    _mk_labels = {f"{cod} — {d['nombre']}": cod for cod, d in _mkts.items()}
+    ci1, ci2 = st.columns([2, 1])
+    _mk_sel = ci1.selectbox("Idioma / Marketplace (keywords localizadas por API)",
+                            list(_mk_labels.keys()),
+                            index=list(_mk_labels.values()).index(
+                                st.session_state.get("inv_mkt", "US")),
+                            key="inv_mkt_label")
+    mkt_cod = _mk_labels[_mk_sel]
+    st.session_state["inv_mkt"] = mkt_cod
+    traducir_seed = ci2.checkbox("Traducir el seed al idioma del país", value=False,
+                                 key="inv_trad",
+                                 help="Con clave de Claude traduce tu keyword al idioma "
+                                      "del marketplace antes de buscar.")
     c1, c2 = st.columns([3, 1])
     keyword = c1.text_input("Nicho / keyword principal", value="bamboo kitchen utensils")
     correr = c2.button("Investigar", type="primary", use_container_width=True)
@@ -118,8 +166,14 @@ with tabs[0]:
         up = None
 
     if usa_motor and correr:
-        with st.spinner("Consultando el autocompletado de Amazon (gratis)..."):
-            res_m = motor_propio.investigar(keyword, demo=demo)
+        seed_busqueda = keyword
+        if traducir_seed and not demo:
+            from agents import traductor
+            tr = traductor.traducir(keyword, _mkts[mkt_cod]["idioma"])
+            seed_busqueda = tr["texto"]
+            (st.success if tr["fuente"].startswith("Claude") else st.info)(tr["mensaje"])
+        with st.spinner(f"Consultando el autocompletado de Amazon {mkt_cod} (gratis)..."):
+            res_m = motor_propio.investigar(seed_busqueda, demo=demo, marketplace=mkt_cod)
         if not res_m["ok"]:
             st.info(res_m["mensaje"])
         else:
@@ -412,13 +466,13 @@ with tabs[2]:
     st.markdown(ui.seccion("Pricing", "Costo desembarcado -> precio -> margen -> ROI"),
                 unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
-    costo = c1.number_input("Costo unitario (USD)", value=2.10, min_value=0.0, step=0.10)
-    flete = c2.number_input("Flete unitario (USD)", value=0.80, min_value=0.0, step=0.10)
-    arancel = c3.number_input("Arancel (%)", value=6.0, min_value=0.0, step=0.5)
+    costo = c1.number_input("Costo unitario (USD)", value=float(A("costo", 2.10)), min_value=0.0, step=0.10)
+    flete = c2.number_input("Flete unitario (USD)", value=float(A("flete", 0.80)), min_value=0.0, step=0.10)
+    arancel = c3.number_input("Arancel (%)", value=float(A("arancel_pct", 6.0)), min_value=0.0, step=0.5)
     c4, c5, c6 = st.columns(3)
-    prep = c4.number_input("Prep (USD)", value=0.50, min_value=0.0, step=0.10)
-    fba = c5.number_input("FBA fee (USD)", value=config.FBA_FEE_DEFAULT, min_value=0.0, step=0.10)
-    comp = c6.number_input("Precio competencia (USD, 0=sin)", value=19.99, min_value=0.0, step=0.50)
+    prep = c4.number_input("Prep (USD)", value=float(A("prep", 0.50)), min_value=0.0, step=0.10)
+    fba = c5.number_input("FBA fee (USD)", value=float(A("fba_fee", config.FBA_FEE_DEFAULT)), min_value=0.0, step=0.10)
+    comp = c6.number_input("Precio competencia (USD, 0=sin)", value=float(A("precio_competencia", 19.99) or 0.0), min_value=0.0, step=0.50)
     prod = {"costo": costo, "flete": flete, "arancel_pct": arancel, "prep": prep}
     m = evaluar_precio(prod, fba_fee=fba, precio_competencia=(comp if comp > 0 else None))
     tono = {"verde": "good", "amarillo": "warn", "rojo": "bad"}[m["semaforo"]]
@@ -689,11 +743,11 @@ with tabs[5]:
                 unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
     budget = c1.number_input("Capital (USD)", value=8000, min_value=0, step=500)
-    landed_in = c2.number_input("Landed/unidad (USD)", value=5.50, min_value=0.0, step=0.10)
-    precio_in = c3.number_input("Precio venta (USD)", value=24.0, min_value=0.0, step=0.50)
+    landed_in = c2.number_input("Landed/unidad (USD)", value=float(A("landed", 5.50)), min_value=0.0, step=0.10)
+    precio_in = c3.number_input("Precio venta (USD)", value=float(A("precio", 24.0)), min_value=0.0, step=0.50)
     c4, c5, c6 = st.columns(3)
-    net_in = c4.number_input("Neto/unidad (USD)", value=6.90, min_value=0.0, step=0.10)
-    techo = c5.number_input("Techo demanda (unid/mes)", value=290, min_value=0, step=10)
+    net_in = c4.number_input("Neto/unidad (USD)", value=float(A("neto", 6.90)), min_value=0.0, step=0.10)
+    techo = c5.number_input("Techo demanda (unid/mes)", value=int(A("techo_demanda", 290)), min_value=0, step=10)
     meses = c6.number_input("Meses", value=12, min_value=1, step=1)
     r = proyeccion_realista(budget, landed_in, precio_in, net_in,
                             techo_demanda=int(techo), meses=int(meses))
@@ -722,19 +776,23 @@ with tabs[5]:
 with tabs[6]:
     st.markdown(ui.seccion("Ventas y KPIs", "Registra una venta y segui el mix"),
                 unsafe_allow_html=True)
+    if ACTIVO:
+        st.caption(f"Producto activo: **{ACTIVO.get('nombre')}** — precio y neto/unidad "
+                   "vienen precargados. Cambialo en la barra lateral.")
     with st.form("venta"):
         c1, c2, c3 = st.columns(3)
-        asin = c1.text_input("ASIN", value="B0DEMO123")
+        asin = c1.text_input("ASIN", value=str(A("asin", "B0DEMO123")))
         unid = c2.number_input("Unidades", value=5, min_value=0, step=1)
-        pventa = c3.number_input("Precio (USD)", value=24.0, min_value=0.0, step=0.5)
+        pventa = c3.number_input("Precio (USD)", value=float(A("precio", 24.0)), min_value=0.0, step=0.5)
         c4, c5, c6 = st.columns(3)
-        netou = c4.number_input("Neto/unidad (USD)", value=6.9, min_value=0.0, step=0.1)
+        netou = c4.number_input("Neto/unidad (USD)", value=float(A("neto", 6.9)), min_value=0.0, step=0.1)
         pais = c5.text_input("Pais", value="US")
         seg = c6.text_input("Segmento", value="hogar")
         ok = st.form_submit_button("Registrar venta", type="primary")
     if ok:
         rv = analytics.registrar_venta(asin, int(unid), pventa, netou, pais=pais,
-                                       segmento=seg, alertar=True)
+                                       segmento=seg, product_id=ACTIVO.get("id"),
+                                       alertar=True)
         st.success(f"Venta registrada. Facturacion {ui.usd(rv['ingreso'])} · "
                    f"Neto {ui.usd(rv['neto'])} (alerta -> {config.ALERT_TO})")
     k = analytics.kpis()

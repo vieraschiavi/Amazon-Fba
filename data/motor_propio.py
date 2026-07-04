@@ -37,17 +37,43 @@ if _RAIZ not in sys.path:
     sys.path.insert(0, _RAIZ)
 
 _URL = "https://completion.amazon.com/api/2017/suggestions"
-_MID = "ATVPDKIKX0DER"          # marketplace US
+_MID = "ATVPDKIKX0DER"          # marketplace US (default)
 _UA = "Mozilla/5.0 (compatible; mv-amazon-fba-ia/1.0)"
 _PAUSA_S = 0.35                  # pausa entre requests (uso amable)
 _ABC = "abcdefghijklmnopqrstuvwxyz"
 
+# Marketplaces soportados: el mismo autocompletado de Amazon devuelve las
+# keywords en el IDIOMA del marketplace elegido (localizadas de verdad, por API,
+# sin traducir a mano). Se elige por codigo en la pestaña Investigacion.
+MARKETPLACES = {
+    "US": {"mid": "ATVPDKIKX0DER", "tld": "com", "nombre": "Estados Unidos (inglés)", "idioma": "en"},
+    "UK": {"mid": "A1F83G8C2ARO7P", "tld": "co.uk", "nombre": "Reino Unido (inglés)", "idioma": "en"},
+    "ES": {"mid": "A1RKKUPIHCS9HS", "tld": "es", "nombre": "España (español)", "idioma": "es"},
+    "MX": {"mid": "A1AM78C64UM0Y8", "tld": "com.mx", "nombre": "México (español)", "idioma": "es"},
+    "DE": {"mid": "A1PA6795UKMFR9", "tld": "de", "nombre": "Alemania (alemán)", "idioma": "de"},
+    "FR": {"mid": "A13V1IB3VIYZZH", "tld": "fr", "nombre": "Francia (francés)", "idioma": "fr"},
+    "IT": {"mid": "APJ6JRA9NG5V4", "tld": "it", "nombre": "Italia (italiano)", "idioma": "it"},
+    "BR": {"mid": "A2Q3Y263D00KWC", "tld": "com.br", "nombre": "Brasil (portugués)", "idioma": "pt"},
+    "CA": {"mid": "A2EUQ1WTGCTBG2", "tld": "ca", "nombre": "Canadá (inglés)", "idioma": "en"},
+    "JP": {"mid": "A1VC38T7YXB528", "tld": "co.jp", "nombre": "Japón (japonés)", "idioma": "ja"},
+}
 
-def sugerencias(prefix, timeout=10):
-    """Sugerencias del autocompletado de Amazon US para `prefix` (lista de str)."""
-    params = urllib.parse.urlencode({"mid": _MID, "alias": "aps",
+
+def _mkt(marketplace):
+    return MARKETPLACES.get((marketplace or "US").upper(), MARKETPLACES["US"])
+
+
+def sugerencias(prefix, timeout=10, marketplace="US"):
+    """Sugerencias del autocompletado de Amazon (localizadas al `marketplace`).
+    Usa el DOMINIO del marketplace (completion.amazon.es, .de, ...) + su mid, que
+    es lo que devuelve las keywords en el idioma de ese pais."""
+    mk = _mkt(marketplace)
+    url = f"https://completion.amazon.{mk['tld']}/api/2017/suggestions"
+    params = urllib.parse.urlencode({"mid": mk["mid"], "alias": "aps",
                                      "prefix": prefix.strip()})
-    req = urllib.request.Request(f"{_URL}?{params}", headers={"User-Agent": _UA})
+    req = urllib.request.Request(f"{url}?{params}",
+                                 headers={"User-Agent": _UA,
+                                          "Accept-Language": mk["idioma"]})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         data = json.loads(r.read().decode("utf-8"))
     return [s.get("value", "").strip().lower()
@@ -59,14 +85,14 @@ def _clamp(v, lo=0.0, hi=1.0):
     return max(lo, min(hi, v))
 
 
-def expandir(seed, profundidad=1, max_requests=30):
+def expandir(seed, profundidad=1, max_requests=30, marketplace="US"):
     """
     Expande `seed` con el patron estandar de descubrimiento:
       1) seed tal cual (ranking directo)
       2) seed + " a".."z" (long-tail alfabetico)
       3) si profundidad>1: re-expande las mejores sugerencias directas.
     Devuelve {keyword: {"mejor_rank", "apariciones", "origen"}} y el nro de
-    requests hechas. Corta suave en max_requests.
+    requests hechas. Corta suave en max_requests. `marketplace` localiza el idioma.
     """
     hallazgos, hechos = {}, 0
 
@@ -83,7 +109,7 @@ def expandir(seed, profundidad=1, max_requests=30):
             return []
         hechos += 1
         try:
-            res = sugerencias(prefix)
+            res = sugerencias(prefix, marketplace=marketplace)
         except Exception:
             return []
         for i, kw in enumerate(res, 1):
@@ -146,7 +172,7 @@ _NOTA = ("'interes' es un proxy del autocompletado de Amazon (posicion + "
          "(BSR->ventas) o un CSV de Cerebro.")
 
 
-def investigar(seed, profundidad=1, demo=False):
+def investigar(seed, profundidad=1, demo=False, marketplace="US"):
     """
     Investigacion completa de un seed. Devuelve:
       {ok, fuente, seed, keywords[{keyword,interes,mejor_rank,apariciones}],
@@ -159,7 +185,7 @@ def investigar(seed, profundidad=1, demo=False):
         return {"ok": False, "fuente": "motor_propio", "seed": seed, "keywords": [],
                 "nichos": [], "requests": 0, "nota_honesta": _NOTA,
                 "mensaje": "Escribi un seed de al menos 3 letras."}
-    hallazgos, hechos = expandir(seed, profundidad=profundidad)
+    hallazgos, hechos = expandir(seed, profundidad=profundidad, marketplace=marketplace)
     if not hallazgos:
         return {"ok": False, "fuente": "motor_propio", "seed": seed, "keywords": [],
                 "nichos": [], "requests": hechos, "nota_honesta": _NOTA,
