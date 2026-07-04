@@ -62,6 +62,10 @@ _MIGRACIONES = {
     "products": {"asin": "TEXT", "fba_fee": "REAL", "neto": "REAL",
                  "techo_demanda": "INTEGER", "notas": "TEXT",
                  "activo": "INTEGER DEFAULT 1"},
+    # orders viejas (creadas antes de estas columnas) rompian el registro de
+    # ventas con "table orders has no column named neto_unitario".
+    "orders": {"neto_unitario": "REAL", "ingreso": "REAL", "neto": "REAL",
+               "pais": "TEXT", "segmento": "TEXT", "product_id": "INTEGER"},
 }
 
 
@@ -99,14 +103,30 @@ def execute(sql, params=()):
 def insert(table, **cols):
     keys = ",".join(cols.keys())
     ph = ",".join("?" for _ in cols)
-    con = connect()
+    sql = f"INSERT INTO {table}({keys}) VALUES({ph})"
+    valores = tuple(cols.values())
     try:
-        cur = con.execute(f"INSERT INTO {table}({keys}) VALUES({ph})",
-                          tuple(cols.values()))
-        con.commit()
-        return cur.lastrowid
-    finally:
-        con.close()
+        con = connect()
+        try:
+            cur = con.execute(sql, valores)
+            con.commit()
+            return cur.lastrowid
+        finally:
+            con.close()
+    except sqlite3.OperationalError as e:
+        # Auto-reparacion: si a la tabla le falta una columna (base vieja creada
+        # antes de una migracion), corremos las migraciones y reintentamos una vez
+        # en vez de romper la app entera.
+        if "has no column named" not in str(e) and "no such table" not in str(e):
+            raise
+        init()
+        con = connect()
+        try:
+            cur = con.execute(sql, valores)
+            con.commit()
+            return cur.lastrowid
+        finally:
+            con.close()
 
 
 def rows(sql, params=()):
