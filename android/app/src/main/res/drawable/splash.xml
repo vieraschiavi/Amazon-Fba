@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Fondo de ventana (splash) mientras carga el WebView. OJO: el <bitmap> debe
+     apuntar a un PNG REAL. Antes usaba @mipmap/ic_launcher, que en Android 8+
+     es un adaptive-icon XML, no un bitmap: al inflar el windowBackground al
+     abrir, Android tiraba una excepcion y la app "abria y se cerraba". Se usa
+     el foreground, que si es PNG en todas las densidades. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/navy_deep" />
     <item android:gravity="center">
         <bitmap
-            android:src="@mipmap/ic_launcher"
+            android:src="@mipmap/ic_launcher_foreground"
             android:gravity="center" />
     </item>
 </layer-list>
