@@ -64,16 +64,19 @@ Source: "..\data\*"; DestDir: "{app}\data"; Excludes: "*.pyc,*.csv"; Flags: recu
 Source: "..\n8n\*"; DestDir: "{app}\n8n"; Flags: recursesubdirs ignoreversion
 Source: "assets\icon.ico"; DestDir: "{app}\assets"; Flags: ignoreversion
 Source: "Iniciar_Silencioso.vbs"; DestDir: "{app}"; Flags: ignoreversion
+Source: "App_Escritorio.vbs"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\Iniciar_Silencioso.vbs"; WorkingDir: "{app}"; IconFilename: "{app}\assets\icon.ico"; Comment: "{#MyAppExeDescription}"
+; Acceso principal: la app de ESCRITORIO (ventana nativa propia, sin navegador).
+Name: "{group}\{#MyAppName}"; Filename: "{app}\App_Escritorio.vbs"; WorkingDir: "{app}"; IconFilename: "{app}\assets\icon.ico"; Comment: "{#MyAppExeDescription}"
+Name: "{group}\{#MyAppName} (modo navegador)"; Filename: "{app}\Iniciar_Silencioso.vbs"; WorkingDir: "{app}"; IconFilename: "{app}\assets\icon.ico"; Comment: "Abrir en el navegador (alternativa)"
 Name: "{group}\Diagnostico"; Filename: "{app}\DIAGNOSTICO.bat"; WorkingDir: "{app}"; IconFilename: "{app}\assets\icon.ico"
 Name: "{group}\Verificar conexiones (Keepa, Claude, email)"; Filename: "{app}\CONECTAR.bat"; WorkingDir: "{app}"; IconFilename: "{app}\assets\icon.ico"
 Name: "{group}\Desinstalar {#MyAppName}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\Iniciar_Silencioso.vbs"; WorkingDir: "{app}"; IconFilename: "{app}\assets\icon.ico"; Tasks: desktopicon; Comment: "{#MyAppExeDescription}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\App_Escritorio.vbs"; WorkingDir: "{app}"; IconFilename: "{app}\assets\icon.ico"; Tasks: desktopicon; Comment: "{#MyAppExeDescription}"
 
 [Run]
-Filename: "{app}\Iniciar_Silencioso.vbs"; Description: "Abrir {#MyAppName} ahora"; Flags: postinstall skipifsilent nowait shellexec runasoriginaluser
+Filename: "{app}\App_Escritorio.vbs"; Description: "Abrir {#MyAppName} ahora"; Flags: postinstall skipifsilent nowait shellexec runasoriginaluser
 
 [Code]
 var

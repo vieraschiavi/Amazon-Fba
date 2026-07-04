@@ -134,6 +134,22 @@ with tabs[0]:
                          help="El motor propio descubre keywords y nichos reales sin "
                               "pagar APIs; el CSV de Cerebro suma volumenes de busqueda.")
     usa_motor = fuente_kw.startswith("Motor propio")
+    # Idioma/marketplace: el buscador trae las keywords localizadas por API (no a
+    # mano). Con clave de Claude, ademas traduce el seed al idioma del pais.
+    _mkts = motor_propio.MARKETPLACES
+    _mk_labels = {f"{cod} — {d['nombre']}": cod for cod, d in _mkts.items()}
+    ci1, ci2 = st.columns([2, 1])
+    _mk_sel = ci1.selectbox("Idioma / Marketplace (keywords localizadas por API)",
+                            list(_mk_labels.keys()),
+                            index=list(_mk_labels.values()).index(
+                                st.session_state.get("inv_mkt", "US")),
+                            key="inv_mkt_label")
+    mkt_cod = _mk_labels[_mk_sel]
+    st.session_state["inv_mkt"] = mkt_cod
+    traducir_seed = ci2.checkbox("Traducir el seed al idioma del país", value=False,
+                                 key="inv_trad",
+                                 help="Con clave de Claude traduce tu keyword al idioma "
+                                      "del marketplace antes de buscar.")
     c1, c2 = st.columns([3, 1])
     keyword = c1.text_input("Nicho / keyword principal", value="bamboo kitchen utensils")
     correr = c2.button("Investigar", type="primary", use_container_width=True)
@@ -150,8 +166,14 @@ with tabs[0]:
         up = None
 
     if usa_motor and correr:
-        with st.spinner("Consultando el autocompletado de Amazon (gratis)..."):
-            res_m = motor_propio.investigar(keyword, demo=demo)
+        seed_busqueda = keyword
+        if traducir_seed and not demo:
+            from agents import traductor
+            tr = traductor.traducir(keyword, _mkts[mkt_cod]["idioma"])
+            seed_busqueda = tr["texto"]
+            (st.success if tr["fuente"].startswith("Claude") else st.info)(tr["mensaje"])
+        with st.spinner(f"Consultando el autocompletado de Amazon {mkt_cod} (gratis)..."):
+            res_m = motor_propio.investigar(seed_busqueda, demo=demo, marketplace=mkt_cod)
         if not res_m["ok"]:
             st.info(res_m["mensaje"])
         else:
