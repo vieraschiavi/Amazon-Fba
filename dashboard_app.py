@@ -50,6 +50,28 @@ def _cols_html(items):
         c.markdown(html, unsafe_allow_html=True)
 
 
+# Los graficos nativos de Streamlit usan altair; en Python 3.14 con versiones
+# viejas de altair/typing_extensions eso puede reventar al renderizar. Estos
+# wrappers intentan el grafico y, si falla, muestran la tabla en vez de romper
+# TODO el programa. Asi la app nunca se cae por un problema de dependencias.
+def _line_chart(data, **kw):
+    try:
+        st.line_chart(data, **kw)
+    except Exception:
+        st.dataframe(data, use_container_width=True)
+        st.caption("Grafico no disponible en este equipo (dependencia de charts); "
+                   "muestro la tabla. Se corrige con: pip install -U typing_extensions altair")
+
+
+def _bar_chart(data, **kw):
+    try:
+        st.bar_chart(data, **kw)
+    except Exception:
+        st.dataframe(data, use_container_width=True)
+        st.caption("Grafico no disponible en este equipo (dependencia de charts); "
+                   "muestro la tabla. Se corrige con: pip install -U typing_extensions altair")
+
+
 # --- Sidebar ---
 with st.sidebar:
     st.markdown(
@@ -603,7 +625,7 @@ with tabs[3]:
                            tone=("good" if vr["ingreso"] > 0 else "navy")),
                 ])
                 dfa = pd.DataFrame(an["proyeccion"]["filas"])
-                st.line_chart(dfa.set_index("mes")[["caja", "sueldo"]], height=220,
+                _line_chart(dfa.set_index("mes")[["caja", "sueldo"]], height=220,
                               color=["#1e3a8a", "#8bc34a"])
             if vr["ordenes"]:
                 st.markdown(ui.seccion("Ultimas ventas del producto"),
@@ -767,7 +789,7 @@ with tabs[5]:
         st.warning("Caja minima muy ajustada: estas fronteando casi todo el capital en stock.")
     df = pd.DataFrame(r["filas"])
     st.markdown(ui.seccion("Evolucion mensual"), unsafe_allow_html=True)
-    st.line_chart(df.set_index("mes")[["caja", "sueldo"]], height=240,
+    _line_chart(df.set_index("mes")[["caja", "sueldo"]], height=240,
                   color=["#1e3a8a", "#8bc34a"])
     st.dataframe(df[["mes", "vendidas", "cobrado", "sueldo", "caja", "capital_atado"]],
                  use_container_width=True, hide_index=True)
@@ -805,7 +827,7 @@ with tabs[6]:
     ])
     if k["por_producto"]:
         st.markdown(ui.seccion("Mix por producto"), unsafe_allow_html=True)
-        st.bar_chart(pd.DataFrame(k["por_producto"]).set_index("k")["ingreso"], height=220,
+        _bar_chart(pd.DataFrame(k["por_producto"]).set_index("k")["ingreso"], height=220,
                      color="#1e3a8a")
         cca, ccb = st.columns(2)
         if k["por_pais"]:
@@ -1008,7 +1030,7 @@ with tabs[8]:
     ])
     dfc = pd.DataFrame(ic["filas"])
     if not dfc.empty:
-        st.line_chart(dfc.set_index("mes")[["capital", "aportado"]], height=240,
+        _line_chart(dfc.set_index("mes")[["capital", "aportado"]], height=240,
                       color=["#1e3a8a", "#8bc34a"])
         df_an = dfc[dfc["mes"] % 12 == 0][["anio", "capital", "aportado", "ocioso"]]
         st.dataframe(df_an, use_container_width=True, hide_index=True)
