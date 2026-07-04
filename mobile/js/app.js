@@ -523,6 +523,15 @@ function responderLocal(preg) {
   if (/(precio|cuanto.*vender|cuanto.*cobrar)/.test(q)) {
     return "El sistema sugiere tu **precio** apuntando a un margen objetivo del 25%, y si cargas el precio de la competencia intenta entrar **5% por debajo del lider** siempre que el margen siga sano. Cargá el producto en Portafolio y te lo calcula.";
   }
+  if (/(keepa|helium|jungle|herramienta|api.*39|api.*49|19.*euro|49.*euro|que.*pago|vale la pena)/.test(q)) {
+    return "Para **Keepa**: la **web (~19 €/mes)** te da el historial de precio y ranking para "
+      + "mirar a mano antes de comprar — **es lo que te conviene para arrancar**. La **API (49 €/mes)** "
+      + "solo sirve para que la app traiga esos datos sola (automatizado), y recién vale la pena mas "
+      + "adelante. **No pagues la API para investigar.** Alternativa: **Helium 10** tiene plan gratis y "
+      + "cubre keywords + productos + competencia; Jungle Scout hace lo mismo pero sin free. Igual, tu "
+      + "app ya trae el motor propio gratis, asi que las herramientas son para **validar a mano** el "
+      + "candidato. (Mas detalle en la pestaña **Config**.)";
+  }
   return "Puedo ayudarte con tu **portafolio**, el **sueldo meseta**, **margen/ROI/ACOS**, la **dedicacion horaria** y como **evaluar un nicho** en Mercado. Para respuestas abiertas fuera de tus datos, cargá una clave de Claude en **Config** y con internet te respondo cualquier cosa. ¿Sobre cual querés que profundice?";
 }
 async function responderClaude(preg) {
