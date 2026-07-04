@@ -4,15 +4,14 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-    <!-- usesCleartextTraffic: la API del negocio corre en la PC del usuario por
-         HTTP plano en la red local (http://192.168.x.x:8000); sin esto Android
-         bloquea esas conexiones desde la app. -->
+    <!-- La app es autocontenida: el motor corre en el telefono y los datos viven
+         en localStorage. INTERNET solo se usa para funciones online opcionales
+         (keywords de Amazon y asistente Claude), ambas por HTTPS. -->
     <application
         android:label="@string/app_name"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
         android:theme="@style/Theme.MvFbaIa"
-        android:usesCleartextTraffic="true"
         android:allowBackup="true"
         android:supportsRtl="false">
 

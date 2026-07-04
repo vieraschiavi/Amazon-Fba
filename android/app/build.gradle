@@ -14,18 +14,43 @@ android {
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.mv.amazonfbaia"
+        // applicationId NUEVO a proposito: la app anterior (com.mv.amazonfbaia)
+        // pudo quedar instalada firmada con otra clave, y MIUI rechaza el update
+        // ("no se instalo"). Con un package fresco instala limpio, sin conflicto,
+        // igual que cualquier app nueva. El namespace/clase Java no cambia.
+        applicationId "com.mvtrade.fbaia"
         minSdk 24            // Android 7.0+ (~98% de los dispositivos activos)
         targetSdk 34
-        versionCode 1
-        versionName "1.0.0"
+        versionCode 6
+        versionName "1.1.4"
+    }
+
+    // Firma de distribucion (sideload). El keystore viaja en el repo a proposito:
+    // para una app que se instala por fuera de Play Store, la firma solo sirve
+    // para identificar de forma consistente al emisor y permitir updates; no es
+    // un secreto que proteja datos del usuario. Se firma con v1 (JAR) + v2 + v3
+    // a la vez: v1 es imprescindible para que los instaladores de APK de terceros
+    // y los Android 7-9 reconozcan el paquete (sin v1, muchos "no detectan la APK").
+    signingConfigs {
+        release {
+            storeFile file('mv-release.keystore')
+            storePassword 'mvfba2026'
+            keyAlias 'mvfba'
+            keyPassword 'mvfba2026'
+            enableV1Signing true
+            enableV2Signing true
+            enableV3Signing true
+        }
     }
 
     buildTypes {
         release {
             minifyEnabled false
-            // Para publicar en Play Store hace falta firmar con tu keystore:
-            // crea uno con keytool y configura signingConfigs aca.
+            signingConfig signingConfigs.release
+        }
+        debug {
+            // El APK debug tambien firmado con v1+v2+v3, por si se distribuye ese.
+            signingConfig signingConfigs.release
         }
     }
 

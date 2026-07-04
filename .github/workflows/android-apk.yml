@@ -1,6 +1,13 @@
 # Compila el APK nativo de MV Amazon FBA IA en cada push que toque la app
-# Android o la UI movil, y lo publica como artifact descargable en la pestana
-# Actions. Los runners de GitHub ya traen el Android SDK preinstalado.
+# Android o la UI movil. Lo publica de dos formas:
+#   1) como artifact (util para descargar desde la pestana Actions), y
+#   2) como asset de un GitHub Release con tag "android-latest", que sirve el
+#      .apk CRUDO — desde el celular abris el link del release y lo instalas
+#      directo (el artifact, en cambio, se baja como .zip y el instalador de
+#      APK del telefono NO detecta un zip).
+#
+# El APK sale firmado con v1 (JAR) + v2 + v3, asi lo reconoce cualquier
+# instalador de APK y cualquier Android 7+ (ver android/build-apk.sh).
 name: Android APK
 
 on:
@@ -10,6 +17,9 @@ on:
       - "mobile/**"
       - ".github/workflows/android-apk.yml"
   workflow_dispatch:
+
+permissions:
+  contents: write   # para crear/actualizar el Release con el .apk
 
 jobs:
   build:
@@ -29,12 +39,34 @@ jobs:
         with:
           gradle-version: "8.14.3"
 
-      - name: Compilar APK (debug)
-        run: gradle -p android assembleDebug
+      - name: Compilar y firmar APK (v1+v2+v3)
+        run: bash android/build-apk.sh
 
       - name: Publicar APK como artifact
         uses: actions/upload-artifact@v4
         with:
           name: MV-Amazon-FBA-IA-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: android/app/build/outputs/apk/release/MV-Amazon-FBA-IA.apk
           if-no-files-found: error
+
+      - name: Publicar APK en un Release (descarga directa desde el celular)
+        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-latest
+          name: MV Amazon FBA IA — App Android
+          body: |
+            APK nativo y autocontenido de MV Amazon FBA IA. Corre 100% en el
+            telefono, sin depender de la PC.
+
+            **Instalar desde el celular:**
+            1. Abri este link en el navegador del telefono y descarga
+               `MV-Amazon-FBA-IA.apk`.
+            2. Tocá el archivo descargado. Si aparece "Instalar apps desconocidas",
+               habilitalo para tu navegador y volvé a tocarlo.
+            3. Instalar → Abrir.
+
+            Firmado con v1+v2+v3, compatible con Android 7.0+.
+          prerelease: true
+          files: android/app/build/outputs/apk/release/MV-Amazon-FBA-IA.apk
+          fail_on_unmatched_files: true

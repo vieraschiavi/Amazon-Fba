@@ -1,0 +1,39 @@
+# Compila el instalador .exe de Windows (Inno Setup) en un runner Windows real
+# y lo publica como artifact descargable en la pestana Actions. Se dispara con
+# cada push que toque el instalador o el codigo del programa, y a mano.
+name: Windows Installer (EXE)
+
+on:
+  push:
+    paths:
+      - "installer/**"
+      - "*.py"
+      - "*.bat"
+      - "agents/**"
+      - "core/**"
+      - "data/**"
+      - "requirements.txt"
+      - ".github/workflows/windows-installer.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Compilar instalador
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\MV_Amazon_FBA_IA.iss
+        shell: pwsh
+
+      - name: Publicar EXE como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MV-Amazon-FBA-IA-instalador-windows
+          path: installer/Output/MV_Amazon_FBA_IA_Setup.exe
+          if-no-files-found: error

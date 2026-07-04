@@ -1,12 +1,13 @@
 // service-worker.js — cache del "shell" de la app (HTML/CSS/JS/iconos) para que
-// abra instantaneo y funcione offline en modo lectura de la ultima pantalla.
-// Los datos (KPIs, portafolio, etc.) siempre se piden en vivo a la API: nunca
-// se cachean, para no mostrar numeros del negocio desactualizados.
-const CACHE = "mv-fba-ia-shell-v1";
+// abra instantanea y funcione OFFLINE por completo. El motor de negocio corre
+// en el telefono (nucleo.js) y los datos viven en localStorage, asi que no hay
+// nada que pedirle a ninguna PC: la app entera funciona sin red.
+const CACHE = "mv-fba-ia-shell-v2";
 const SHELL = [
   "./",
   "./index.html",
   "./css/estilos.css",
+  "./js/nucleo.js",
   "./js/app.js",
   "./manifest.json",
   "./icons/icon-192.png",
