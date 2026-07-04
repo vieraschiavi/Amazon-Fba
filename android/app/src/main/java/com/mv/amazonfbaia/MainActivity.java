@@ -6,19 +6,28 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.View;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
 
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -32,23 +41,58 @@ import java.util.Iterator;
  * en el telefono. No depende de ninguna PC ni hosting: abre y funciona offline.
  *
  * Lo unico que necesita internet (keywords reales de Amazon, asistente Claude)
- * usa el internet del celular a traves del PUENTE NATIVO de abajo: hace el HTTP
- * en Java, evitando el bloqueo CORS que sufre el origen file:// del WebView.
+ * usa el internet del celular a traves del PUENTE NATIVO de abajo, que hace el
+ * HTTP en Java para evitar el bloqueo CORS del origen file:// del WebView.
  *
- * Sin AppCompat ni librerias pesadas: WebView del framework + Activity plana.
+ * A prueba de crashes: si algo falla al arrancar, en vez de "abrir y cerrar" en
+ * silencio, la app guarda el error y lo MUESTRA en pantalla (seleccionable) para
+ * poder diagnosticarlo. Ver capturarError()/mostrarError().
  */
 public class MainActivity extends Activity {
 
+    private static final String ARCHIVO_ERROR = "ultimo_error.txt";
     private WebView webView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // 1) Cualquier excepcion no atrapada (incluida la inflacion del primer
+        //    frame) se guarda a disco antes de que el proceso muera.
+        final Thread.UncaughtExceptionHandler previo = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                guardarError(e);
+                if (previo != null) previo.uncaughtException(t, e);
+            }
+        });
+
+        // 2) Si en el arranque anterior hubo un crash, mostramos el detalle en
+        //    vez de volver a intentar (y volver a cerrarse). El usuario puede
+        //    leerlo, copiarlo y mandarlo; o tocar "Reintentar".
+        File err = new File(getFilesDir(), ARCHIVO_ERROR);
+        if (err.exists()) {
+            String detalle = leerArchivo(err);
+            err.delete();
+            mostrarError(detalle);
+            return;
+        }
+
+        // 3) Arranque normal, protegido: si tira algo sincronico, lo mostramos ya.
+        try {
+            arrancar(savedInstanceState);
+        } catch (Throwable t) {
+            guardarError(t);
+            mostrarError(traza(t));
+        }
+    }
+
+    /** Toda la inicializacion real de la app. */
+    private void arrancar(Bundle savedInstanceState) {
         webView = new WebView(this);
         setContentView(webView);
 
-        // Barra de estado en navy de marca, iconos claros.
         getWindow().setStatusBarColor(Color.parseColor("#152A63"));
         getWindow().setNavigationBarColor(Color.parseColor("#FFFFFF"));
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -62,30 +106,23 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(true);        // assets locales via file://
         s.setLoadsImagesAutomatically(true);
         s.setTextZoom(100);
-        // Viewport correcto en cualquier WebView: usa el <meta viewport> de la
-        // pagina y no arranca "zoomeado".
         s.setUseWideViewPort(true);
         s.setLoadWithOverviewMode(true);
         s.setBuiltInZoomControls(false);
         s.setSupportZoom(false);
 
-        // Puente nativo: la UI llama a PuenteNativo.httpRequest(...) para las
-        // pocas cosas que necesitan internet, sin toparse con CORS.
         webView.addJavascriptInterface(new PuenteNativo(), "PuenteNativo");
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri url = request.getUrl();
-                // La UI vive en assets: cualquier link externo (Alibaba, Amazon,
-                // Global Sources...) se abre en el navegador del telefono.
                 if ("file".equals(url.getScheme())) {
                     return false;
                 }
                 try {
                     startActivity(new Intent(Intent.ACTION_VIEW, url));
                 } catch (Exception ignored) {
-                    // sin navegador instalado: no romper la app por un link
                 }
                 return true;
             }
@@ -98,11 +135,75 @@ public class MainActivity extends Activity {
         }
     }
 
+    // ------------------------------------------------------ diagnostico de crash
+    private void guardarError(Throwable t) {
+        try {
+            String txt = "MV Amazon FBA IA — error de arranque\n"
+                    + "versionName 1.1.3\n"
+                    + "Android " + Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")\n"
+                    + Build.MANUFACTURER + " " + Build.MODEL + "\n\n" + traza(t);
+            FileOutputStream fos = openFileOutput(ARCHIVO_ERROR, MODE_PRIVATE);
+            fos.write(txt.getBytes(StandardCharsets.UTF_8));
+            fos.close();
+        } catch (Throwable ignore) {
+        }
+    }
+
+    private String traza(Throwable t) {
+        StringWriter sw = new StringWriter();
+        t.printStackTrace(new PrintWriter(sw));
+        return sw.toString();
+    }
+
+    private void mostrarError(String detalle) {
+        LinearLayout col = new LinearLayout(this);
+        col.setOrientation(LinearLayout.VERTICAL);
+        col.setBackgroundColor(Color.parseColor("#152A63"));
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        col.setPadding(pad, pad * 3, pad, pad);
+
+        TextView titulo = new TextView(this);
+        titulo.setText("La app se cerro por este error");
+        titulo.setTextColor(Color.WHITE);
+        titulo.setTextSize(18);
+        titulo.setPadding(0, 0, 0, pad);
+        col.addView(titulo);
+
+        TextView sub = new TextView(this);
+        sub.setText("Copiá este texto (mantené apretado) y mandámelo para arreglarlo:");
+        sub.setTextColor(Color.parseColor("#CBD5E1"));
+        sub.setTextSize(13);
+        sub.setPadding(0, 0, 0, pad);
+        col.addView(sub);
+
+        TextView tv = new TextView(this);
+        tv.setText(detalle);
+        tv.setTextColor(Color.parseColor("#8BC34A"));
+        tv.setTextSize(12);
+        tv.setTextIsSelectable(true);
+        tv.setTypeface(android.graphics.Typeface.MONOSPACE);
+        ScrollView sv = new ScrollView(this);
+        sv.addView(tv);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f);
+        col.addView(sv, lp);
+
+        Button reintentar = new Button(this);
+        reintentar.setText("Reintentar");
+        reintentar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                recreate();
+            }
+        });
+        col.addView(reintentar);
+
+        setContentView(col);
+    }
+
     /**
      * Puente HTTP para el JS. Corre la peticion en un hilo aparte y devuelve el
      * resultado al WebView invocando window.__puenteResolver(id, respuestaJSON).
-     * La respuesta es {status, body} o {error} — el mismo contrato que espera
-     * pedirHTTP() en app.js.
      */
     private class PuenteNativo {
         @JavascriptInterface
@@ -181,10 +282,24 @@ public class MainActivity extends Activity {
         });
     }
 
+    private String leerArchivo(File f) {
+        try {
+            BufferedReader br = new BufferedReader(new InputStreamReader(
+                    new java.io.FileInputStream(f), StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            String linea;
+            while ((linea = br.readLine()) != null) sb.append(linea).append('\n');
+            br.close();
+            return sb.toString();
+        } catch (Throwable t) {
+            return "(no se pudo leer el detalle del error)";
+        }
+    }
+
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        webView.saveState(outState);
+        if (webView != null) webView.saveState(outState);
     }
 
     @Override
