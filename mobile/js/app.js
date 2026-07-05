@@ -806,6 +806,8 @@ $("#form-demo-licencia").addEventListener("submit", async (ev) => {
   if (res.ok) {
     mostrarToast(t.clave_ok);
     evaluarDemo();
+  } else if (res.mensaje === "sin_conexion") {
+    mostrarToast(t.sin_conexion);
   } else {
     mostrarToast(t.clave_invalida);
   }

@@ -16,6 +16,9 @@ on:
       - ".github/workflows/windows-installer.yml"
   workflow_dispatch:
 
+permissions:
+  contents: write   # para publicar el Release con el instalador
+
 jobs:
   build:
     runs-on: windows-latest
@@ -37,3 +40,17 @@ jobs:
           name: MV-Amazon-FBA-IA-instalador-windows
           path: installer/Output/MV_Amazon_FBA_IA_Setup.exe
           if-no-files-found: error
+
+      # Publica/actualiza el Release "pc-latest" con el instalador, para que la
+      # descarga gated (api/descarga.js, tras pago verificado) lo pueda entregar.
+      - name: Publicar instalador como Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: pc-latest
+          name: MV Amazon FBA IA — Instalador PC (Windows)
+          body: >-
+            Instalador oficial de MV Amazon FBA IA para Windows.
+            La descarga se habilita tras la compra (ver /gracias.html).
+          files: installer/Output/MV_Amazon_FBA_IA_Setup.exe
+          make_latest: "false"
