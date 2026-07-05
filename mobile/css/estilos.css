@@ -251,6 +251,22 @@ a { color: inherit; }
   margin-top: 16px; text-decoration: underline;
 }
 
+/* ---- Demo/registro (3 dias) ---- */
+.demo-idioma-sel {
+  align-self: flex-end; margin: 0 0 10px; padding: 6px 10px; border-radius: 9px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+  font-size: 12.5px; font-weight: 600;
+}
+#demo-gate .bienvenida-card { display: flex; flex-direction: column; }
+#demo-gate .formulario { text-align: left; }
+#demo-registro.oculto, #demo-vencido.oculto { display: none; }
+.demo-badge {
+  font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px;
+  background: var(--green-soft, #dcfce7); color: var(--green-ink); margin-right: 8px;
+}
+.demo-badge.vencido { background: #fee2e2; color: #991b1b; }
+.demo-badge.oculto { display: none; }
+
 /* Tablet / desktop: contenedor centrado, no se estira el bottom nav */
 @media (min-width: 640px) {
   #app { max-width: 480px; margin: 0 auto; box-shadow: 0 0 40px rgba(0,0,0,.08); min-height: 100vh; }

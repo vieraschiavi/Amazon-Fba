@@ -17,6 +17,37 @@
 </head>
 <body>
 
+<!-- Demo/registro: 3 dias completos por usuario, multi-idioma. Bloquea la app
+     hasta registrarse; si vence sin licencia, bloquea de nuevo. -->
+<div id="demo-gate" class="bienvenida oculto">
+  <div class="bienvenida-card">
+    <select id="demo-idioma" class="demo-idioma-sel">
+      <option value="es">Español</option>
+      <option value="en">English</option>
+      <option value="pt">Português</option>
+    </select>
+    <img src="icons/icon-192.png" alt="" class="bienvenida-logo">
+    <h1 id="demo-titulo">MV Amazon FBA <b>IA</b></h1>
+    <div id="demo-registro">
+      <p class="bienvenida-lead" id="demo-sub"></p>
+      <form id="form-demo-registro" class="formulario">
+        <label><span id="demo-lbl-nombre"></span><input type="text" id="demo-nombre" autocomplete="name"></label>
+        <label><span id="demo-lbl-email"></span><input type="email" id="demo-email" autocomplete="email"></label>
+        <button type="submit" class="btn-primario" id="demo-btn-empezar"></button>
+      </form>
+    </div>
+    <div id="demo-vencido" class="oculto">
+      <p class="bienvenida-lead" id="demo-vencido-sub"></p>
+      <form id="form-demo-licencia" class="formulario">
+        <label><span id="demo-lbl-email2"></span><input type="email" id="demo-email2" autocomplete="email"></label>
+        <label><span id="demo-lbl-clave"></span><input type="text" id="demo-clave" autocomplete="off"></label>
+        <button type="submit" class="btn-primario" id="demo-btn-activar"></button>
+      </form>
+      <a id="demo-contactar" href="#" class="bienvenida-saltar"></a>
+    </div>
+  </div>
+</div>
+
 <!-- Bienvenida standalone: la app corre 100% en el telefono. Solo la primera vez. -->
 <div id="bienvenida" class="bienvenida oculto">
   <div class="bienvenida-card">
@@ -48,6 +79,7 @@
         <div class="tag">Tu negocio en el celular</div>
       </div>
     </div>
+    <span id="demo-badge" class="demo-badge oculto"></span>
     <button id="btn-estado" class="estado-dot" title="Motor local activo" aria-label="Estado">
       <span class="dot"></span>
     </button>
@@ -204,6 +236,7 @@
 
 </div>
 <script src="js/nucleo.js"></script>
+<script src="js/licencia.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

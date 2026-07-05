@@ -133,6 +133,8 @@ section{padding:76px 0}
 .klabel{font-size:12.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
 .h2{font-size:32px;letter-spacing:-.6px;margin:0 0 14px;max-width:22ch}
 .sublede{color:var(--slate);font-size:16.5px;max-width:60ch;margin:0 0 40px}
+.demo-banner{display:inline-flex;align-items:center;gap:8px;background:var(--accent-soft);color:var(--accent-ink);
+  font-size:13.5px;font-weight:700;padding:9px 16px;border-radius:999px;margin:-20px 0 30px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
 .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
@@ -324,6 +326,7 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
     <div class="klabel" data-t="pricing.label">Precios</div>
     <h2 class="h2" data-t="pricing.h2">Elegí tu plan</h2>
     <p class="sublede" data-t="pricing.sub">Pago único o mensual. Descargás la versión que compraste apenas se confirma el pago.</p>
+    <div class="demo-banner" data-t="pricing.demoBanner">🎁 Demo completa gratis por 3 días — todas las funciones activas, sin tarjeta</div>
     <div class="g3">
       <div class="card price-card">
         <div class="pname" data-t="pricing.starter.name">Starter · Celular</div>
@@ -527,6 +530,7 @@ const I18N = {
     "vs.bad1":"Suscripción recurrente de por vida","vs.bad2":"Pagás módulos que no usás","vs.bad3":"Sin app nativa de escritorio",
     "vs.good1":"Motor de keywords propio incluido","vs.good2":"PC + Android, todo desbloqueado","vs.good3":"IA con tu clave o la nuestra, a elección",
     "pricing.label":"Precios","pricing.h2":"Elegí tu plan","pricing.sub":"Pago único o mensual. Descargás la versión que compraste apenas se confirma el pago.",
+    "pricing.demoBanner":"🎁 Demo completa gratis por 3 días — todas las funciones activas, sin tarjeta",
     "pricing.once":" pago único","pricing.mo":" /mes","pricing.buy":"Comprar","pricing.popular":"MÁS VENDIDO",
     "pricing.starter.name":"Starter · Celular","pricing.starter.alt":"o US$4,99/mes",
     "pricing.starter.f1":"App Android (APK)","pricing.starter.f2":"Pricing, portafolio, ganancias, mercado","pricing.starter.f3":"Motor de keywords gratis","pricing.starter.f4":"Sin módulos avanzados de PC",
@@ -585,6 +589,7 @@ const I18N = {
     "vs.bad1":"Recurring subscription forever","vs.bad2":"You pay for modules you don't use","vs.bad3":"No native desktop app",
     "vs.good1":"Own keyword engine included","vs.good2":"PC + Android, fully unlocked","vs.good3":"AI with your key or ours, your choice",
     "pricing.label":"Pricing","pricing.h2":"Choose your plan","pricing.sub":"One-time or monthly. Download the version you bought as soon as payment is confirmed.",
+    "pricing.demoBanner":"🎁 Full 3-day free demo — every feature unlocked, no card required",
     "pricing.once":" one-time","pricing.mo":" /mo","pricing.buy":"Buy now","pricing.popular":"MOST POPULAR",
     "pricing.starter.name":"Starter · Mobile","pricing.starter.alt":"or US$4.99/mo",
     "pricing.starter.f1":"Android app (APK)","pricing.starter.f2":"Pricing, portfolio, profit, market research","pricing.starter.f3":"Free keyword engine","pricing.starter.f4":"No advanced desktop modules",
@@ -643,6 +648,7 @@ const I18N = {
     "vs.bad1":"Assinatura recorrente para sempre","vs.bad2":"Você paga por módulos que não usa","vs.bad3":"Sem app de desktop nativo",
     "vs.good1":"Motor de palavras-chave próprio incluído","vs.good2":"PC + Android, tudo desbloqueado","vs.good3":"IA com sua chave ou a nossa, à escolha",
     "pricing.label":"Preços","pricing.h2":"Escolha seu plano","pricing.sub":"Pagamento único ou mensal. Baixe a versão comprada assim que o pagamento for confirmado.",
+    "pricing.demoBanner":"🎁 Demo completo grátis por 3 dias — todas as funções ativas, sem cartão",
     "pricing.once":" pagamento único","pricing.mo":" /mês","pricing.buy":"Comprar","pricing.popular":"MAIS VENDIDO",
     "pricing.starter.name":"Starter · Celular","pricing.starter.alt":"ou US$4,99/mês",
     "pricing.starter.f1":"App Android (APK)","pricing.starter.f2":"Preço, portfólio, lucro, mercado","pricing.starter.f3":"Motor de palavras-chave grátis","pricing.starter.f4":"Sem módulos avançados de PC",

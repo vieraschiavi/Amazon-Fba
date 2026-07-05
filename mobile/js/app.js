@@ -638,6 +638,106 @@ $("#btn-demo").addEventListener("click", () => {
   irAVista("inicio");
 });
 
+// ============================ DEMO / REGISTRO (3 dias, multi-idioma) ============================
+const LS_IDIOMA = "mvfba_idioma";
+function idiomaActual() {
+  const guardado = localStorage.getItem(LS_IDIOMA);
+  if (guardado) return guardado;
+  const nav = (navigator.language || "es").slice(0, 2).toLowerCase();
+  return ["es", "en", "pt"].includes(nav) ? nav : "es";
+}
+function fijarIdioma(id) { localStorage.setItem(LS_IDIOMA, id); }
+
+function pintarBadgeDemo() {
+  const st = Licencia.estado();
+  const t = Licencia.TXT[idiomaActual()];
+  const badge = $("#demo-badge");
+  if (!badge) return;
+  if (st.licencia) {
+    badge.textContent = t.badge_licencia;
+    badge.classList.remove("oculto", "vencido");
+  } else if (st.registrado) {
+    badge.textContent = t.badge_demo.replace("{n}", st.diasRestantes);
+    badge.classList.toggle("vencido", st.diasRestantes <= 1);
+    badge.classList.remove("oculto");
+  } else {
+    badge.classList.add("oculto");
+  }
+}
+
+function pintarGateDemo() {
+  const idioma = idiomaActual();
+  $("#demo-idioma").value = idioma;
+  const t = Licencia.TXT[idioma];
+  const st = Licencia.estado();
+  $("#demo-sub").textContent = t.sub;
+  $("#demo-lbl-nombre").textContent = t.nombre;
+  $("#demo-lbl-email").textContent = t.email;
+  $("#demo-btn-empezar").textContent = t.empezar;
+  $("#demo-vencido-sub").textContent = t.vencida_sub;
+  $("#demo-lbl-email2").textContent = t.email;
+  $("#demo-lbl-clave").textContent = t.clave;
+  $("#demo-btn-activar").textContent = t.activar;
+  $("#demo-contactar").textContent = t.contactar;
+  const asunto = encodeURIComponent(`Compra de licencia ${Licencia.DOMINIO}`);
+  const cuerpo = encodeURIComponent(`Quiero comprar la licencia. Email de registro: ${st.email || ""}`);
+  $("#demo-contactar").href = `mailto:vieraschiavi@gmail.com?subject=${asunto}&body=${cuerpo}`;
+
+  if (!st.registrado) {
+    $("#demo-registro").classList.remove("oculto");
+    $("#demo-vencido").classList.add("oculto");
+  } else {
+    $("#demo-registro").classList.add("oculto");
+    $("#demo-vencido").classList.remove("oculto");
+    $("#demo-email2").value = st.email || "";
+  }
+}
+
+// Devuelve true si la demo/licencia esta vigente (y oculta el gate); si no,
+// muestra el gate (registro o reactivacion de licencia) y devuelve false.
+function evaluarDemo() {
+  const st = Licencia.estado();
+  if (st.vigente) {
+    $("#demo-gate").classList.add("oculto");
+    pintarBadgeDemo();
+    return true;
+  }
+  pintarGateDemo();
+  $("#demo-gate").classList.remove("oculto");
+  return false;
+}
+
+$("#demo-idioma").addEventListener("change", (ev) => {
+  fijarIdioma(ev.target.value);
+  pintarGateDemo();
+});
+
+$("#form-demo-registro").addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  const nombre = $("#demo-nombre").value.trim();
+  const email = $("#demo-email").value.trim();
+  const t = Licencia.TXT[idiomaActual()];
+  if (!email.includes("@")) { mostrarToast(t.falta_email); return; }
+  Licencia.registrar(nombre, email);
+  if (evaluarDemo()) {
+    if (!localStorage.getItem(LS_VISTO)) $("#bienvenida").classList.remove("oculto");
+  }
+});
+
+$("#form-demo-licencia").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const email = $("#demo-email2").value.trim();
+  const clave = $("#demo-clave").value.trim();
+  const t = Licencia.TXT[idiomaActual()];
+  const res = await Licencia.activarLicencia(email, clave);
+  if (res.ok) {
+    mostrarToast(t.clave_ok);
+    evaluarDemo();
+  } else {
+    mostrarToast(t.clave_invalida);
+  }
+});
+
 // ============================ BIENVENIDA (standalone) ============================
 $("#bienvenida-empezar").addEventListener("click", () => {
   localStorage.setItem(LS_VISTO, "1");
@@ -670,7 +770,7 @@ $("#form-contacto").addEventListener("submit", (ev) => {
   estadoConexion();
   pintarConfig();
   cargarInicio();
-  if (!localStorage.getItem(LS_VISTO)) {
+  if (evaluarDemo() && !localStorage.getItem(LS_VISTO)) {
     $("#bienvenida").classList.remove("oculto");
   }
   window.addEventListener("online", estadoConexion);
