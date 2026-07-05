@@ -7,13 +7,16 @@
 // localStorage del telefono (misma logica que core/licencia.py para el
 // programa de PC). Reinstalar la app y registrarse con otro email reinicia
 // la demo -- limitacion conocida y aceptada de un esquema sin servidor.
-// La licencia definitiva (post-pago) se valida offline con una firma HMAC
-// derivada del email -- la misma formula que en el lado de PC, asi una
-// clave emitida sirve en cualquiera de las dos puntas.
+// La licencia definitiva (post-pago) se valida CONTRA EL SERVIDOR (api/validar):
+// el secreto de firma vive solo en Vercel, nunca en el cliente, asi no se puede
+// crackear leyendo el codigo. Activar pide internet una vez; despues anda offline.
 const Licencia = (() => {
   const DOMINIO = "MV-Amazon-Fba";
   const DIAS_DEMO = 3;
-  const SECRETO = "mv-amazon-fba-2026-clave-de-firma";
+  // El secreto de la licencia NO vive en el cliente (así no se puede crackear
+  // por código): la validación se hace contra el servidor. La activación pide
+  // internet una sola vez; después la licencia queda guardada y anda offline.
+  const API_BASE = "https://amazon-fba-seven.vercel.app";
   const LS_REGISTRO = "mvfba_registro_v1";
 
   function _leer() {
@@ -47,28 +50,27 @@ const Licencia = (() => {
     return Math.max(0, DIAS_DEMO - transcurridoDias);
   }
 
-  async function _hmacSha256Hex(secreto, mensaje) {
-    const enc = new TextEncoder();
-    const key = await crypto.subtle.importKey(
-      "raw", enc.encode(secreto), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-    const firma = await crypto.subtle.sign("HMAC", key, enc.encode(mensaje));
-    return Array.from(new Uint8Array(firma)).map((b) => b.toString(16).padStart(2, "0")).join("");
-  }
-
-  async function generarClave(email) {
-    const base = (email || "").trim().toLowerCase();
-    const hex = (await _hmacSha256Hex(SECRETO, base + DOMINIO)).toUpperCase().slice(0, 16);
-    const grupos = [hex.slice(0, 4), hex.slice(4, 8), hex.slice(8, 12), hex.slice(12, 16)].join("-");
-    return `MVFBA-${grupos}`;
-  }
-
+  // Valida la licencia contra el servidor (el secreto vive solo ahí). Devuelve
+  // true/false. Si no hay internet, lanza para que la UI avise "activá con
+  // conexión" en vez de rechazar una clave legítima.
   async function validarClave(email, clave) {
-    const esperada = await generarClave(email);
-    return (clave || "").trim().toUpperCase() === esperada;
+    const resp = await fetch(API_BASE + "/api/validar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: (email || "").trim(), clave: (clave || "").trim() }),
+    });
+    if (!resp.ok) throw new Error("sin_conexion");
+    const d = await resp.json();
+    return Boolean(d && d.valido);
   }
 
   async function activarLicencia(email, clave) {
-    const ok = await validarClave(email, clave);
+    let ok;
+    try {
+      ok = await validarClave(email, clave);
+    } catch (e) {
+      return { ok: false, mensaje: "sin_conexion" };  // activar requiere internet una vez
+    }
     if (!ok) return { ok: false, mensaje: "clave_invalida" };
     let reg = _leer() || registrar("", email);
     reg = { ...reg, email: (email || "").trim(), claveLicencia: clave.trim().toUpperCase(),
@@ -112,6 +114,7 @@ const Licencia = (() => {
       vencida_sub: "Activá tu licencia para seguir usando MV Amazon FBA IA sin límites, o escribinos para comprarla.",
       clave: "Clave de licencia", activar: "Activar licencia",
       clave_invalida: "Esa clave no es válida para este email.",
+      sin_conexion: "Necesitás internet para activar la licencia la primera vez.",
       clave_ok: "Licencia activada. ¡Gracias por tu compra!",
       contactar: "✉️ Escribinos para comprar tu licencia",
       badge_licencia: "Licencia activa",
@@ -127,6 +130,7 @@ const Licencia = (() => {
       vencida_sub: "Activate your license to keep using MV Amazon FBA IA with no limits, or contact us to buy it.",
       clave: "License key", activar: "Activate license",
       clave_invalida: "That key is not valid for this email.",
+      sin_conexion: "You need internet to activate the license the first time.",
       clave_ok: "License activated. Thanks for your purchase!",
       contactar: "✉️ Contact us to buy your license",
       badge_licencia: "Active license",
@@ -142,6 +146,7 @@ const Licencia = (() => {
       vencida_sub: "Ative sua licença para continuar usando o MV Amazon FBA IA sem limites, ou fale conosco para comprá-la.",
       clave: "Chave de licença", activar: "Ativar licença",
       clave_invalida: "Essa chave não é válida para este email.",
+      sin_conexion: "Você precisa de internet para ativar a licença na primeira vez.",
       clave_ok: "Licença ativada. Obrigado pela compra!",
       contactar: "✉️ Fale conosco para comprar sua licença",
       badge_licencia: "Licença ativa",
@@ -152,7 +157,7 @@ const Licencia = (() => {
   return {
     DOMINIO, DIAS_DEMO, TXT,
     obtenerRegistro, registrar, diasRestantes,
-    generarClave, validarClave, activarLicencia,
+    validarClave, activarLicencia,
     tieneLicencia, demoVigente, estado,
   };
 })();

@@ -11,12 +11,11 @@ internet), el registro y el conteo de dias viven en la base local (SQLite en
 PC, localStorage en el telefono via su propio modulo JS equivalente). Esto
 significa que reinstalar y volver a registrarse con otro email reinicia la
 demo — es una limitacion conocida y aceptada de un esquema sin servidor.
-La licencia definitiva (post-pago) se valida offline con una firma HMAC
-derivada del email, asi el vendedor puede emitir claves sin necesitar un
-servidor de licencias.
+La licencia definitiva (post-pago) se valida CONTRA EL SERVIDOR (api/validar):
+el secreto de firma vive solo en Vercel, nunca en este cliente, asi no se puede
+crackear leyendo el codigo. Activar la licencia pide internet una sola vez;
+despues el programa sigue andando offline.
 """
-import hashlib
-import hmac
 import os
 import sys
 from datetime import datetime, timezone
@@ -29,7 +28,6 @@ from core import db  # noqa: E402
 
 DOMINIO = "MV-Amazon-Fba"
 DIAS_DEMO = 3
-_SECRETO = config.env("LICENCIA_SECRETO", "mv-amazon-fba-2026-clave-de-firma")
 
 
 def _ahora():
@@ -76,22 +74,39 @@ def dias_restantes(reg=None):
     return max(0.0, DIAS_DEMO - transcurrido_dias)
 
 
-def generar_clave(email):
-    """Clave de licencia definitiva para un email (la emite el vendedor tras
-    el pago). Determinista: el mismo email siempre da la misma clave."""
-    base = (email or "").strip().lower().encode("utf-8")
-    firma = hmac.new(_SECRETO.encode("utf-8"), base + DOMINIO.encode("utf-8"),
-                      hashlib.sha256).hexdigest().upper()[:16]
-    grupos = "-".join(firma[i:i + 4] for i in range(0, 16, 4))
-    return f"MVFBA-{grupos}"
+# La validacion de la licencia se hace CONTRA EL SERVIDOR: el secreto de firma
+# vive solo en Vercel (LICENCIA_SECRETO), nunca en este cliente de PC, asi nadie
+# puede auto-generarse una clave leyendo el codigo. Activar pide internet una vez;
+# despues la licencia queda guardada en la base local y el programa anda offline.
+_API_VALIDAR = config.env("API_VALIDAR_URL",
+                          "https://amazon-fba-seven.vercel.app/api/validar")
 
 
 def validar_clave(email, clave):
-    return (clave or "").strip().upper() == generar_clave(email)
+    """Devuelve True/False consultando al servidor. Lanza RuntimeError si no hay
+    conexion, para que la UI distinga 'sin internet' de 'clave invalida'."""
+    import json
+    import urllib.request
+    import urllib.error
+    cuerpo = json.dumps({"email": (email or "").strip(),
+                         "clave": (clave or "").strip()}).encode("utf-8")
+    req = urllib.request.Request(_API_VALIDAR, data=cuerpo, method="POST",
+                                 headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            data = json.loads(r.read().decode("utf-8"))
+        return bool(data.get("valido"))
+    except (urllib.error.URLError, OSError, ValueError) as e:
+        raise RuntimeError("sin_conexion") from e
 
 
 def activar_licencia(email, clave):
-    if not validar_clave(email, clave):
+    try:
+        ok = validar_clave(email, clave)
+    except RuntimeError:
+        return {"ok": False, "mensaje": "Necesitas internet para activar la "
+                "licencia la primera vez. Reintenta con conexion."}
+    if not ok:
         return {"ok": False, "mensaje": "Clave invalida para ese email."}
     reg = obtener() or registrar("", email)
     db.execute("UPDATE registro SET clave_licencia=?, fecha_activacion=?, email=? WHERE id=?",
