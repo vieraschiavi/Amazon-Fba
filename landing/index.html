@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MV Amazon FBA IA — Tu negocio Amazon, con IA propia</title>
+<meta name="description" content="Investigación de nicho, pricing, portafolio y asistente IA para vender en Amazon — en tu PC, tu Android y pronto iOS. Motor de keywords propio, sin pagar Helium 10 ni Jungle Scout.">
+<style>
+:root{
+  --navy-900:#0b1230; --navy-700:#101c42; --navy-500:#182a5c;
+  --accent:#b9720a; --accent-ink:#8a5407; --accent-soft:#fbeacb; --accent-on-dark:#f0ac3f;
+  --green:#4c8a17; --green-ink:#3a6b10;
+  --paper:#f4f6fb; --card:#ffffff; --ink:#0d1424; --slate:#48536b; --muted:#6d7791;
+  --line:#dfe4f0;
+  --shadow:0 1px 2px rgba(13,20,50,.05),0 18px 44px -12px rgba(13,20,50,.18);
+  --shadow-sm:0 1px 2px rgba(13,20,50,.06),0 4px 12px rgba(13,20,50,.06);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --navy-900:#080d20; --navy-700:#0d1530; --navy-500:#16224a;
+    --accent:#f0ac3f; --accent-ink:#ffcf85; --accent-soft:#3a2c12; --accent-on-dark:#f0ac3f;
+    --green:#8ed24a; --green-ink:#a6e35a;
+    --paper:#080d20; --card:#111a35; --ink:#eef1fb; --slate:#aab3cc; --muted:#8590ac;
+    --line:#232f52;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 20px 50px -14px rgba(0,0,0,.55);
+    --shadow-sm:0 1px 2px rgba(0,0,0,.35),0 6px 16px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --navy-900:#080d20; --navy-700:#0d1530; --navy-500:#16224a;
+  --accent:#f0ac3f; --accent-ink:#ffcf85; --accent-soft:#3a2c12; --accent-on-dark:#f0ac3f;
+  --green:#8ed24a; --green-ink:#a6e35a;
+  --paper:#080d20; --card:#111a35; --ink:#eef1fb; --slate:#aab3cc; --muted:#8590ac;
+  --line:#232f52;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 20px 50px -14px rgba(0,0,0,.55);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.35),0 6px 16px rgba(0,0,0,.3);
+}
+:root[data-theme="light"]{
+  --navy-900:#0b1230; --navy-700:#101c42; --navy-500:#182a5c;
+  --accent:#b9720a; --accent-ink:#8a5407; --accent-soft:#fbeacb; --accent-on-dark:#f0ac3f;
+  --green:#4c8a17; --green-ink:#3a6b10;
+  --paper:#f4f6fb; --card:#ffffff; --ink:#0d1424; --slate:#48536b; --muted:#6d7791;
+  --line:#dfe4f0;
+  --shadow:0 1px 2px rgba(13,20,50,.05),0 18px 44px -12px rgba(13,20,50,.18);
+  --shadow-sm:0 1px 2px rgba(13,20,50,.06),0 4px 12px rgba(13,20,50,.06);
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:16.5px;line-height:1.6;
+}
+.tabular{font-variant-numeric:tabular-nums}
+h1,h2,h3,.disp{font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-weight:800;letter-spacing:-.02em;text-wrap:balance}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+img,svg{max-width:100%}
+a{color:inherit}
+button{font:inherit}
+::selection{background:var(--accent);color:#0b1230}
+
+/* ---------- Nav ---------- */
+.nav{position:sticky;top:0;z-index:40;
+  background:linear-gradient(150deg,var(--navy-700),var(--navy-900));
+  border-bottom:1px solid rgba(255,255,255,.08)}
+.nav .in{display:flex;align-items:center;gap:18px;padding:14px 24px;max-width:1120px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.2px;font-size:15.5px;color:#fff}
+.brand .mk{width:32px;height:32px;border-radius:9px;flex:none;
+  background:linear-gradient(150deg,#2a4f9e,#0e1a3a);display:grid;place-items:center;
+  font-weight:800;font-size:13px;color:#fff;border:1px solid rgba(160,180,220,.35)}
+.brand .mk i{color:#8bc63f;font-style:normal}
+.navlinks{display:flex;gap:22px;margin-left:8px;font-size:14px;color:#b7c2e0}
+.navlinks a{border-bottom:2px solid transparent;padding-bottom:3px;transition:border-color .15s}
+.navlinks a:hover{border-color:var(--accent-on-dark)}
+.nav .right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.langsel{display:flex;border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:3px;gap:2px;background:rgba(255,255,255,.04)}
+.langsel button{border:0;background:transparent;padding:5px 11px;border-radius:999px;font-size:12.5px;
+  font-weight:700;color:#9fb0d8;cursor:pointer;letter-spacing:.02em}
+.langsel button.on{background:var(--accent-on-dark);color:#241705}
+.btn{display:inline-flex;align-items:center;gap:8px;border-radius:11px;padding:11px 18px;font-weight:700;
+  font-size:14.5px;cursor:pointer;border:1px solid transparent;text-decoration:none;white-space:nowrap}
+.btn-primary{background:var(--accent-on-dark);color:#241705;box-shadow:var(--shadow-sm)}
+.btn-primary:hover{background:#ffc266}
+.btn-ghost{background:transparent;border-color:var(--line);color:var(--ink)}
+.hero .btn-ghost,.cta .btn-ghost,.nav .btn-ghost{border-color:rgba(255,255,255,.32);color:#fff}
+.btn-sm{padding:8px 13px;font-size:13px;border-radius:9px}
+@media(max-width:860px){.navlinks{display:none}}
+
+/* ---------- Hero: banda oscura fija (no cambia con el tema claro/oscuro),
+   igual que el resto de la familia de landings MV. ---------- */
+.hero{padding:64px 0 56px;background:linear-gradient(165deg,var(--navy-700) 0%,var(--navy-900) 70%);
+  position:relative;overflow:hidden;color:#fff}
+.hero::before{content:"";position:absolute;inset:0;pointer-events:none;background:
+  radial-gradient(650px 320px at 88% -12%,rgba(240,172,63,.14),transparent 60%)}
+.hero .in{position:relative;display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center}
+@media(max-width:860px){.hero .in{grid-template-columns:1fr}}
+.eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--accent-on-dark);background:rgba(240,172,63,.14);
+  padding:6px 12px;border-radius:999px;margin-bottom:18px}
+.eyebrow i{width:6px;height:6px;border-radius:50%;background:var(--accent-on-dark)}
+.hero h1{font-size:47px;line-height:1.05;letter-spacing:-1.2px;margin:0 0 20px;color:#fff}
+.hero h1 em{font-style:normal;color:var(--accent-on-dark)}
+@media(max-width:860px){.hero h1{font-size:34px}}
+.hero p.sub{font-size:18px;color:#b7c2e0;margin:0 0 28px;max-width:52ch}
+.herobtns{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:26px}
+.trustrow{display:flex;gap:28px;flex-wrap:wrap}
+.trustrow span{display:flex;flex-direction:column;gap:2px}
+.trustrow b{font-size:22px;font-weight:800;color:#fff;letter-spacing:-.3px}
+.trustrow em{font-style:normal;font-size:12px;color:#8ea0cc}
+
+/* mock cockpit card: mas clara que el fondo del hero para que se despegue */
+.mock{background:linear-gradient(160deg,var(--navy-500),var(--navy-700));border-radius:22px;padding:22px;
+  box-shadow:0 30px 60px -20px rgba(0,0,0,.5),0 1px 0 rgba(255,255,255,.06) inset;
+  border:1px solid rgba(255,255,255,.1);position:relative;overflow:hidden}
+.mock::before{content:"";position:absolute;inset:0;background:
+  radial-gradient(500px 200px at 90% -10%,rgba(240,172,63,.16),transparent 60%);pointer-events:none}
+.mock .bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.mock .bar .dot{width:9px;height:9px;border-radius:50%;background:#ff6159;box-shadow:16px 0 0 #ffbd2e,32px 0 0 #28c840}
+.mock .bar .lbl{font-size:11.5px;color:#9fb0d8;letter-spacing:.04em}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.mk-kpi{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px 13px}
+.mk-kpi .l{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:#8ea0cc}
+.mk-kpi .v{font-size:20px;font-weight:800;color:#fff;margin-top:2px}
+.mk-kpi .v.g{color:#a6e35a}
+.mk-row{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:9px 12px;font-size:12.5px;color:#c7d2ee;margin-top:8px}
+.mk-row b{color:#fff}
+.mk-badge{font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;background:rgba(120,189,47,.18);color:#a6e35a}
+
+/* ---------- generic sections ---------- */
+section{padding:76px 0}
+.klabel{font-size:12.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.h2{font-size:32px;letter-spacing:-.6px;margin:0 0 14px;max-width:22ch}
+.sublede{color:var(--slate);font-size:16.5px;max-width:60ch;margin:0 0 40px}
+.demo-banner{display:inline-flex;align-items:center;gap:8px;background:var(--accent-soft);color:var(--accent-ink);
+  font-size:13.5px;font-weight:700;padding:9px 16px;border-radius:999px;margin:-20px 0 30px;
+  text-decoration:none;cursor:pointer;transition:transform .15s}
+.demo-banner:hover{transform:translateY(-1px)}
+/* ---------- video / tour player ---------- */
+#video{background:linear-gradient(180deg,var(--navy-900),var(--navy-700));color:#fff}
+#video .klabel{color:var(--accent-on-dark)}
+#video .h2{color:#fff}
+#video .sublede{color:#b9c4e0}
+.player{max-width:960px;margin:0 auto}
+.stage{position:relative;aspect-ratio:16/9;border-radius:16px;overflow:hidden;
+  background:#0a1020;box-shadow:0 30px 70px -30px rgba(0,0,0,.7);border:1px solid rgba(255,255,255,.08)}
+.scene{position:absolute;inset:0;opacity:0;transition:opacity .6s ease;display:flex;
+  align-items:center;justify-content:center;background:#0a1020}
+.scene.on{opacity:1}
+.scene img{width:100%;height:100%;object-fit:cover;object-position:top center}
+.scene[data-scene="multiplataforma"]{background:radial-gradient(120% 90% at 50% 0%,var(--navy-700),var(--navy-900))}
+.scene[data-scene="multiplataforma"] img{object-fit:contain;width:auto;max-width:46%;padding:14px 0}
+.slide{flex-direction:column;text-align:center;padding:8%;gap:14px;
+  background:radial-gradient(120% 90% at 50% 0%,var(--navy-700),var(--navy-900))}
+.slide .mk{display:inline-flex;width:64px;height:64px;border-radius:16px;align-items:center;
+  justify-content:center;font-weight:800;font-size:30px;background:var(--navy-500);
+  color:#fff;border:1px solid rgba(255,255,255,.16);margin:0 auto}
+.slide .mk i{color:var(--green);font-style:normal}
+.slide h3{font-size:clamp(20px,3.4vw,34px);font-weight:800;letter-spacing:-.02em;margin:0;color:#fff}
+.slide p{color:#c6d0ea;font-size:clamp(13px,1.8vw,17px);margin:0;max-width:34ch}
+.slide .pill2{display:inline-flex;gap:7px;align-items:center;background:var(--accent-on-dark);
+  color:#241705;font-weight:800;font-size:13px;padding:8px 15px;border-radius:999px}
+.vcap{position:absolute;left:0;right:0;bottom:0;padding:44px 20px 16px;font-size:clamp(13px,1.9vw,17px);
+  font-weight:600;line-height:1.4;color:#fff;text-align:center;
+  background:linear-gradient(0deg,rgba(5,10,25,.92),rgba(5,10,25,0))}
+.vover{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(5,10,25,.45);cursor:pointer;transition:opacity .3s}
+.vover.hide{opacity:0;pointer-events:none}
+.vplay{width:74px;height:74px;border-radius:50%;border:0;background:var(--accent-on-dark);
+  color:#241705;font-size:26px;cursor:pointer;box-shadow:0 12px 30px -8px rgba(0,0,0,.6);
+  display:flex;align-items:center;justify-content:center;padding-left:5px}
+.vprogwrap{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.14)}
+.vprog{height:100%;width:0;background:var(--accent-on-dark);transition:width .2s linear}
+.vctrls{display:flex;align-items:center;gap:14px;margin-top:14px;color:#b9c4e0;font-size:13px}
+.vctrls button{background:var(--accent-on-dark);color:#241705;border:0;border-radius:9px;
+  padding:9px 16px;font-weight:800;font-size:13.5px;cursor:pointer}
+.vhint{margin-left:auto;font-size:12px;color:#8ea0cc}
+@media(max-width:640px){.vhint{display:none}}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media(max-width:900px){.g3,.g4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){.g2,.g3,.g4{grid-template-columns:1fr}}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:var(--shadow-sm)}
+.feat .ic{width:40px;height:40px;border-radius:11px;background:var(--accent-soft);color:var(--accent-ink);
+  display:grid;place-items:center;margin-bottom:14px;font-size:18px}
+.feat h3{font-size:16.5px;margin:0 0 6px;font-family:inherit;font-weight:700}
+.feat p{font-size:14px;color:var(--slate);margin:0}
+
+.section-alt{background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+
+/* problem/solution strip */
+.vs{display:grid;grid-template-columns:1fr auto 1fr;gap:24px;align-items:center}
+@media(max-width:760px){.vs{grid-template-columns:1fr}}
+.vs .side{padding:22px}
+.vs .side.bad{opacity:.8}
+.vs .price-old{font-size:34px;font-weight:800;color:var(--muted);text-decoration:line-through;text-decoration-color:var(--accent)}
+.vs .price-new{font-size:34px;font-weight:800;color:var(--green-ink)}
+.vs .vsdiv{font-size:12px;font-weight:800;color:var(--muted);text-align:center;letter-spacing:.1em}
+.vs ul{margin:12px 0 0;padding-left:0;list-style:none;font-size:14px;color:var(--slate);display:flex;flex-direction:column;gap:8px}
+.vs li{display:flex;gap:8px}
+.vs .bad li::before{content:"✕";color:#c0392b;flex:none}
+.vs .good li::before{content:"✓";color:var(--green-ink);font-weight:800;flex:none}
+
+/* pricing */
+.price-card{display:flex;flex-direction:column;gap:14px;position:relative}
+.price-card.hot{border-color:var(--accent);box-shadow:0 0 0 1.5px var(--accent),var(--shadow)}
+.price-card .tag{position:absolute;top:-11px;right:16px;background:var(--accent);color:#fff;font-size:11px;
+  font-weight:800;padding:4px 10px;border-radius:999px;letter-spacing:.02em}
+.price-card .pname{font-size:12.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.price-card .pamt{font-size:33px;font-weight:800;letter-spacing:-.8px}
+.price-card .pamt small{font-size:14px;font-weight:600;color:var(--muted)}
+.price-card ul{margin:4px 0 0;padding:0;list-style:none;font-size:13.8px;color:var(--slate);display:flex;flex-direction:column;gap:8px;flex:1}
+.price-card li{display:flex;gap:9px;align-items:flex-start}
+.price-card li::before{content:"";flex:none;width:16px;height:16px;margin-top:2.5px;border-radius:5px;background:var(--green);opacity:.24}
+.price-card li.off{color:var(--muted)}
+.price-card li.off::before{background:var(--muted);opacity:.18}
+
+/* payments */
+.pay-row{display:flex;flex-wrap:wrap;gap:12px;margin:22px 0 6px}
+.pay-chip{display:flex;align-items:center;gap:9px;border:1px solid var(--line);background:var(--card);
+  border-radius:11px;padding:10px 15px;font-size:13.5px;font-weight:700}
+.pay-chip .sw{width:20px;height:20px;border-radius:6px;flex:none}
+.flow{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.flow .st{flex:1 1 160px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.flow .st .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.flow .st b{display:block;margin-top:3px;font-size:14.5px}
+.flow .st span{font-size:12.5px;color:var(--slate)}
+.flow .ar{align-self:center;color:var(--green-ink);font-weight:800;padding:0 2px}
+
+/* platforms table */
+.plattable{width:100%;border-collapse:collapse;font-size:14px}
+.plattable th,.plattable td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--line)}
+.plattable thead th{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.plattable tbody tr:last-child td{border-bottom:none}
+.pill{display:inline-block;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px}
+.pill.g{color:var(--green-ink);background:color-mix(in srgb,var(--green) 16%,transparent)}
+.pill.w{color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.pill.b{color:#c0392b;background:color-mix(in srgb,#c0392b 14%,transparent)}
+.scrollx{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+
+/* faq */
+.faq details{border-bottom:1px solid var(--line);padding:16px 0}
+.faq summary{cursor:pointer;font-weight:700;font-size:15.5px;list-style:none;display:flex;justify-content:space-between;gap:12px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";color:var(--accent);font-size:20px;font-weight:400}
+.faq details[open] summary::after{content:"–"}
+.faq p{color:var(--slate);font-size:14.5px;margin:10px 0 0;max-width:70ch}
+
+/* final CTA */
+.cta{background:linear-gradient(150deg,var(--navy-700),var(--navy-900));border-radius:24px;padding:56px 40px;
+  text-align:center;color:#fff;position:relative;overflow:hidden}
+.cta::before{content:"";position:absolute;inset:0;background:radial-gradient(600px 260px at 50% -20%,rgba(120,189,47,.22),transparent 65%)}
+.cta h2{color:#fff;font-size:30px;margin-bottom:10px}
+.cta p{color:#b7c2e6;font-size:15.5px;margin:0 0 26px}
+.cta .herobtns{justify-content:center}
+
+footer{border-top:1px solid var(--line);padding:40px 0 60px;color:var(--muted);font-size:13px}
+footer .fgrid{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap}
+footer .col b{color:var(--ink);display:block;margin-bottom:8px;font-size:13px}
+footer .col a{display:block;color:var(--muted);text-decoration:none;margin-bottom:6px}
+footer .col a:hover{color:var(--accent)}
+footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);font-size:12px}
+
+[data-i18n-hide]{display:none}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="in">
+    <div class="brand"><span class="mk">M<i>V</i></span> MV Amazon FBA IA</div>
+    <div class="navlinks">
+      <a href="#video" data-t="nav.video">Video</a>
+      <a href="#producto" data-t="nav.product">Producto</a>
+      <a href="#precios" data-t="nav.pricing">Precios</a>
+      <a href="#plataformas" data-t="nav.platforms">Plataformas</a>
+      <a href="#faq" data-t="nav.faq">Preguntas</a>
+      <a href="#contacto" data-t="nav.contact">Contacto</a>
+    </div>
+    <div class="right">
+      <div class="langsel" id="langsel"></div>
+      <a class="btn btn-ghost btn-sm" href="/app/" target="_blank" rel="noopener" data-t="nav.demo">Probar demo</a>
+      <a class="btn btn-primary btn-sm" href="#precios" data-t="nav.cta">Comprar</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap in">
+    <div>
+      <div class="eyebrow"><i></i><span data-t="hero.eyebrow">Motor de keywords propio · sin pagar Helium 10</span></div>
+      <h1 data-t="hero.h1">Vendé en Amazon con <em>tu propia IA</em>, no con su factura mensual</h1>
+      <p class="sub" data-t="hero.sub">Investigación de nicho, pricing, portafolio, proyección de caja y asistente IA — en tu PC y en tu Android, en el idioma que necesites. Sin depender de Helium 10 ni Jungle Scout.</p>
+      <div class="herobtns">
+        <a class="btn btn-primary" href="#precios" data-t="hero.ctaPrimary">Ver precios y comprar</a>
+        <a class="btn btn-ghost" href="/app/" target="_blank" rel="noopener" data-t="hero.ctaGhost">Probar demo gratis (3 días)</a>
+      </div>
+      <div class="trustrow">
+        <span data-t="hero.trust1"><b>10</b><em>marketplaces de keywords</em></span>
+        <span data-t="hero.trust2"><b>3</b><em>plataformas: PC · Android · iOS</em></span>
+        <span data-t="hero.trust3"><b>US$0</b><em>de costo en APIs (motor propio)</em></span>
+      </div>
+    </div>
+    <div class="mock" aria-hidden="true">
+      <div class="bar"><span class="dot"></span><span class="lbl">MV Amazon FBA IA — Resumen ejecutivo</span></div>
+      <div class="mgrid">
+        <div class="mk-kpi"><div class="l">Sueldo meseta</div><div class="v g tabular">US$2.101</div></div>
+        <div class="mk-kpi"><div class="l">Margen</div><div class="v tabular">37,0%</div></div>
+        <div class="mk-kpi"><div class="l">ROI</div><div class="v tabular">196,4%</div></div>
+        <div class="mk-kpi"><div class="l">Productos</div><div class="v tabular">3</div></div>
+      </div>
+      <div class="mk-row"><span>Set utensilios bambú</span><b class="tabular">$18,99</b><span class="mk-badge">VERDE</span></div>
+      <div class="mk-row"><span>Organizador de escritorio</span><b class="tabular">$27,99</b><span class="mk-badge">VERDE</span></div>
+      <div class="mk-row"><span>Botella térmica 750ml</span><b class="tabular">$34,99</b><span class="mk-badge" style="background:rgba(224,171,63,.18);color:#e0ab3f">AMARILLO</span></div>
+    </div>
+  </div>
+</header>
+
+<section id="video">
+  <div class="wrap">
+    <div class="klabel" data-t="video.label">En acción</div>
+    <h2 class="h2" data-t="video.h2">Mirá el programa funcionando, de punta a punta</h2>
+    <p class="sublede" data-t="video.sub">Un recorrido narrado por todo el sistema. El audio sigue el idioma que elijas arriba.</p>
+    <div class="player">
+      <div class="stage" id="vstage">
+        <div class="scene slide" data-scene="intro">
+          <span class="mk">M<i>V</i></span>
+          <h3>MV Amazon FBA IA</h3>
+          <p data-t="video.cap.intro"></p>
+        </div>
+        <div class="scene" data-scene="keywords"><img src="media/escena-investigacion.jpg" alt="" loading="lazy"></div>
+        <div class="scene" data-scene="pricing"><img src="media/escena-pricing.jpg" alt="" loading="lazy"></div>
+        <div class="scene" data-scene="portafolio"><img src="media/escena-portafolio.jpg" alt="" loading="lazy"></div>
+        <div class="scene" data-scene="ganancias"><img src="media/escena-ganancias.jpg" alt="" loading="lazy"></div>
+        <div class="scene" data-scene="mercado"><img src="media/escena-mercado.jpg" alt="" loading="lazy"></div>
+        <div class="scene" data-scene="asistente"><img src="media/escena-asistente.jpg" alt="" loading="lazy"></div>
+        <div class="scene" data-scene="multiplataforma"><img src="media/escena-plataformas.jpg" alt="" loading="lazy"></div>
+        <div class="scene slide" data-scene="cierre">
+          <span class="pill2" data-t="video.slidePill">🎁 3 días gratis</span>
+          <h3 data-t="video.slideCierre">Tu negocio en Amazon, bajo control</h3>
+          <p data-t="video.cap.cierre"></p>
+        </div>
+        <div class="vcap" id="vcap"></div>
+        <div class="vprogwrap"><div class="vprog" id="vprog"></div></div>
+        <div class="vover" id="vover"><button class="vplay" id="vplay" aria-label="Play">▶</button></div>
+      </div>
+      <div class="vctrls">
+        <button id="vtoggle" data-t="video.play">▶ Reproducir</button>
+        <span id="vtime">0:00</span>
+        <span class="vhint" data-t="video.hint">Voz neutra/latina · sin costo de datos</span>
+      </div>
+    </div>
+  </div>
+  <audio id="vaudio" preload="none"></audio>
+</section>
+
+<section id="producto" class="section-alt">
+  <div class="wrap">
+    <div class="klabel" data-t="feat.label">El producto</div>
+    <h2 class="h2" data-t="feat.h2">Todo lo que necesitás para decidir qué vender, y cuánto vas a ganar</h2>
+    <p class="sublede" data-t="feat.sub">Un solo lugar, sin duplicar suscripciones ni pegar datos entre planillas.</p>
+    <div class="g4">
+      <div class="card feat"><div class="ic">🔎</div><h3 data-t="feat.f1.h">Motor de keywords propio</h3><p data-t="feat.f1.p">Autocompletado real de Amazon en 10 marketplaces — sin pagar API de terceros.</p></div>
+      <div class="card feat"><div class="ic">💰</div><h3 data-t="feat.f2.h">¿Cuánto podés ganar?</h3><p data-t="feat.f2.p">Simulador de inversión → ganancia neta, desglose completo de costos y ROI.</p></div>
+      <div class="card feat"><div class="ic">📦</div><h3 data-t="feat.f3.h">Portafolio multi-producto</h3><p data-t="feat.f3.p">Cargá tus productos una vez; precio, margen y caja se calculan solos.</p></div>
+      <div class="card feat"><div class="ic">🤖</div><h3 data-t="feat.f4.h">Asistente IA</h3><p data-t="feat.f4.p">Preguntale por tu negocio. Con tu clave o la nuestra, según tu plan.</p></div>
+      <div class="card feat"><div class="ic">🌎</div><h3 data-t="feat.f5.h">Multi-idioma real</h3><p data-t="feat.f5.p">Traducción de keywords y plataforma en varios idiomas — vendé en cualquier país.</p></div>
+      <div class="card feat"><div class="ic">💵</div><h3 data-t="feat.f6.h">Proyección de caja</h3><p data-t="feat.f6.p">Lead time, DD+7, devoluciones y techo de demanda — sabés cuándo cobrás.</p></div>
+      <div class="card feat"><div class="ic">🖥️</div><h3 data-t="feat.f7.h">PC + Android</h3><p data-t="feat.f7.p">App de escritorio nativa y app Android autocontenida — funciona sin internet.</p></div>
+      <div class="card feat"><div class="ic">🔐</div><h3 data-t="feat.f8.h">Tus datos, tu claves</h3><p data-t="feat.f8.p">Guardado seguro y local. Vos elegís si usar tus APIs o las nuestras.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="klabel" data-t="vs.label">La diferencia</div>
+    <h2 class="h2" data-t="vs.h2">Dejá de pagar US$49–99 por mes por herramientas que no necesitás enteras</h2>
+    <div class="card vs">
+      <div class="side bad">
+        <div class="klabel" style="color:var(--muted)" data-t="vs.badLabel">Helium 10 / Jungle Scout</div>
+        <div class="price-old tabular">US$49–99<span style="font-size:15px">/mes</span></div>
+        <ul class="bad">
+          <li data-t="vs.bad1">Suscripción recurrente de por vida</li>
+          <li data-t="vs.bad2">Pagás módulos que no usás</li>
+          <li data-t="vs.bad3">Sin app nativa de escritorio</li>
+        </ul>
+      </div>
+      <div class="vsdiv">VS</div>
+      <div class="side good">
+        <div class="klabel" data-t="vs.goodLabel">MV Amazon FBA IA</div>
+        <div class="price-new tabular">US$129<span style="font-size:15px" data-t="vs.once"> pago único</span></div>
+        <ul class="good">
+          <li data-t="vs.good1">Motor de keywords propio incluido</li>
+          <li data-t="vs.good2">PC + Android, todo desbloqueado</li>
+          <li data-t="vs.good3">IA con tu clave o la nuestra, a elección</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="precios" class="section-alt">
+  <div class="wrap">
+    <div class="klabel" data-t="pricing.label">Precios</div>
+    <h2 class="h2" data-t="pricing.h2">Elegí tu plan</h2>
+    <p class="sublede" data-t="pricing.sub">Pago único o mensual. Descargás la versión que compraste apenas se confirma el pago.</p>
+    <a class="demo-banner" href="/app/" target="_blank" rel="noopener" data-t="pricing.demoBanner">🎁 Demo completa gratis por 3 días — todas las funciones activas, sin tarjeta</a>
+    <div class="g3">
+      <div class="card price-card">
+        <div class="pname" data-t="pricing.starter.name">Starter · Celular</div>
+        <div class="pamt tabular">US$29<small data-t="pricing.once"> pago único</small></div>
+        <div class="klabel" style="margin:-6px 0 0;font-size:12px" data-t="pricing.starter.alt">o US$4,99/mes</div>
+        <ul>
+          <li data-t="pricing.starter.f1">App Android (APK)</li>
+          <li data-t="pricing.starter.f2">Pricing, portafolio, ganancias, mercado</li>
+          <li data-t="pricing.starter.f3">Motor de keywords gratis</li>
+          <li class="off" data-t="pricing.starter.f4">Sin módulos avanzados de PC</li>
+        </ul>
+        <a class="btn btn-ghost" href="#pagos" data-t="pricing.buy">Comprar</a>
+      </div>
+      <div class="card price-card hot">
+        <div class="tag" data-t="pricing.popular">MÁS VENDIDO</div>
+        <div class="pname" data-t="pricing.pro.name">Pro · PC (BYOK)</div>
+        <div class="pamt tabular">US$129<small data-t="pricing.once"> pago único</small></div>
+        <div class="klabel" style="margin:-6px 0 0;font-size:12px" data-t="pricing.pro.alt">o US$14,99/mes</div>
+        <ul>
+          <li data-t="pricing.pro.f1">App de escritorio completa + APK</li>
+          <li data-t="pricing.pro.f2">Todos los módulos desbloqueados</li>
+          <li data-t="pricing.pro.f3">Multi-idioma / 10 marketplaces</li>
+          <li data-t="pricing.pro.f4">IA con tu propia clave</li>
+        </ul>
+        <a class="btn btn-primary" href="#pagos" data-t="pricing.buy">Comprar</a>
+      </div>
+      <div class="card price-card">
+        <div class="pname" data-t="pricing.ia.name">Pro IA · todo incluido</div>
+        <div class="pamt tabular">US$34<small data-t="pricing.mo"> /mes</small></div>
+        <div class="klabel" style="margin:-6px 0 0;font-size:12px" data-t="pricing.ia.alt">IA embebida con créditos</div>
+        <ul>
+          <li data-t="pricing.ia.f1">Todo lo del plan Pro</li>
+          <li data-t="pricing.ia.f2">Asistente IA incluido (con tope justo)</li>
+          <li data-t="pricing.ia.f3">Sin configurar ninguna clave</li>
+          <li data-t="pricing.ia.f4">Soporte prioritario</li>
+        </ul>
+        <a class="btn btn-ghost" href="#pagos" data-t="pricing.buy">Comprar</a>
+      </div>
+    </div>
+
+    <div class="card" id="pagos" style="margin-top:26px;scroll-margin-top:90px">
+      <div class="klabel" data-t="pay.label">Medios de pago</div>
+      <p style="color:var(--slate);font-size:14.5px;margin:0" data-t="pay.sub">Elegí como pagar. La descarga con tu licencia se habilita apenas se confirma el pago.</p>
+      <div class="pay-row">
+        <div class="pay-chip"><span class="sw" style="background:#00b1ea"></span>MercadoPago</div>
+        <div class="pay-chip"><span class="sw" style="background:#635bff"></span><span data-t="pay.card">Tarjeta de crédito/débito</span></div>
+        <div class="pay-chip"><span class="sw" style="background:#0070ba"></span>PayPal</div>
+        <div class="pay-chip"><span class="sw" style="background:#152a63"></span><span data-t="pay.wire">Transferencia bancaria</span></div>
+      </div>
+      <div class="flow">
+        <div class="st"><div class="k" data-t="pay.step1k">Paso 1</div><b data-t="pay.step1b">Elegís tu plan</b><span data-t="pay.step1s">Y el medio de pago</span></div>
+        <div class="ar">→</div>
+        <div class="st"><div class="k" data-t="pay.step2k">Paso 2</div><b data-t="pay.step2b">Pagás seguro</b><span data-t="pay.step2s">MercadoPago, tarjeta o transferencia</span></div>
+        <div class="ar">→</div>
+        <div class="st"><div class="k" data-t="pay.step3k">Paso 3</div><b data-t="pay.step3b">Recibís la licencia</b><span data-t="pay.step3s">Por email, al instante</span></div>
+        <div class="ar">→</div>
+        <div class="st"><div class="k" data-t="pay.step4k">Paso 4</div><b data-t="pay.step4b">Descargás tu versión</b><span data-t="pay.step4s">PC, Android o ambas</span></div>
+      </div>
+      <p class="sublede" style="margin:16px 0 0;font-size:12.5px" data-t="pay.note">Pagos internacionales procesados por nuestro partner de cobros; transferencias y MercadoPago liquidan directo. Precios en USD, se muestran impuestos si corresponden en tu país.</p>
+    </div>
+  </div>
+</section>
+
+<section id="plataformas">
+  <div class="wrap">
+    <div class="klabel" data-t="plat.label">Plataformas</div>
+    <h2 class="h2" data-t="plat.h2">Una licencia, el dispositivo que necesites</h2>
+    <p class="sublede" data-t="plat.sub">El celular hace menos que la PC — por eso cuesta menos.</p>
+    <div class="scrollx">
+      <table class="plattable">
+        <thead><tr><th data-t="plat.col0">Capacidad</th><th data-t="plat.col1">PC (Windows)</th><th data-t="plat.col2">Android</th><th data-t="plat.col3">iOS</th></tr></thead>
+        <tbody>
+          <tr><td data-t="plat.r1">Pricing · Portafolio · Ganancias</td><td><span class="pill g">✓</span></td><td><span class="pill g">✓</span></td><td><span class="pill w" data-t="plat.soon">Próximamente</span></td></tr>
+          <tr><td data-t="plat.r2">Keywords multi-idioma</td><td><span class="pill g">✓</span></td><td><span class="pill g">✓</span></td><td><span class="pill w" data-t="plat.soon">Próximamente</span></td></tr>
+          <tr><td data-t="plat.r3">Caja avanzada · Inversores · Plan</td><td><span class="pill g">✓</span></td><td><span class="pill w" data-t="plat.reduced">Reducido</span></td><td><span class="pill w" data-t="plat.soon">Próximamente</span></td></tr>
+          <tr><td data-t="plat.r4">Funciona sin internet</td><td><span class="pill g">✓</span></td><td><span class="pill g">✓</span></td><td><span class="pill w" data-t="plat.soon">Próximamente</span></td></tr>
+          <tr><td data-t="plat.r5">Precio</td><td class="tabular">US$129</td><td class="tabular">US$29</td><td class="tabular">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="faq" class="section-alt">
+  <div class="wrap" style="max-width:820px">
+    <div class="klabel" data-t="faq.label">Preguntas frecuentes</div>
+    <h2 class="h2" data-t="faq.h2">Todo lo que necesitás saber</h2>
+    <div class="faq">
+      <details open>
+        <summary data-t="faq.q1">¿Necesito pagar Keepa o Helium 10 aparte?</summary>
+        <p data-t="faq.a1">No. El motor propio te da keywords reales gratis. Keepa/Helium son opcionales para quien quiera datos extra de demanda — la app funciona completa sin ellos.</p>
+      </details>
+      <details>
+        <summary data-t="faq.q2">¿Qué pasa si no quiero pagar por la IA cada mes?</summary>
+        <p data-t="faq.a2">Elegís el plan Pro (pago único) y usás tu propia clave de IA gratis o de pago — vos controlás ese costo. La IA incluida es un plan aparte, opcional.</p>
+      </details>
+      <details>
+        <summary data-t="faq.q3">¿Cómo descargo el software después de pagar?</summary>
+        <p data-t="faq.a3">Al confirmarse el pago te llega un email con el link de descarga y tu clave de licencia para esa versión (PC y/o Android, según tu plan).</p>
+      </details>
+      <details>
+        <summary data-t="faq.q4">¿Hay versión para uso propio, sin restricciones?</summary>
+        <p data-t="faq.a4">Sí — la licencia Pro desbloquea todos los módulos para tu propio negocio, sin límites de productos ni de uso del motor propio.</p>
+      </details>
+      <details>
+        <summary data-t="faq.q5">¿En qué países funciona el pago?</summary>
+        <p data-t="faq.a5">Tarjeta y PayPal funcionan en cualquier país; MercadoPago cubre LatAm con tarjetas locales y cuotas; transferencia bancaria para pagos grandes.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section id="contacto" class="section-alt">
+  <div class="wrap" style="max-width:640px">
+    <div class="klabel" data-t="contact.label">Contacto</div>
+    <h2 class="h2" data-t="contact.h2">¿Tenés una pregunta?</h2>
+    <p class="sublede" data-t="contact.sub">Escribinos y se abre tu correo con todo completado.</p>
+    <form class="card" id="form-contacto" style="display:flex;flex-direction:column;gap:14px">
+      <div class="g2">
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700">
+          <span data-t="contact.subjectLbl">Asunto</span>
+          <input type="text" id="ct-asunto" placeholder="Ej: Consulta sobre licencia Pro"
+                 style="padding:11px 13px;border:1px solid var(--line);border-radius:10px;font-size:14.5px;background:var(--paper);color:var(--ink)">
+        </label>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700">
+          <span data-t="contact.contactLbl">Tu teléfono o email</span>
+          <input type="text" id="ct-contacto" placeholder="+598 99 123 456"
+                 style="padding:11px 13px;border:1px solid var(--line);border-radius:10px;font-size:14.5px;background:var(--paper);color:var(--ink)">
+        </label>
+      </div>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700">
+        <span data-t="contact.questionLbl">Tu pregunta</span>
+        <textarea id="ct-pregunta" rows="4" placeholder="Contanos en qué te podemos ayudar..."
+                  style="padding:11px 13px;border:1px solid var(--line);border-radius:10px;font-size:14.5px;
+                         background:var(--paper);color:var(--ink);font-family:inherit;resize:vertical"></textarea>
+      </label>
+      <button type="submit" class="btn btn-primary" style="align-self:flex-start" data-t="contact.send">Enviar consulta</button>
+    </form>
+    <p class="sublede" style="margin-top:14px;font-size:13px" data-t="contact.note">También podés escribir directo a <b>vieraschiavi@gmail.com</b>.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="cta">
+      <h2 data-t="ctaEnd.h2">Empezá a vender mejor en Amazon, hoy</h2>
+      <p data-t="ctaEnd.p">Pago único o mensual. Descarga inmediata al confirmarse el pago.</p>
+      <div class="herobtns"><a class="btn btn-primary" href="#precios" data-t="ctaEnd.btn">Ver planes</a></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="fgrid">
+      <div class="col" style="max-width:280px">
+        <b>MV Amazon FBA IA</b>
+        <span style="color:var(--muted);font-size:13px" data-t="foot.tag">Cockpit de inteligencia para vender en Amazon, con tu propia IA.</span>
+      </div>
+      <div class="col">
+        <b data-t="foot.h1">Producto</b>
+        <a href="#producto" data-t="foot.l1">Funciones</a>
+        <a href="#precios" data-t="foot.l2">Precios</a>
+        <a href="#plataformas" data-t="foot.l3">Plataformas</a>
+      </div>
+      <div class="col">
+        <b data-t="foot.h2">Soporte</b>
+        <a href="#faq" data-t="foot.l4">Preguntas frecuentes</a>
+        <a href="mailto:soporte@mvfbaia.com" data-t="foot.l5">Contacto</a>
+      </div>
+      <div class="col">
+        <b data-t="foot.h3">Pagos</b>
+        <span style="color:var(--muted);font-size:13px" data-t="foot.l6">MercadoPago · Tarjeta · Transferencia · PayPal</span>
+      </div>
+    </div>
+    <div class="legal" data-t="foot.legal">MV Amazon FBA IA es una herramienta independiente de gestión y análisis para vendedores de Amazon. No está afiliada a Amazon.com, Inc. Los precios están sujetos a cambio. Las cifras de ejemplo son ilustrativas.</div>
+  </div>
+</footer>
+
+<script>
+const I18N = {
+  es: {
+    "nav.product":"Producto","nav.pricing":"Precios","nav.platforms":"Plataformas","nav.faq":"Preguntas","nav.contact":"Contacto","nav.cta":"Comprar","nav.demo":"Probar demo",
+    "nav.video":"Video","video.label":"En acción","video.h2":"Mirá el programa funcionando, de punta a punta","video.sub":"Un recorrido narrado por todo el sistema. El audio sigue el idioma que elijas arriba.","video.play":"▶ Reproducir","video.pause":"⏸ Pausar","video.replay":"↻ Ver de nuevo","video.hint":"Voz neutra/latina · sin costo de datos","video.slidePill":"🎁 3 días gratis","video.slideCierre":"Tu negocio en Amazon, bajo control","video.cap.intro":"Tenés el capital y las ganas de vender en Amazon. Lo que falta es un sistema que te diga qué vender, a qué precio, y cuánto vas a ganar. Eso es MV Amazon FBA IA.","video.cap.keywords":"Investigá nichos con nuestro motor propio: keywords reales de Amazon en diez mercados, sin pagar Helium 10 ni Jungle Scout.","video.cap.pricing":"Cargá tu costo real y el sistema calcula el precio, el margen y el retorno, con un semáforo que te dice al toque si el producto conviene.","video.cap.portafolio":"Todos tus productos en un tablero: tu sueldo estable proyectado, el capital en juego y qué producto tira del resto.","video.cap.ganancias":"Poné cuánto invertís y mirá el desglose completo: unidades, ingreso, costos y ganancia real, sin sorpresas.","video.cap.mercado":"Evaluá cualquier producto: competencia, demanda y una probabilidad de éxito honesta, para no jugarte la plata a ciegas.","video.cap.asistente":"Y un asistente con inteligencia artificial que responde sobre tus números, tu portafolio y tu estrategia, cuando lo necesites.","video.cap.multiplataforma":"Todo en tu PC y en tu celular, Android o iPhone. Funciona sin internet y tus datos quedan en tu dispositivo.","video.cap.cierre":"Probalo gratis tres días, con todas las funciones. Sin factura mensual. MV Amazon FBA IA: tu negocio en Amazon, bajo control.",
+
+    "hero.eyebrow":"Motor de keywords propio · sin pagar Helium 10",
+    "hero.h1":'Vendé en Amazon con <em>tu propia IA</em>, no con su factura mensual',
+    "hero.sub":"Investigación de nicho, pricing, portafolio, proyección de caja y asistente IA — en tu PC y en tu Android, en el idioma que necesites. Sin depender de Helium 10 ni Jungle Scout.",
+    "hero.ctaPrimary":"Ver precios y comprar","hero.ctaGhost":"Probar demo gratis (3 días)",
+    "hero.trust1":"<b>10</b><em>marketplaces de keywords</em>","hero.trust2":"<b>3</b><em>plataformas: PC · Android · iOS</em>","hero.trust3":"<b>US$0</b><em>de costo en APIs (motor propio)</em>",
+    "feat.label":"El producto","feat.h2":"Todo lo que necesitás para decidir qué vender, y cuánto vas a ganar",
+    "feat.sub":"Un solo lugar, sin duplicar suscripciones ni pegar datos entre planillas.",
+    "feat.f1.h":"Motor de keywords propio","feat.f1.p":"Autocompletado real de Amazon en 10 marketplaces — sin pagar API de terceros.",
+    "feat.f2.h":"¿Cuánto podés ganar?","feat.f2.p":"Simulador de inversión → ganancia neta, desglose completo de costos y ROI.",
+    "feat.f3.h":"Portafolio multi-producto","feat.f3.p":"Cargá tus productos una vez; precio, margen y caja se calculan solos.",
+    "feat.f4.h":"Asistente IA","feat.f4.p":"Preguntale por tu negocio. Con tu clave o la nuestra, según tu plan.",
+    "feat.f5.h":"Multi-idioma real","feat.f5.p":"Traducción de keywords y plataforma en varios idiomas — vendé en cualquier país.",
+    "feat.f6.h":"Proyección de caja","feat.f6.p":"Lead time, DD+7, devoluciones y techo de demanda — sabés cuándo cobrás.",
+    "feat.f7.h":"PC + Android","feat.f7.p":"App de escritorio nativa y app Android autocontenida — funciona sin internet.",
+    "feat.f8.h":"Tus datos, tus claves","feat.f8.p":"Guardado seguro y local. Vos elegís si usar tus APIs o las nuestras.",
+    "vs.label":"La diferencia","vs.h2":"Dejá de pagar US$49–99 por mes por herramientas que no necesitás enteras",
+    "vs.badLabel":"Helium 10 / Jungle Scout","vs.goodLabel":"MV Amazon FBA IA","vs.once":" pago único",
+    "vs.bad1":"Suscripción recurrente de por vida","vs.bad2":"Pagás módulos que no usás","vs.bad3":"Sin app nativa de escritorio",
+    "vs.good1":"Motor de keywords propio incluido","vs.good2":"PC + Android, todo desbloqueado","vs.good3":"IA con tu clave o la nuestra, a elección",
+    "pricing.label":"Precios","pricing.h2":"Elegí tu plan","pricing.sub":"Pago único o mensual. Descargás la versión que compraste apenas se confirma el pago.",
+    "pricing.demoBanner":"🎁 Demo completa gratis por 3 días — todas las funciones activas, sin tarjeta",
+    "pricing.once":" pago único","pricing.mo":" /mes","pricing.buy":"Comprar","pricing.popular":"MÁS VENDIDO",
+    "pricing.starter.name":"Starter · Celular","pricing.starter.alt":"o US$4,99/mes",
+    "pricing.starter.f1":"App Android (APK)","pricing.starter.f2":"Pricing, portafolio, ganancias, mercado","pricing.starter.f3":"Motor de keywords gratis","pricing.starter.f4":"Sin módulos avanzados de PC",
+    "pricing.pro.name":"Pro · PC (BYOK)","pricing.pro.alt":"o US$14,99/mes",
+    "pricing.pro.f1":"App de escritorio completa + APK","pricing.pro.f2":"Todos los módulos desbloqueados","pricing.pro.f3":"Multi-idioma / 10 marketplaces","pricing.pro.f4":"IA con tu propia clave",
+    "pricing.ia.name":"Pro IA · todo incluido","pricing.ia.alt":"IA embebida con créditos",
+    "pricing.ia.f1":"Todo lo del plan Pro","pricing.ia.f2":"Asistente IA incluido (con tope justo)","pricing.ia.f3":"Sin configurar ninguna clave","pricing.ia.f4":"Soporte prioritario",
+    "pay.label":"Medios de pago","pay.sub":"Elegí como pagar. La descarga con tu licencia se habilita apenas se confirma el pago.",
+    "pay.card":"Tarjeta de crédito/débito","pay.wire":"Transferencia bancaria",
+    "pay.step1k":"Paso 1","pay.step1b":"Elegís tu plan","pay.step1s":"Y el medio de pago",
+    "pay.step2k":"Paso 2","pay.step2b":"Pagás seguro","pay.step2s":"MercadoPago, tarjeta o transferencia",
+    "pay.step3k":"Paso 3","pay.step3b":"Recibís la licencia","pay.step3s":"Por email, al instante",
+    "pay.step4k":"Paso 4","pay.step4b":"Descargás tu versión","pay.step4s":"PC, Android o ambas",
+    "pay.note":"Pagos internacionales procesados por nuestro partner de cobros; transferencias y MercadoPago liquidan directo. Precios en USD, se muestran impuestos si corresponden en tu país.",
+    "plat.label":"Plataformas","plat.h2":"Una licencia, el dispositivo que necesites","plat.sub":"El celular hace menos que la PC — por eso cuesta menos.",
+    "plat.col0":"Capacidad","plat.col1":"PC (Windows)","plat.col2":"Android","plat.col3":"iOS",
+    "plat.r1":"Pricing · Portafolio · Ganancias","plat.r2":"Keywords multi-idioma","plat.r3":"Caja avanzada · Inversores · Plan","plat.r4":"Funciona sin internet","plat.r5":"Precio",
+    "plat.soon":"Próximamente","plat.reduced":"Reducido",
+    "faq.label":"Preguntas frecuentes","faq.h2":"Todo lo que necesitás saber",
+    "faq.q1":"¿Necesito pagar Keepa o Helium 10 aparte?","faq.a1":"No. El motor propio te da keywords reales gratis. Keepa/Helium son opcionales para quien quiera datos extra de demanda — la app funciona completa sin ellos.",
+    "faq.q2":"¿Qué pasa si no quiero pagar por la IA cada mes?","faq.a2":"Elegís el plan Pro (pago único) y usás tu propia clave de IA gratis o de pago — vos controlás ese costo. La IA incluida es un plan aparte, opcional.",
+    "faq.q3":"¿Cómo descargo el software después de pagar?","faq.a3":"Al confirmarse el pago te llega un email con el link de descarga y tu clave de licencia para esa versión (PC y/o Android, según tu plan).",
+    "faq.q4":"¿Hay versión para uso propio, sin restricciones?","faq.a4":"Sí — la licencia Pro desbloquea todos los módulos para tu propio negocio, sin límites de productos ni de uso del motor propio.",
+    "faq.q5":"¿En qué países funciona el pago?","faq.a5":"Tarjeta y PayPal funcionan en cualquier país; MercadoPago cubre LatAm con tarjetas locales y cuotas; transferencia bancaria para pagos grandes.",
+    "ctaEnd.h2":"Empezá a vender mejor en Amazon, hoy","ctaEnd.p":"Pago único o mensual. Descarga inmediata al confirmarse el pago.","ctaEnd.btn":"Ver planes",
+    "foot.tag":"Cockpit de inteligencia para vender en Amazon, con tu propia IA.",
+    "foot.h1":"Producto","foot.l1":"Funciones","foot.l2":"Precios","foot.l3":"Plataformas",
+    "foot.h2":"Soporte","foot.l4":"Preguntas frecuentes","foot.l5":"Contacto",
+    "foot.h3":"Pagos","foot.l6":"MercadoPago · Tarjeta · Transferencia · PayPal",
+    "foot.legal":"MV Amazon FBA IA es una herramienta independiente de gestión y análisis para vendedores de Amazon. No está afiliada a Amazon.com, Inc. Los precios están sujetos a cambio. Las cifras de ejemplo son ilustrativas.",
+    "contact.label":"Contacto","contact.h2":"¿Tenés una pregunta?","contact.sub":"Escribinos y se abre tu correo con todo completado.",
+    "contact.subjectLbl":"Asunto","contact.contactLbl":"Tu teléfono o email","contact.questionLbl":"Tu pregunta","contact.send":"Enviar consulta",
+    "contact.note":"También podés escribir directo a <b>vieraschiavi@gmail.com</b>.",
+    "contact.defaultSubject":"Consulta desde la landing MV Amazon FBA IA",
+    "contact.noContact":"(no indicado)","contact.bodyContactLine":"Contacto de quien consulta"
+  },
+  en: {
+    "nav.product":"Product","nav.pricing":"Pricing","nav.platforms":"Platforms","nav.faq":"FAQ","nav.contact":"Contact","nav.cta":"Buy now","nav.demo":"Try demo",
+    "nav.video":"Video","video.label":"In action","video.h2":"See the program working, end to end","video.sub":"A narrated tour of the whole system. The audio follows the language you pick above.","video.play":"▶ Play","video.pause":"⏸ Pause","video.replay":"↻ Watch again","video.hint":"Neutral/Latin voice · no data cost","video.slidePill":"🎁 3 days free","video.slideCierre":"Your Amazon business, under control","video.cap.intro":"You've got the capital and the drive to sell on Amazon. What's missing is a system that tells you what to sell, at what price, and how much you'll make. That's MV Amazon FBA IA.","video.cap.keywords":"Research niches with our own engine: real Amazon keywords across ten marketplaces, without paying for Helium 10 or Jungle Scout.","video.cap.pricing":"Enter your real cost and the system computes price, margin and return, with a traffic light that tells you instantly if the product is worth it.","video.cap.portafolio":"All your products on one board: your projected steady salary, the capital at play, and which product carries the rest.","video.cap.ganancias":"Enter how much you invest and see the full breakdown: units, revenue, costs and real profit, with no surprises.","video.cap.mercado":"Evaluate any product: competition, demand and an honest success probability, so you don't bet your money blindly.","video.cap.asistente":"And an AI assistant that answers about your numbers, your portfolio and your strategy, whenever you need it.","video.cap.multiplataforma":"Everything on your PC and your phone, Android or iPhone. It works offline and your data stays on your device.","video.cap.cierre":"Try it free for three days, with every feature. No monthly bill. MV Amazon FBA IA: your Amazon business, under control.",
+
+    "hero.eyebrow":"Own keyword engine · no Helium 10 bill",
+    "hero.h1":'Sell on Amazon with <em>your own AI</em>, not their monthly invoice',
+    "hero.sub":"Niche research, pricing, portfolio, cash-flow projection and an AI assistant — on your PC and your Android, in the language you need. No dependency on Helium 10 or Jungle Scout.",
+    "hero.ctaPrimary":"See pricing & buy","hero.ctaGhost":"Try free demo (3 days)",
+    "hero.trust1":"<b>10</b><em>keyword marketplaces</em>","hero.trust2":"<b>3</b><em>platforms: PC · Android · iOS</em>","hero.trust3":"<b>US$0</b><em>API cost (own engine)</em>",
+    "feat.label":"The product","feat.h2":"Everything you need to decide what to sell, and how much you'll make",
+    "feat.sub":"One place — no duplicate subscriptions, no copy-pasting between spreadsheets.",
+    "feat.f1.h":"Own keyword engine","feat.f1.p":"Real Amazon autocomplete across 10 marketplaces — no third-party API fees.",
+    "feat.f2.h":"How much could you make?","feat.f2.p":"Investment simulator → net profit, full cost breakdown and ROI.",
+    "feat.f3.h":"Multi-product portfolio","feat.f3.p":"Load your products once; price, margin and cash flow calculate themselves.",
+    "feat.f4.h":"AI assistant","feat.f4.p":"Ask it about your business. Bring your own key or use ours, depending on your plan.",
+    "feat.f5.h":"Real multi-language","feat.f5.p":"Keyword translation and a multi-language platform — sell in any country.",
+    "feat.f6.h":"Cash-flow projection","feat.f6.p":"Lead time, DD+7, returns and demand ceiling — know exactly when you get paid.",
+    "feat.f7.h":"PC + Android","feat.f7.p":"Native desktop app and a self-contained Android app — works offline.",
+    "feat.f8.h":"Your data, your keys","feat.f8.p":"Saved securely and locally. You choose whether to use your own APIs or ours.",
+    "vs.label":"The difference","vs.h2":"Stop paying US$49–99 a month for tools you don't need in full",
+    "vs.badLabel":"Helium 10 / Jungle Scout","vs.goodLabel":"MV Amazon FBA IA","vs.once":" one-time",
+    "vs.bad1":"Recurring subscription forever","vs.bad2":"You pay for modules you don't use","vs.bad3":"No native desktop app",
+    "vs.good1":"Own keyword engine included","vs.good2":"PC + Android, fully unlocked","vs.good3":"AI with your key or ours, your choice",
+    "pricing.label":"Pricing","pricing.h2":"Choose your plan","pricing.sub":"One-time or monthly. Download the version you bought as soon as payment is confirmed.",
+    "pricing.demoBanner":"🎁 Full 3-day free demo — every feature unlocked, no card required",
+    "pricing.once":" one-time","pricing.mo":" /mo","pricing.buy":"Buy now","pricing.popular":"MOST POPULAR",
+    "pricing.starter.name":"Starter · Mobile","pricing.starter.alt":"or US$4.99/mo",
+    "pricing.starter.f1":"Android app (APK)","pricing.starter.f2":"Pricing, portfolio, profit, market research","pricing.starter.f3":"Free keyword engine","pricing.starter.f4":"No advanced desktop modules",
+    "pricing.pro.name":"Pro · Desktop (BYOK)","pricing.pro.alt":"or US$14.99/mo",
+    "pricing.pro.f1":"Full desktop app + APK","pricing.pro.f2":"Every module unlocked","pricing.pro.f3":"Multi-language / 10 marketplaces","pricing.pro.f4":"AI with your own key",
+    "pricing.ia.name":"Pro AI · all-inclusive","pricing.ia.alt":"Embedded AI with credits",
+    "pricing.ia.f1":"Everything in Pro","pricing.ia.f2":"AI assistant included (fair monthly cap)","pricing.ia.f3":"No keys to configure","pricing.ia.f4":"Priority support",
+    "pay.label":"Payment methods","pay.sub":"Choose how to pay. Your download and license unlock as soon as payment is confirmed.",
+    "pay.card":"Credit/debit card","pay.wire":"Bank transfer",
+    "pay.step1k":"Step 1","pay.step1b":"Pick your plan","pay.step1s":"And payment method",
+    "pay.step2k":"Step 2","pay.step2b":"Pay securely","pay.step2s":"MercadoPago, card or transfer",
+    "pay.step3k":"Step 3","pay.step3b":"Get your license","pay.step3s":"By email, instantly",
+    "pay.step4k":"Step 4","pay.step4b":"Download your version","pay.step4s":"PC, Android or both",
+    "pay.note":"International payments processed by our payments partner; wire transfers and MercadoPago settle directly. Prices in USD; taxes shown where applicable in your country.",
+    "plat.label":"Platforms","plat.h2":"One license, whichever device you need","plat.sub":"The phone does less than the PC — that's why it costs less.",
+    "plat.col0":"Capability","plat.col1":"PC (Windows)","plat.col2":"Android","plat.col3":"iOS",
+    "plat.r1":"Pricing · Portfolio · Profit","plat.r2":"Multi-language keywords","plat.r3":"Advanced cash flow · Investors · Plan","plat.r4":"Works offline","plat.r5":"Price",
+    "plat.soon":"Coming soon","plat.reduced":"Reduced",
+    "faq.label":"FAQ","faq.h2":"Everything you need to know",
+    "faq.q1":"Do I need to pay for Keepa or Helium 10 separately?","faq.a1":"No. The own engine gives you real keywords for free. Keepa/Helium are optional for extra demand data — the app works in full without them.",
+    "faq.q2":"What if I don't want to pay for AI every month?","faq.a2":"Choose the Pro plan (one-time) and use your own AI key, free or paid — you control that cost. Embedded AI is a separate, optional plan.",
+    "faq.q3":"How do I download the software after paying?","faq.a3":"Once payment is confirmed, you get an email with the download link and your license key for that version (PC and/or Android, per your plan).",
+    "faq.q4":"Is there an unrestricted version for my own use?","faq.a4":"Yes — the Pro license unlocks every module for your own business, with no limits on products or on the own engine's usage.",
+    "faq.q5":"Which countries can pay?","faq.a5":"Card and PayPal work worldwide; MercadoPago covers LatAm with local cards and installments; bank transfer for larger orders.",
+    "ctaEnd.h2":"Start selling smarter on Amazon, today","ctaEnd.p":"One-time or monthly. Instant download once payment is confirmed.","ctaEnd.btn":"See plans",
+    "foot.tag":"An intelligence cockpit for selling on Amazon, with your own AI.",
+    "foot.h1":"Product","foot.l1":"Features","foot.l2":"Pricing","foot.l3":"Platforms",
+    "foot.h2":"Support","foot.l4":"FAQ","foot.l5":"Contact",
+    "foot.h3":"Payments","foot.l6":"MercadoPago · Card · Bank transfer · PayPal",
+    "foot.legal":"MV Amazon FBA IA is an independent management and analytics tool for Amazon sellers. Not affiliated with Amazon.com, Inc. Prices subject to change. Sample figures are illustrative.",
+    "contact.label":"Contact","contact.h2":"Got a question?","contact.sub":"Send us a message — your email client opens pre-filled.",
+    "contact.subjectLbl":"Subject","contact.contactLbl":"Your phone or email","contact.questionLbl":"Your question","contact.send":"Send message",
+    "contact.note":"You can also write directly to <b>vieraschiavi@gmail.com</b>.",
+    "contact.defaultSubject":"Inquiry from the MV Amazon FBA IA landing page",
+    "contact.noContact":"(not provided)","contact.bodyContactLine":"Contact info of the requester"
+  },
+  pt: {
+    "nav.product":"Produto","nav.pricing":"Preços","nav.platforms":"Plataformas","nav.faq":"Perguntas","nav.contact":"Contato","nav.cta":"Comprar","nav.demo":"Testar demo",
+    "nav.video":"Vídeo","video.label":"Em ação","video.h2":"Veja o programa funcionando, de ponta a ponta","video.sub":"Um tour narrado por todo o sistema. O áudio segue o idioma que você escolher acima.","video.play":"▶ Reproduzir","video.pause":"⏸ Pausar","video.replay":"↻ Ver de novo","video.hint":"Voz neutra/latina · sem custo de dados","video.slidePill":"🎁 3 dias grátis","video.slideCierre":"Seu negócio na Amazon, sob controle","video.cap.intro":"Você tem o capital e a vontade de vender na Amazon. Falta um sistema que diga o que vender, a que preço, e quanto você vai ganhar. Isso é o MV Amazon FBA IA.","video.cap.keywords":"Pesquise nichos com o nosso motor próprio: palavras-chave reais da Amazon em dez mercados, sem pagar Helium 10 ou Jungle Scout.","video.cap.pricing":"Coloque seu custo real e o sistema calcula o preço, a margem e o retorno, com um semáforo que diz na hora se o produto vale a pena.","video.cap.portafolio":"Todos os seus produtos em um painel: seu salário estável projetado, o capital em jogo e qual produto puxa o resto.","video.cap.ganancias":"Informe quanto investe e veja o detalhamento completo: unidades, receita, custos e lucro real, sem surpresas.","video.cap.mercado":"Avalie qualquer produto: concorrência, demanda e uma probabilidade de sucesso honesta, para não apostar seu dinheiro às cegas.","video.cap.asistente":"E um assistente com inteligência artificial que responde sobre seus números, seu portfólio e sua estratégia, quando você precisar.","video.cap.multiplataforma":"Tudo no seu PC e no seu celular, Android ou iPhone. Funciona sem internet e seus dados ficam no seu dispositivo.","video.cap.cierre":"Experimente grátis por três dias, com todas as funções. Sem fatura mensal. MV Amazon FBA IA: seu negócio na Amazon, sob controle.",
+
+    "hero.eyebrow":"Motor de palavras-chave próprio · sem pagar Helium 10",
+    "hero.h1":'Venda na Amazon com <em>sua própria IA</em>, não com a fatura mensal deles',
+    "hero.sub":"Pesquisa de nicho, precificação, portfólio, projeção de caixa e assistente de IA — no seu PC e no seu Android, no idioma que precisar. Sem depender de Helium 10 ou Jungle Scout.",
+    "hero.ctaPrimary":"Ver preços e comprar","hero.ctaGhost":"Testar demo grátis (3 dias)",
+    "hero.trust1":"<b>10</b><em>marketplaces de palavras-chave</em>","hero.trust2":"<b>3</b><em>plataformas: PC · Android · iOS</em>","hero.trust3":"<b>US$0</b><em>de custo em APIs (motor próprio)</em>",
+    "feat.label":"O produto","feat.h2":"Tudo que você precisa para decidir o que vender e quanto vai ganhar",
+    "feat.sub":"Um só lugar, sem duplicar assinaturas nem colar dados entre planilhas.",
+    "feat.f1.h":"Motor de palavras-chave próprio","feat.f1.p":"Autocompletar real da Amazon em 10 marketplaces — sem pagar API de terceiros.",
+    "feat.f2.h":"Quanto você pode ganhar?","feat.f2.p":"Simulador de investimento → lucro líquido, detalhamento completo de custos e ROI.",
+    "feat.f3.h":"Portfólio multi-produto","feat.f3.p":"Cadastre seus produtos uma vez; preço, margem e caixa se calculam sozinhos.",
+    "feat.f4.h":"Assistente de IA","feat.f4.p":"Pergunte sobre o seu negócio. Com sua chave ou a nossa, conforme seu plano.",
+    "feat.f5.h":"Multi-idioma de verdade","feat.f5.p":"Tradução de palavras-chave e plataforma em vários idiomas — venda em qualquer país.",
+    "feat.f6.h":"Projeção de caixa","feat.f6.p":"Lead time, DD+7, devoluções e teto de demanda — você sabe quando recebe.",
+    "feat.f7.h":"PC + Android","feat.f7.p":"App de desktop nativo e app Android autocontido — funciona sem internet.",
+    "feat.f8.h":"Seus dados, suas chaves","feat.f8.p":"Salvo com segurança e localmente. Você escolhe usar suas APIs ou as nossas.",
+    "vs.label":"A diferença","vs.h2":"Pare de pagar US$49–99 por mês por ferramentas que você não usa por inteiro",
+    "vs.badLabel":"Helium 10 / Jungle Scout","vs.goodLabel":"MV Amazon FBA IA","vs.once":" pagamento único",
+    "vs.bad1":"Assinatura recorrente para sempre","vs.bad2":"Você paga por módulos que não usa","vs.bad3":"Sem app de desktop nativo",
+    "vs.good1":"Motor de palavras-chave próprio incluído","vs.good2":"PC + Android, tudo desbloqueado","vs.good3":"IA com sua chave ou a nossa, à escolha",
+    "pricing.label":"Preços","pricing.h2":"Escolha seu plano","pricing.sub":"Pagamento único ou mensal. Baixe a versão comprada assim que o pagamento for confirmado.",
+    "pricing.demoBanner":"🎁 Demo completo grátis por 3 dias — todas as funções ativas, sem cartão",
+    "pricing.once":" pagamento único","pricing.mo":" /mês","pricing.buy":"Comprar","pricing.popular":"MAIS VENDIDO",
+    "pricing.starter.name":"Starter · Celular","pricing.starter.alt":"ou US$4,99/mês",
+    "pricing.starter.f1":"App Android (APK)","pricing.starter.f2":"Preço, portfólio, lucro, mercado","pricing.starter.f3":"Motor de palavras-chave grátis","pricing.starter.f4":"Sem módulos avançados de PC",
+    "pricing.pro.name":"Pro · PC (BYOK)","pricing.pro.alt":"ou US$14,99/mês",
+    "pricing.pro.f1":"App de desktop completo + APK","pricing.pro.f2":"Todos os módulos desbloqueados","pricing.pro.f3":"Multi-idioma / 10 marketplaces","pricing.pro.f4":"IA com sua própria chave",
+    "pricing.ia.name":"Pro IA · tudo incluído","pricing.ia.alt":"IA embutida com créditos",
+    "pricing.ia.f1":"Tudo do plano Pro","pricing.ia.f2":"Assistente de IA incluído (com limite justo)","pricing.ia.f3":"Sem configurar nenhuma chave","pricing.ia.f4":"Suporte prioritário",
+    "pay.label":"Formas de pagamento","pay.sub":"Escolha como pagar. O download com sua licença libera assim que o pagamento é confirmado.",
+    "pay.card":"Cartão de crédito/débito","pay.wire":"Transferência bancária",
+    "pay.step1k":"Passo 1","pay.step1b":"Escolha seu plano","pay.step1s":"E a forma de pagamento",
+    "pay.step2k":"Passo 2","pay.step2b":"Pague com segurança","pay.step2s":"MercadoPago, cartão ou transferência",
+    "pay.step3k":"Passo 3","pay.step3b":"Receba a licença","pay.step3s":"Por email, na hora",
+    "pay.step4k":"Passo 4","pay.step4b":"Baixe sua versão","pay.step4s":"PC, Android ou ambos",
+    "pay.note":"Pagamentos internacionais processados pelo nosso parceiro de pagamentos; transferências e MercadoPago liquidam direto. Preços em USD; impostos exibidos quando aplicável no seu país.",
+    "plat.label":"Plataformas","plat.h2":"Uma licença, o dispositivo que precisar","plat.sub":"O celular faz menos que o PC — por isso custa menos.",
+    "plat.col0":"Capacidade","plat.col1":"PC (Windows)","plat.col2":"Android","plat.col3":"iOS",
+    "plat.r1":"Preço · Portfólio · Lucro","plat.r2":"Palavras-chave multi-idioma","plat.r3":"Caixa avançado · Investidores · Plano","plat.r4":"Funciona sem internet","plat.r5":"Preço",
+    "plat.soon":"Em breve","plat.reduced":"Reduzido",
+    "faq.label":"Perguntas frequentes","faq.h2":"Tudo que você precisa saber",
+    "faq.q1":"Preciso pagar Keepa ou Helium 10 à parte?","faq.a1":"Não. O motor próprio te dá palavras-chave reais de graça. Keepa/Helium são opcionais para quem quiser dados extras de demanda — o app funciona completo sem eles.",
+    "faq.q2":"E se eu não quiser pagar pela IA todo mês?","faq.a2":"Escolha o plano Pro (pagamento único) e use sua própria chave de IA, grátis ou paga — você controla esse custo. A IA incluída é um plano separado, opcional.",
+    "faq.q3":"Como faço o download do software depois de pagar?","faq.a3":"Assim que o pagamento é confirmado, você recebe um email com o link de download e sua chave de licença para essa versão (PC e/ou Android, conforme seu plano).",
+    "faq.q4":"Existe versão para uso próprio, sem restrições?","faq.a4":"Sim — a licença Pro desbloqueia todos os módulos para o seu próprio negócio, sem limite de produtos nem de uso do motor próprio.",
+    "faq.q5":"Em quais países o pagamento funciona?","faq.a5":"Cartão e PayPal funcionam em qualquer país; MercadoPago cobre a LatAm com cartões locais e parcelamento; transferência bancária para pedidos maiores.",
+    "ctaEnd.h2":"Comece a vender melhor na Amazon, hoje","ctaEnd.p":"Pagamento único ou mensal. Download imediato após confirmação do pagamento.","ctaEnd.btn":"Ver planos",
+    "foot.tag":"Um cockpit de inteligência para vender na Amazon, com sua própria IA.",
+    "foot.h1":"Produto","foot.l1":"Funcionalidades","foot.l2":"Preços","foot.l3":"Plataformas",
+    "foot.h2":"Suporte","foot.l4":"Perguntas frequentes","foot.l5":"Contato",
+    "foot.h3":"Pagamentos","foot.l6":"MercadoPago · Cartão · Transferência · PayPal",
+    "foot.legal":"MV Amazon FBA IA é uma ferramenta independente de gestão e análise para vendedores da Amazon. Não afiliada à Amazon.com, Inc. Preços sujeitos a alteração. Números de exemplo são ilustrativos.",
+    "contact.label":"Contato","contact.h2":"Tem uma pergunta?","contact.sub":"Escreva para nós e seu email abre preenchido.",
+    "contact.subjectLbl":"Assunto","contact.contactLbl":"Seu telefone ou email","contact.questionLbl":"Sua pergunta","contact.send":"Enviar mensagem",
+    "contact.note":"Você também pode escrever direto para <b>vieraschiavi@gmail.com</b>.",
+    "contact.defaultSubject":"Consulta da landing MV Amazon FBA IA",
+    "contact.noContact":"(não informado)","contact.bodyContactLine":"Contato de quem consulta"
+  }
+};
+const LANGS = [["es","ES"],["en","EN"],["pt","PT"]];
+function applyLang(lang){
+  const dict = I18N[lang] || I18N.es;
+  document.documentElement.setAttribute("lang", lang);
+  document.querySelectorAll("[data-t]").forEach(el=>{
+    const key = el.getAttribute("data-t");
+    if (dict[key] != null) el.innerHTML = dict[key];
+  });
+  document.querySelectorAll("#langsel button").forEach(b=>b.classList.toggle("on", b.dataset.lang===lang));
+  try{ localStorage.setItem("mvfba_lang", lang); }catch(e){}
+  if (window.videoOnLang) window.videoOnLang(lang);
+}
+const sel = document.getElementById("langsel");
+LANGS.forEach(([code,label])=>{
+  const b = document.createElement("button");
+  b.textContent = label; b.dataset.lang = code;
+  b.addEventListener("click", ()=>applyLang(code));
+  sel.appendChild(b);
+});
+let start = "es";
+try{
+  const saved = localStorage.getItem("mvfba_lang");
+  if (saved && I18N[saved]) start = saved;
+  else {
+    const nav = (navigator.language||"es").slice(0,2);
+    if (I18N[nav]) start = nav;
+  }
+}catch(e){}
+applyLang(start);
+
+const CONTACT_EMAIL = "vieraschiavi@gmail.com";
+const formContacto = document.getElementById("form-contacto");
+if (formContacto) {
+  formContacto.addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const pregunta = document.getElementById("ct-pregunta").value.trim();
+    if (!pregunta) { document.getElementById("ct-pregunta").focus(); return; }
+    const dict = I18N[document.documentElement.lang] || I18N.es;
+    const asunto = document.getElementById("ct-asunto").value.trim() || dict["contact.defaultSubject"];
+    const contacto = document.getElementById("ct-contacto").value.trim() || dict["contact.noContact"];
+    const cuerpo = `${pregunta}\n\n${dict["contact.bodyContactLine"]}: ${contacto}`;
+    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+  });
+}
+
+/* ---------- Reproductor del tour (multi-idioma, audio sigue el idioma) ---------- */
+(function(){
+  const AUDIO = { es:"media/narracion-es.mp3", en:"media/narracion-en.mp3", pt:"media/narracion-pt.mp3" };
+  const STARTS = {
+    es:[0,8.59,14.7,21.39,27.26,33.42,39.63,46.3,51.97],
+    en:[0,10.27,18.3,26.91,33.95,41.68,49.1,55.93,63.29],
+    pt:[0,9.55,17.25,25.18,32.16,39.45,47.02,55.06,62.22]
+  };
+  const ORDER = ["intro","keywords","pricing","portafolio","ganancias","mercado","asistente","multiplataforma","cierre"];
+  const audio = document.getElementById("vaudio");
+  const stage = document.getElementById("vstage");
+  const scenes = ORDER.map(id=>stage.querySelector(`.scene[data-scene="${id}"]`));
+  const cap = document.getElementById("vcap");
+  const prog = document.getElementById("vprog");
+  const over = document.getElementById("vover");
+  const toggle = document.getElementById("vtoggle");
+  const timeEl = document.getElementById("vtime");
+  let curLang = document.documentElement.lang || "es";
+  let idx = -1;
+
+  function fmt(t){ t=Math.max(0,t|0); return Math.floor(t/60)+":"+String(t%60).padStart(2,"0"); }
+  function dict(){ return I18N[curLang] || I18N.es; }
+  function showScene(i){
+    if(i===idx) return;
+    idx=i;
+    scenes.forEach((s,k)=>s.classList.toggle("on", k===i));
+    const d=dict();
+    cap.textContent = d["video.cap."+ORDER[i]] || "";
+  }
+  function starts(){ return STARTS[curLang] || STARTS.es; }
+  function sceneAt(t){
+    const s=starts(); let i=0;
+    for(let k=0;k<s.length;k++){ if(t>=s[k]-0.15) i=k; }
+    return i;
+  }
+  function setLangSrc(){
+    audio.src = AUDIO[curLang] || AUDIO.es;
+  }
+  function reset(){
+    audio.pause(); audio.removeAttribute("src"); audio.load();
+    idx=-1; showScene(0); prog.style.width="0%"; timeEl.textContent="0:00";
+    over.classList.remove("hide"); toggle.textContent = dict()["video.play"];
+  }
+  function play(){
+    if(!audio.src) setLangSrc();
+    audio.play().then(()=>{
+      over.classList.add("hide");
+      toggle.textContent = dict()["video.pause"] || "⏸";
+    }).catch(()=>{});
+  }
+  function pause(){ audio.pause(); toggle.textContent = dict()["video.play"]; }
+
+  audio.addEventListener("timeupdate", ()=>{
+    showScene(sceneAt(audio.currentTime));
+    const dur = audio.duration || 1;
+    prog.style.width = Math.min(100,(audio.currentTime/dur)*100)+"%";
+    timeEl.textContent = fmt(audio.currentTime);
+  });
+  audio.addEventListener("ended", ()=>{
+    over.classList.remove("hide");
+    toggle.textContent = dict()["video.replay"] || dict()["video.play"];
+    prog.style.width="100%";
+  });
+  over.addEventListener("click", play);
+  document.getElementById("vplay").addEventListener("click",(e)=>{e.stopPropagation();play();});
+  toggle.addEventListener("click", ()=>{ if(audio.paused) play(); else pause(); });
+
+  // el idioma cambió: reiniciar el tour en el nuevo idioma
+  window.videoOnLang = function(lang){
+    if(!(lang in AUDIO)) return;
+    const wasPlaying = audio.src && !audio.paused;
+    curLang = lang;
+    reset();
+    setLangSrc();
+    if(wasPlaying) play();
+  };
+  reset();
+})();
+</script>
+
+</body>
+</html>

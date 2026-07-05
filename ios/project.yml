@@ -1,0 +1,56 @@
+# project.yml — especificacion XcodeGen del proyecto iOS de MV Amazon FBA IA.
+#
+# Por que XcodeGen: el .xcodeproj (project.pbxproj) es un formato binario/XML
+# fragil y enorme para escribir a mano o versionar bien en git. XcodeGen genera
+# el .xcodeproj DETERMINISTICAMENTE a partir de este YAML legible, igual que
+# build.gradle genera el proyecto Android. Se corre `xcodegen generate` antes
+# de abrir o compilar (ver README + CI).
+name: MVAmazonFBAIA
+options:
+  bundleIdPrefix: com.mvtrade
+  deploymentTarget:
+    iOS: "15.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    MARKETING_VERSION: "1.1.5"
+    CURRENT_PROJECT_VERSION: "7"
+    SWIFT_VERSION: "5.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+    TARGETED_DEVICE_FAMILY: "1,2"   # iPhone + iPad
+
+targets:
+  MVAmazonFBAIA:
+    type: application
+    platform: iOS
+    sources:
+      - path: MVAmazonFBAIA
+        excludes:
+          - "Info.plist"
+      # La UI web (mobile/) es la unica fuente de verdad: se empaqueta como
+      # carpeta de recursos "www" dentro del bundle de la app, igual que
+      # syncWebAssets en Android. Nunca se edita a mano aca.
+      - path: ../mobile
+        name: www
+        type: folder
+        buildPhase: resources
+        excludes:
+          - "README.md"
+    info:
+      path: MVAmazonFBAIA/Info.plist
+      properties:
+        CFBundleDisplayName: "MV Amazon FBA IA"
+        UILaunchScreen:
+          UIColorName: AccentColor
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mvtrade.fbaia
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        ENABLE_PREVIEWS: YES
+        # Sin firma: los builds locales/CI de simulador no la necesitan. Para
+        # dispositivo real o TestFlight, configurar el equipo de firma en Xcode
+        # (requiere cuenta Apple Developer) — ver ios/README.md.
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""

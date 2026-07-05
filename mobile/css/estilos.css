@@ -133,10 +133,11 @@ a { color: inherit; }
                    <input> hace que la columna crezca mas alla de su 1fr */
 }
 .grid-form label.col-2 { grid-column: span 2; }
-.formulario input[type="text"], .formulario input[type="number"], .formulario input[type="url"] {
+.formulario input[type="text"], .formulario input[type="number"], .formulario input[type="url"],
+.formulario textarea {
   width: 100%; min-width: 0;
   padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px;
-  background: var(--surface); color: var(--ink);
+  background: var(--surface); color: var(--ink); font-family: inherit; resize: vertical;
 }
 .campo-toggle { display: flex; gap: 16px; font-size: 13px; color: var(--ink); font-weight: 500; }
 .campo-toggle label, .campo-check { display: flex; flex-direction: row; align-items: center; gap: 6px; }
@@ -249,6 +250,22 @@ a { color: inherit; }
   background: none; border: 0; color: var(--muted); font-size: 12.5px;
   margin-top: 16px; text-decoration: underline;
 }
+
+/* ---- Demo/registro (3 dias) ---- */
+.demo-idioma-sel {
+  align-self: flex-end; margin: 0 0 10px; padding: 6px 10px; border-radius: 9px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+  font-size: 12.5px; font-weight: 600;
+}
+#demo-gate .bienvenida-card { display: flex; flex-direction: column; }
+#demo-gate .formulario { text-align: left; }
+#demo-registro.oculto, #demo-vencido.oculto { display: none; }
+.demo-badge {
+  font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px;
+  background: var(--green-soft, #dcfce7); color: var(--green-ink); margin-right: 8px;
+}
+.demo-badge.vencido { background: #fee2e2; color: #991b1b; }
+.demo-badge.oculto { display: none; }
 
 /* Tablet / desktop: contenedor centrado, no se estira el bottom nav */
 @media (min-width: 640px) {

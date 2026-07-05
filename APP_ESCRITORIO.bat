@@ -41,6 +41,10 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
+rem En Python muy nuevo (3.13/3.14), altair viejo revienta los graficos
+rem ("TypedDict ... closed"). Si importar altair falla, lo actualizamos.
+"!PYTHON!" -c "import altair" >nul 2>&1
+if errorlevel 1 "!PYTHON!" -m pip install --user -U typing_extensions "altair>=5.5.0" >nul 2>&1
 "!PYTHON!" core\db.py >nul 2>&1
 
 rem pythonw = sin ventana de consola. La app abre en su ventana nativa y este

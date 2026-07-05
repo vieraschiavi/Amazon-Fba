@@ -48,6 +48,11 @@ if errorlevel 1 (
     exit /b 1
 )
 
+rem En Python muy nuevo (3.13/3.14), altair viejo revienta los graficos; si
+rem importar altair falla, lo actualizamos (typing_extensions + altair 5.5+).
+"!PYTHON!" -c "import altair" >nul 2>&1
+if errorlevel 1 "!PYTHON!" -m pip install --user -U typing_extensions "altair>=5.5.0" >nul 2>&1
+
 echo  [3/4] Preparando base de datos...
 "!PYTHON!" core\db.py >nul 2>&1
 

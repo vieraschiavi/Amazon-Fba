@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "sh scripts/vercel-build.sh",
+  "outputDirectory": "landing",
+  "cleanUrls": true,
+  "trailingSlash": false
+}

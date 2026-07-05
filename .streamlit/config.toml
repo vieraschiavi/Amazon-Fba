@@ -1,0 +1,22 @@
+# Configuracion de MV Amazon FBA IA como software para el usuario final.
+[client]
+# No mostrar el traceback de Python crudo al usuario (se ve como software, no
+# como un script roto). Los errores conocidos ya se manejan en el codigo; si
+# algo inesperado falla, se ve un mensaje limpio en vez del bloque rojo.
+showErrorDetails = "none"
+# Sin menu de desarrollador / boton Deploy.
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+base = "light"
+primaryColor = "#1e3a8a"
+backgroundColor = "#f1f5f9"
+secondaryBackgroundColor = "#ffffff"
+textColor = "#0f172a"
+
+[runner]
+# No frenar todo el script por un error en un widget puntual cuando se puede evitar.
+fastReruns = true

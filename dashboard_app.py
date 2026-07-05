@@ -8,6 +8,8 @@ Correr: streamlit run dashboard_app.py
 """
 import os
 import sys
+import urllib.parse
+import webbrowser
 
 import pandas as pd
 import streamlit as st
@@ -19,6 +21,7 @@ if _AQUI not in sys.path:
 import config
 import styles as ui
 from core import db
+from core import licencia
 from agents.market_intel import market_intel
 from agents.listing import generar as generar_listing
 from agents.pricing import evaluar as evaluar_precio
@@ -42,12 +45,145 @@ st.set_page_config(page_title="MV Amazon FBA IA", page_icon="📊", layout="wide
                    initial_sidebar_state="expanded")
 st.markdown(ui.CSS, unsafe_allow_html=True)
 
+# ==================== DEMO / REGISTRO — 3 dias completos, multi-idioma ==================== #
+# Sin servidor de cuentas: el registro y el reloj de 3 dias viven en la base local
+# (misma logica en mobile/js/licencia.js para PWA/Android/iOS). El dominio interno
+# del producto para la clave de licencia es "MV-Amazon-Fba" (nombre comercial sin
+# cambios: "MV Amazon FBA IA").
+_IDIOMAS_DEMO = ["Español", "English", "Português"]
+_COD_IDIOMA_DEMO = {"Español": "es", "English": "en", "Português": "pt"}
+_TXT_DEMO = {
+    "es": {
+        "titulo": "Bienvenido a MV Amazon FBA IA",
+        "sub": "Registrate para arrancar tu demo completa y gratis de 3 días — sin límites de funciones.",
+        "nombre": "Tu nombre", "email": "Tu email",
+        "empezar": "Empezar mi demo de 3 días",
+        "falta_email": "Ingresá un email válido para arrancar la demo.",
+        "vencida_titulo": "Tu demo de 3 días venció",
+        "vencida_sub": "Activá tu licencia para seguir usando MV Amazon FBA IA sin límites, "
+                       "o escribinos para comprarla.",
+        "clave": "Clave de licencia", "activar": "Activar licencia",
+        "clave_invalida": "Esa clave no es válida para este email.",
+        "clave_ok": "Licencia activada. ¡Gracias por tu compra!",
+        "contactar": "✉️ Escribinos para comprar tu licencia",
+        "badge_licencia": "Licencia activa",
+        "badge_demo": "Demo: {n} día(s) restante(s)",
+    },
+    "en": {
+        "titulo": "Welcome to MV Amazon FBA IA",
+        "sub": "Register to start your full, free 3-day demo — no feature limits.",
+        "nombre": "Your name", "email": "Your email",
+        "empezar": "Start my 3-day demo",
+        "falta_email": "Enter a valid email to start the demo.",
+        "vencida_titulo": "Your 3-day demo expired",
+        "vencida_sub": "Activate your license to keep using MV Amazon FBA IA with no limits, "
+                       "or contact us to buy it.",
+        "clave": "License key", "activar": "Activate license",
+        "clave_invalida": "That key is not valid for this email.",
+        "clave_ok": "License activated. Thanks for your purchase!",
+        "contactar": "✉️ Contact us to buy your license",
+        "badge_licencia": "Active license",
+        "badge_demo": "Demo: {n} day(s) left",
+    },
+    "pt": {
+        "titulo": "Bem-vindo ao MV Amazon FBA IA",
+        "sub": "Cadastre-se para começar seu demo completo e gratuito de 3 dias — sem limites de funções.",
+        "nombre": "Seu nome", "email": "Seu email",
+        "empezar": "Começar meu demo de 3 dias",
+        "falta_email": "Digite um email válido para começar o demo.",
+        "vencida_titulo": "Seu demo de 3 dias venceu",
+        "vencida_sub": "Ative sua licença para continuar usando o MV Amazon FBA IA sem limites, "
+                       "ou fale conosco para comprá-la.",
+        "clave": "Chave de licença", "activar": "Ativar licença",
+        "clave_invalida": "Essa chave não é válida para este email.",
+        "clave_ok": "Licença ativada. Obrigado pela compra!",
+        "contactar": "✉️ Fale conosco para comprar sua licença",
+        "badge_licencia": "Licença ativa",
+        "badge_demo": "Demo: {n} dia(s) restante(s)",
+    },
+}
+
+if "demo_idioma" not in st.session_state:
+    st.session_state["demo_idioma"] = "es"
+
+_estado_demo = licencia.estado()
+
+if not _estado_demo["vigente"]:
+    _sel_idioma_lbl = st.selectbox(
+        "🌐", _IDIOMAS_DEMO,
+        index=list(_COD_IDIOMA_DEMO.values()).index(st.session_state["demo_idioma"]),
+        key="demo_idioma_sel", label_visibility="collapsed")
+    st.session_state["demo_idioma"] = _COD_IDIOMA_DEMO[_sel_idioma_lbl]
+    t = _TXT_DEMO[st.session_state["demo_idioma"]]
+
+    st.markdown(
+        f"<div style='display:flex;align-items:center;gap:10px;margin-bottom:6px'>"
+        f"{ui.logo(34, on_dark=False)}"
+        f"<div style='font-weight:800;color:{ui.NAVY};font-size:20px'>{t['titulo']}</div></div>",
+        unsafe_allow_html=True)
+
+    if not _estado_demo["registrado"]:
+        st.info(t["sub"])
+        with st.form("form_registro_demo"):
+            r_nombre = st.text_input(t["nombre"], key="reg_nombre")
+            r_email = st.text_input(t["email"], key="reg_email")
+            r_ok = st.form_submit_button(t["empezar"], type="primary")
+        if r_ok:
+            if "@" not in (r_email or ""):
+                st.warning(t["falta_email"])
+            else:
+                licencia.registrar(r_nombre, r_email)
+                st.rerun()
+        st.stop()
+    else:
+        st.error(f"**{t['vencida_titulo']}**")
+        st.caption(t["vencida_sub"])
+        with st.form("form_activar_licencia"):
+            a_email = st.text_input(t["email"], value=_estado_demo["email"], key="act_email")
+            a_clave = st.text_input(t["clave"], key="act_clave")
+            a_ok = st.form_submit_button(t["activar"], type="primary")
+        if a_ok:
+            res = licencia.activar_licencia(a_email, a_clave)
+            if res["ok"]:
+                st.success(t["clave_ok"])
+                st.rerun()
+            else:
+                st.warning(t["clave_invalida"])
+        _asunto_lic = urllib.parse.quote(f"Compra de licencia {licencia.DOMINIO}")
+        _cuerpo_lic = urllib.parse.quote(
+            f"Quiero comprar la licencia. Email de registro: {_estado_demo['email']}")
+        _mailto_lic = f"mailto:{config.ALERT_TO}?subject={_asunto_lic}&body={_cuerpo_lic}"
+        st.markdown(f"[{t['contactar']}]({_mailto_lic})")
+        st.stop()
+
 
 def _cols_html(items):
     """Renderiza una fila de tarjetas HTML en columnas iguales."""
     cols = st.columns(len(items))
     for c, html in zip(cols, items):
         c.markdown(html, unsafe_allow_html=True)
+
+
+# Los graficos nativos de Streamlit usan altair; en Python 3.14 con versiones
+# viejas de altair/typing_extensions eso puede reventar al renderizar. Estos
+# wrappers intentan el grafico y, si falla, muestran la tabla en vez de romper
+# TODO el programa. Asi la app nunca se cae por un problema de dependencias.
+def _line_chart(data, **kw):
+    try:
+        st.line_chart(data, **kw)
+    except Exception:
+        st.dataframe(data, use_container_width=True)
+        st.caption("Grafico no disponible en este equipo (dependencia de charts); "
+                   "muestro la tabla. Se corrige con: pip install -U typing_extensions altair")
+
+
+def _bar_chart(data, **kw):
+    try:
+        st.bar_chart(data, **kw)
+    except Exception:
+        st.dataframe(data, use_container_width=True)
+        st.caption("Grafico no disponible en este equipo (dependencia de charts); "
+                   "muestro la tabla. Se corrige con: pip install -U typing_extensions altair")
 
 
 # --- Sidebar ---
@@ -58,6 +194,13 @@ with st.sidebar:
         f"{ui.BRAND_PREFIX} <span style='color:{ui.GREEN}'>{ui.BRAND_ACCENT}</span></div></div>",
         unsafe_allow_html=True)
     st.caption(ui.TAGLINE)
+    _t_badge = _TXT_DEMO[st.session_state.get("demo_idioma", "es")]
+    if _estado_demo["licencia"]:
+        st.markdown(ui.badge(_t_badge["badge_licencia"], "verde"), unsafe_allow_html=True)
+    else:
+        st.markdown(ui.badge(_t_badge["badge_demo"].format(n=_estado_demo["dias_restantes"]),
+                             "amarillo" if _estado_demo["dias_restantes"] <= 1 else "verde"),
+                    unsafe_allow_html=True)
     st.divider()
     demo = st.toggle("Modo DEMO", value=True,
                      help="Datos [DEMO] ilustrativos. Apagar para usar CSV real de Cerebro.")
@@ -102,6 +245,24 @@ except Exception:
 _opc_activo = {"— Manual (sin producto) —": None}
 for _p in _cartera:
     _opc_activo[f"{_p['nombre']} · {(_p.get('asin') or 's/ASIN')}"] = _p
+# Demo full-experience: cargar 1 producto de ejemplo con un clic para recorrer
+# TODO el sistema (Pricing, Caja, Ventas, Asistente) con numeros reales.
+from core import demo_seed  # noqa: E402
+st.sidebar.markdown("### 🎁 Probar con un ejemplo")
+if demo_seed.hay_ejemplo():
+    if st.sidebar.button("Quitar producto de ejemplo", use_container_width=True):
+        demo_seed.quitar_ejemplo()
+        st.rerun()
+    st.sidebar.caption("Ejemplo cargado: elegilo abajo en «Producto activo» y "
+                       "recorré las pestañas.")
+else:
+    if st.sidebar.button("Cargar producto de ejemplo", type="primary",
+                         use_container_width=True):
+        demo_seed.cargar_ejemplo()
+        st.rerun()
+    st.sidebar.caption("1 producto listo (costo, precio, margen, ROI y ventas) para "
+                       "ver el sistema completo funcionando.")
+
 st.sidebar.markdown("### 🎯 Producto activo")
 _sel_activo = st.sidebar.selectbox(
     "Sus datos se replican en Pricing, Caja y Ventas",
@@ -603,7 +764,7 @@ with tabs[3]:
                            tone=("good" if vr["ingreso"] > 0 else "navy")),
                 ])
                 dfa = pd.DataFrame(an["proyeccion"]["filas"])
-                st.line_chart(dfa.set_index("mes")[["caja", "sueldo"]], height=220,
+                _line_chart(dfa.set_index("mes")[["caja", "sueldo"]], height=220,
                               color=["#1e3a8a", "#8bc34a"])
             if vr["ordenes"]:
                 st.markdown(ui.seccion("Ultimas ventas del producto"),
@@ -767,7 +928,7 @@ with tabs[5]:
         st.warning("Caja minima muy ajustada: estas fronteando casi todo el capital en stock.")
     df = pd.DataFrame(r["filas"])
     st.markdown(ui.seccion("Evolucion mensual"), unsafe_allow_html=True)
-    st.line_chart(df.set_index("mes")[["caja", "sueldo"]], height=240,
+    _line_chart(df.set_index("mes")[["caja", "sueldo"]], height=240,
                   color=["#1e3a8a", "#8bc34a"])
     st.dataframe(df[["mes", "vendidas", "cobrado", "sueldo", "caja", "capital_atado"]],
                  use_container_width=True, hide_index=True)
@@ -805,7 +966,7 @@ with tabs[6]:
     ])
     if k["por_producto"]:
         st.markdown(ui.seccion("Mix por producto"), unsafe_allow_html=True)
-        st.bar_chart(pd.DataFrame(k["por_producto"]).set_index("k")["ingreso"], height=220,
+        _bar_chart(pd.DataFrame(k["por_producto"]).set_index("k")["ingreso"], height=220,
                      color="#1e3a8a")
         cca, ccb = st.columns(2)
         if k["por_pais"]:
@@ -1008,7 +1169,7 @@ with tabs[8]:
     ])
     dfc = pd.DataFrame(ic["filas"])
     if not dfc.empty:
-        st.line_chart(dfc.set_index("mes")[["capital", "aportado"]], height=240,
+        _line_chart(dfc.set_index("mes")[["capital", "aportado"]], height=240,
                       color=["#1e3a8a", "#8bc34a"])
         df_an = dfc[dfc["mes"] % 12 == 0][["anio", "capital", "aportado", "ocioso"]]
         st.dataframe(df_an, use_container_width=True, hide_index=True)
@@ -1172,3 +1333,38 @@ with tabs[12]:
         "miente. Con techo, se estabiliza en meseta (~techo x neto).\n"
         "- **El score mide ganabilidad, no margen.** Nada reemplaza la orden de prueba "
         "(USD 1.000-2.000) antes de escalar.")
+
+    st.divider()
+    st.markdown(ui.seccion("Contacto y soporte",
+                           "Escribinos tu consulta — se abre tu correo con todo completado"),
+                unsafe_allow_html=True)
+    with st.form("form_contacto"):
+        ct1, ct2 = st.columns(2)
+        ct_asunto = ct1.text_input("Asunto", placeholder="Ej: Consulta sobre licencia Pro",
+                                   key="ct_asunto")
+        ct_contacto = ct2.text_input("Tu teléfono o email de contacto",
+                                     placeholder="Ej: +598 99 123 456 o vos@email.com",
+                                     key="ct_contacto")
+        ct_pregunta = st.text_area("Tu pregunta", height=110,
+                                   placeholder="Contanos en qué te podemos ayudar...",
+                                   key="ct_pregunta")
+        ct_enviar = st.form_submit_button("Enviar consulta", type="primary")
+    if ct_enviar:
+        if not ct_pregunta.strip():
+            st.warning("Escribí tu pregunta antes de enviar.")
+        else:
+            asunto = ct_asunto.strip() or "Consulta desde MV Amazon FBA IA"
+            cuerpo = (f"{ct_pregunta.strip()}\n\n"
+                     f"Contacto de quien consulta: {ct_contacto.strip() or '(no indicado)'}")
+            mailto = ("mailto:" + config.ALERT_TO + "?subject=" + urllib.parse.quote(asunto)
+                      + "&body=" + urllib.parse.quote(cuerpo))
+            try:
+                webbrowser.open(mailto)
+                st.success(f"Abriendo tu programa de correo hacia {config.ALERT_TO} con el "
+                          "mensaje completado. Si no se abrió solo, copiá el texto de abajo "
+                          "y mandalo a mano.")
+            except Exception:
+                st.info("No se pudo abrir el correo automaticamente. Copiá el texto de abajo "
+                       f"y envialo a mano a {config.ALERT_TO}.")
+            st.code(f"Para: {config.ALERT_TO}\nAsunto: {asunto}\n\n{cuerpo}", language=None)
+    st.caption(f"También podés escribir directo a **{config.ALERT_TO}**.")

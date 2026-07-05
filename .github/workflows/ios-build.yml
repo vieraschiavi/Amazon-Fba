@@ -1,0 +1,45 @@
+# Compila la app iOS de MV Amazon FBA IA en un runner macOS (gratis en GitHub
+# Actions) para el Simulador de iOS en cada push que toque la app iOS o la UI
+# movil. Esto CONFIRMA que el proyecto compila sin errores, sin necesitar
+# ninguna cuenta de Apple ni certificados (los builds de simulador no se firman).
+#
+# No genera un .ipa instalable en un iPhone real: eso requiere una cuenta Apple
+# Developer (US$99/año) y firma con tus certificados — ver ios/README.md.
+name: iOS Build (Simulador)
+
+on:
+  push:
+    paths:
+      - "ios/**"
+      - "mobile/**"
+      - ".github/workflows/ios-build.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar XcodeGen
+        run: brew install xcodegen
+
+      - name: Generar el proyecto Xcode
+        run: cd ios && xcodegen generate
+
+      - name: Elegir el simulador de iOS disponible
+        id: sim
+        run: |
+          NAME=$(xcrun simctl list devicetypes | grep -m1 "iPhone 15" | sed -E 's/ \(com.*//')
+          if [ -z "$NAME" ]; then NAME="iPhone 15"; fi
+          echo "device=$NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Compilar para el Simulador de iOS (sin firma)
+        run: |
+          cd ios
+          xcodebuild build \
+            -project MVAmazonFBAIA.xcodeproj \
+            -scheme MVAmazonFBAIA \
+            -destination "generic/platform=iOS Simulator" \
+            CODE_SIGNING_ALLOWED=NO

@@ -541,7 +541,8 @@ async function responderClaude(preg) {
   const contexto = `Datos del negocio del usuario (Amazon FBA): ${r.n} productos, `
     + `sueldo meseta proyectado ${fmtMoney(r.sueldo_meseta_proyectado)}/mes, `
     + `margen promedio ${fmtPct(r.margen_promedio_pct)}, ventas reales ${fmtMoney(r.ingreso_real)}. `
-    + `Respondé en español rioplatense, breve y practico, como asesor FBA.`;
+    + `Respondé en español rioplatense con tono profesional pero amable y cercano, `
+    + `breve y practico, como un asesor FBA de confianza.`;
   const cuerpo = JSON.stringify({
     model: "claude-opus-4-8", max_tokens: 600,
     system: contexto,
@@ -558,6 +559,34 @@ async function responderClaude(preg) {
   const bloque = (data.content || []).find((b) => b.type === "text");
   return bloque ? bloque.text : "No obtuve respuesta del asistente.";
 }
+// Proxy de IA del DEMO web: la clave vive en el servidor (Vercel), no en el
+// cliente. En la app descargada (file://) este fetch falla y se cae al local.
+async function responderProxy(preg) {
+  const r = resumenPortafolio();
+  const contexto = `${r.n} productos, sueldo meseta ${fmtMoney(r.sueldo_meseta_proyectado)}/mes, `
+    + `margen promedio ${fmtPct(r.margen_promedio_pct)}, ventas reales ${fmtMoney(r.ingreso_real)}.`;
+  const idioma = (localStorage.getItem("mvfba_idioma") || (navigator.language || "es").slice(0, 2));
+  const resp = await fetch("/api/ia", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pregunta: preg, contexto, idioma }),
+  });
+  if (!resp.ok) return null;          // 503 no configurada / 502 upstream -> fallback
+  const data = await resp.json();
+  return (data && data.texto) ? data.texto : null;
+}
+// Orquesta: 1) clave propia (versión paga) 2) proxy del demo (IA incluida)
+// 3) asistente local (siempre disponible, sin internet ni clave).
+async function responderIA(texto) {
+  if ((estado.claves.claude || "").trim()) {
+    try { return await responderClaude(texto); } catch (e) { /* sigue */ }
+  }
+  try {
+    const p = await responderProxy(texto);
+    if (p) return p;
+  } catch (e) { /* sigue */ }
+  return responderLocal(texto);
+}
 $("#form-chat").addEventListener("submit", async (ev) => {
   ev.preventDefault();
   const input = $("#chat-input");
@@ -570,7 +599,7 @@ $("#form-chat").addEventListener("submit", async (ev) => {
   pintarChat();
   let respuesta;
   try {
-    respuesta = await responderClaude(texto);       // abierto (si hay clave+internet)
+    respuesta = await responderIA(texto);            // clave propia -> proxy demo -> local
   } catch (e) {
     respuesta = responderLocal(texto);               // local, siempre disponible
   }
@@ -638,6 +667,106 @@ $("#btn-demo").addEventListener("click", () => {
   irAVista("inicio");
 });
 
+// ============================ DEMO / REGISTRO (3 dias, multi-idioma) ============================
+const LS_IDIOMA = "mvfba_idioma";
+function idiomaActual() {
+  const guardado = localStorage.getItem(LS_IDIOMA);
+  if (guardado) return guardado;
+  const nav = (navigator.language || "es").slice(0, 2).toLowerCase();
+  return ["es", "en", "pt"].includes(nav) ? nav : "es";
+}
+function fijarIdioma(id) { localStorage.setItem(LS_IDIOMA, id); }
+
+function pintarBadgeDemo() {
+  const st = Licencia.estado();
+  const t = Licencia.TXT[idiomaActual()];
+  const badge = $("#demo-badge");
+  if (!badge) return;
+  if (st.licencia) {
+    badge.textContent = t.badge_licencia;
+    badge.classList.remove("oculto", "vencido");
+  } else if (st.registrado) {
+    badge.textContent = t.badge_demo.replace("{n}", st.diasRestantes);
+    badge.classList.toggle("vencido", st.diasRestantes <= 1);
+    badge.classList.remove("oculto");
+  } else {
+    badge.classList.add("oculto");
+  }
+}
+
+function pintarGateDemo() {
+  const idioma = idiomaActual();
+  $("#demo-idioma").value = idioma;
+  const t = Licencia.TXT[idioma];
+  const st = Licencia.estado();
+  $("#demo-sub").textContent = t.sub;
+  $("#demo-lbl-nombre").textContent = t.nombre;
+  $("#demo-lbl-email").textContent = t.email;
+  $("#demo-btn-empezar").textContent = t.empezar;
+  $("#demo-vencido-sub").textContent = t.vencida_sub;
+  $("#demo-lbl-email2").textContent = t.email;
+  $("#demo-lbl-clave").textContent = t.clave;
+  $("#demo-btn-activar").textContent = t.activar;
+  $("#demo-contactar").textContent = t.contactar;
+  const asunto = encodeURIComponent(`Compra de licencia ${Licencia.DOMINIO}`);
+  const cuerpo = encodeURIComponent(`Quiero comprar la licencia. Email de registro: ${st.email || ""}`);
+  $("#demo-contactar").href = `mailto:vieraschiavi@gmail.com?subject=${asunto}&body=${cuerpo}`;
+
+  if (!st.registrado) {
+    $("#demo-registro").classList.remove("oculto");
+    $("#demo-vencido").classList.add("oculto");
+  } else {
+    $("#demo-registro").classList.add("oculto");
+    $("#demo-vencido").classList.remove("oculto");
+    $("#demo-email2").value = st.email || "";
+  }
+}
+
+// Devuelve true si la demo/licencia esta vigente (y oculta el gate); si no,
+// muestra el gate (registro o reactivacion de licencia) y devuelve false.
+function evaluarDemo() {
+  const st = Licencia.estado();
+  if (st.vigente) {
+    $("#demo-gate").classList.add("oculto");
+    pintarBadgeDemo();
+    return true;
+  }
+  pintarGateDemo();
+  $("#demo-gate").classList.remove("oculto");
+  return false;
+}
+
+$("#demo-idioma").addEventListener("change", (ev) => {
+  fijarIdioma(ev.target.value);
+  pintarGateDemo();
+});
+
+$("#form-demo-registro").addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  const nombre = $("#demo-nombre").value.trim();
+  const email = $("#demo-email").value.trim();
+  const t = Licencia.TXT[idiomaActual()];
+  if (!email.includes("@")) { mostrarToast(t.falta_email); return; }
+  Licencia.registrar(nombre, email);
+  if (evaluarDemo()) {
+    if (!localStorage.getItem(LS_VISTO)) $("#bienvenida").classList.remove("oculto");
+  }
+});
+
+$("#form-demo-licencia").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const email = $("#demo-email2").value.trim();
+  const clave = $("#demo-clave").value.trim();
+  const t = Licencia.TXT[idiomaActual()];
+  const res = await Licencia.activarLicencia(email, clave);
+  if (res.ok) {
+    mostrarToast(t.clave_ok);
+    evaluarDemo();
+  } else {
+    mostrarToast(t.clave_invalida);
+  }
+});
+
 // ============================ BIENVENIDA (standalone) ============================
 $("#bienvenida-empezar").addEventListener("click", () => {
   localStorage.setItem(LS_VISTO, "1");
@@ -650,12 +779,27 @@ $("#bienvenida-demo").addEventListener("click", () => {
   $("#btn-demo").click();
 });
 
+// ============================ CONTACTO ============================
+const CONTACTO_EMAIL = "vieraschiavi@gmail.com";
+$("#form-contacto").addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  const pregunta = $("#ct-pregunta").value.trim();
+  if (!pregunta) { mostrarToast("Escribí tu pregunta antes de enviar"); return; }
+  const asunto = $("#ct-asunto").value.trim() || "Consulta desde MV Amazon FBA IA";
+  const contacto = $("#ct-contacto").value.trim() || "(no indicado)";
+  const cuerpo = `${pregunta}\n\nContacto de quien consulta: ${contacto}`;
+  const mailto = `mailto:${CONTACTO_EMAIL}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+  // La WebView nativa reenvia cualquier link no-file:// al sistema (abre la app de mail).
+  window.location.href = mailto;
+  mostrarToast("Abriendo tu app de correo…");
+});
+
 // ============================ ARRANQUE ============================
 (function arranque() {
   estadoConexion();
   pintarConfig();
   cargarInicio();
-  if (!localStorage.getItem(LS_VISTO)) {
+  if (evaluarDemo() && !localStorage.getItem(LS_VISTO)) {
     $("#bienvenida").classList.remove("oculto");
   }
   window.addEventListener("online", estadoConexion);

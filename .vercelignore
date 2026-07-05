@@ -1,0 +1,25 @@
+# La landing es un sitio estatico (landing/index.html, self-contained).
+# Vercel detecta automaticamente cualquier app.py en la raiz (variable "app")
+# como funcion serverless de Python -- eso rompia el deploy (500
+# FUNCTION_INVOCATION_FAILED) porque app.py es la API FastAPI del backend
+# (para n8n), no algo pensado para correr en Vercel. Se excluye todo el
+# codigo del programa (backend/Android nativo/iOS nativo) para que Vercel
+# solo vea landing/ + mobile/ (esta ultima es solo HTML/CSS/JS estatico:
+# el buildCommand de vercel.json la copia dentro de landing/app/ para que
+# la demo web sea usable desde la landing, sin riesgo de ser detectada
+# como funcion -- no tiene ningun .py).
+*.py
+requirements.txt
+core/
+agents/
+data/
+android/
+ios/
+n8n/
+test/
+installer/
+brand/
+*.db
+*.bat
+*.iss
+*.vbs

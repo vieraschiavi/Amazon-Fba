@@ -1,4 +1,6 @@
 streamlit==1.45.1
+typing_extensions>=4.13.0   # PEP 728 (closed TypedDict): altair 5.5 lo necesita en Python 3.13/3.14
+altair>=5.5.0               # charts de streamlit; version compatible con Python nuevo
 pandas
 fastapi
 uvicorn[standard]
