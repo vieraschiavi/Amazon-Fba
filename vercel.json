@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "buildCommand": "mkdir -p landing/app/css landing/app/js landing/app/icons && cp mobile/index.html mobile/manifest.json mobile/service-worker.js landing/app/ && cp mobile/css/estilos.css landing/app/css/ && cp mobile/js/nucleo.js mobile/js/licencia.js mobile/js/app.js landing/app/js/ && cp mobile/icons/*.png landing/app/icons/",
+  "buildCommand": "sh scripts/vercel-build.sh",
   "outputDirectory": "landing",
   "cleanUrls": true,
   "trailingSlash": false
