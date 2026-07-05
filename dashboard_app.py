@@ -207,7 +207,7 @@ with st.sidebar:
     cfg = config.estado_config()
     st.markdown(ui.seccion("Conexiones"), unsafe_allow_html=True)
     st.markdown(
-        ui.badge("Claude" if config.ANTHROPIC_API_KEY else "Listing offline",
+        ui.badge("IA avanzada" if config.ANTHROPIC_API_KEY else "Listing offline",
                  "verde" if config.ANTHROPIC_API_KEY else "navy") +
         " " + ui.badge("Keepa" if config.KEEPA_API_KEY else "Keepa sin clave",
                        "verde" if config.KEEPA_API_KEY else "amarillo"),
@@ -225,7 +225,7 @@ st.markdown(ui.header(
     subtitulo="Investigacion, pricing, portafolio y caja para Amazon FBA — mercado US",
     chips=[("DEMO" if demo else "Produccion", not demo),
            ("Keepa", bool(config.KEEPA_API_KEY)),
-           ("Claude", bool(config.ANTHROPIC_API_KEY)),
+           ("IA avanzada", bool(config.ANTHROPIC_API_KEY)),
            ("Email", bool(config.SMTP_USER and config.SMTP_PASS))]),
     unsafe_allow_html=True)
 
@@ -291,8 +291,8 @@ with tabs[0]:
     st.session_state["inv_mkt"] = mkt_cod
     traducir_seed = ci2.checkbox("Traducir el seed al idioma del país", value=False,
                                  key="inv_trad",
-                                 help="Con clave de Claude traduce tu keyword al idioma "
-                                      "del marketplace antes de buscar.")
+                                 help="Con clave de IA conectada traduce tu keyword al "
+                                      "idioma del marketplace antes de buscar.")
     c1, c2 = st.columns([3, 1])
     keyword = c1.text_input("Nicho / keyword principal", value="bamboo kitchen utensils")
     correr = c2.button("Investigar", type="primary", use_container_width=True)
@@ -314,7 +314,7 @@ with tabs[0]:
             from agents import traductor
             tr = traductor.traducir(keyword, _mkts[mkt_cod]["idioma"])
             seed_busqueda = tr["texto"]
-            (st.success if tr["fuente"].startswith("Claude") else st.info)(tr["mensaje"])
+            (st.success if tr["fuente"].startswith("IA") else st.info)(tr["mensaje"])
         with st.spinner(f"Consultando el autocompletado de Amazon {mkt_cod} (gratis)..."):
             res_m = motor_propio.investigar(seed_busqueda, demo=demo, marketplace=mkt_cod)
         if not res_m["ok"]:
@@ -464,7 +464,7 @@ with tabs[1]:
 
         st.divider()
         st.markdown(ui.seccion("Asesor de probabilidad de exito",
-                               "Formula auditable + analisis razonado (Claude si hay clave)"),
+                               "Formula auditable + analisis razonado (IA avanzada si hay clave)"),
                     unsafe_allow_html=True)
         e1, e2, e3 = st.columns(3)
         ex_precio = e1.number_input("Tu precio objetivo (USD)", value=24.0,
@@ -501,7 +501,7 @@ with tabs[1]:
             with st.spinner("Analisis razonado..."):
                 nar = exito.narrativa(ev, comp if comp.get("ok") else None)
             if nar["modo"] == "online":
-                st.markdown(ui.seccion("Analisis del asesor (Claude)"),
+                st.markdown(ui.seccion("Analisis del asesor (IA)"),
                             unsafe_allow_html=True)
                 st.markdown(nar["texto"])
             st.warning(ev["caveat"])
@@ -1196,15 +1196,15 @@ with tabs[10]:
                 unsafe_allow_html=True)
     st.caption("Estado actual — "
                f"KEEPA_API_KEY: {config.mask(config.KEEPA_API_KEY)} · "
-               f"ANTHROPIC_API_KEY: {config.mask(config.ANTHROPIC_API_KEY)} · "
+               f"Clave de IA: {config.mask(config.ANTHROPIC_API_KEY)} · "
                f"SMTP_USER: {config.mask(config.SMTP_USER)} · "
                f"SMTP_PASS: {config.mask(config.SMTP_PASS)}")
     with st.form("form_claves"):
         k1, k2 = st.columns(2)
         in_keepa = k1.text_input("KEEPA_API_KEY", type="password",
                                  help="keepa.com -> Keepa API -> Private API access key")
-        in_anth = k2.text_input("ANTHROPIC_API_KEY", type="password",
-                                help="console.anthropic.com -> API Keys")
+        in_anth = k2.text_input("Clave de IA (asistente)", type="password",
+                                help="Clave de tu proveedor de IA para el asistente abierto")
         k3, k4, k5 = st.columns(3)
         in_su = k3.text_input("SMTP_USER (Gmail)", key="cf_smtp_user")
         in_sp = k4.text_input("SMTP_PASS (App Password)", type="password",
@@ -1230,11 +1230,11 @@ with tabs[10]:
 
 # ============================ 12) ASISTENTE IA ============================ #
 with tabs[11]:
-    st.markdown(ui.seccion("Asistente IA (Claude)",
+    st.markdown(ui.seccion("Asistente IA",
                            "Pregunta sobre tus metricas, tu portafolio o la estrategia FBA"),
                 unsafe_allow_html=True)
     est = asistente.estado()
-    st.markdown(ui.badge("Claude conectado" if est["ok"] else "Modo offline (glosario)",
+    st.markdown(ui.badge("IA conectada" if est["ok"] else "Modo offline (glosario)",
                          "verde" if est["ok"] else "amarillo"), unsafe_allow_html=True)
     st.caption(est["mensaje"])
 

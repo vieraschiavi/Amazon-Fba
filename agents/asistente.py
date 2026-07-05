@@ -81,19 +81,19 @@ def _contexto_negocio():
 
 
 def estado():
-    """Estado del asistente para el panel: online (Claude) u offline (glosario)."""
+    """Estado del asistente para el panel: online (IA avanzada) u offline (glosario)."""
     if not config.ANTHROPIC_API_KEY:
         return {"ok": False, "modo": "offline",
-                "mensaje": "Sin ANTHROPIC_API_KEY: respondo desde el glosario. "
+                "mensaje": "Sin clave de IA conectada: respondo desde el glosario. "
                            "Conecta tu clave en Config para respuestas completas."}
     try:
         import anthropic  # noqa: F401
     except ImportError:
         return {"ok": False, "modo": "offline",
-                "mensaje": "Falta el paquete 'anthropic' (pip install anthropic). "
+                "mensaje": "Falta instalar el motor de IA. "
                            "Mientras tanto respondo desde el glosario."}
     return {"ok": True, "modo": "online",
-            "mensaje": f"Asistente Claude conectado ({config.MODEL_OPUS})."}
+            "mensaje": "Asistente IA conectado."}
 
 
 _STOP = {"que", "es", "el", "la", "los", "las", "un", "una", "de", "del", "mi", "mis",
@@ -116,11 +116,11 @@ def _responder_offline(pregunta):
                     hits.append((t, d, c))
     if hits:
         cuerpo = "\n\n".join(f"**{t}** — {d}" for t, d, _ in hits[:4])
-        return ("Modo offline (sin clave de Claude). Segun el glosario:\n\n" + cuerpo +
+        return ("Modo offline (sin clave de IA). Segun el glosario:\n\n" + cuerpo +
                 "\n\nPara analisis personalizado de TUS numeros, conecta tu "
-                "ANTHROPIC_API_KEY en la pestana Config.")
-    return ("Modo offline (sin clave de Claude). No encontre ese termino en el "
-            "glosario. Conecta tu ANTHROPIC_API_KEY en la pestana Config y te "
+                "clave de IA en la pestana Config.")
+    return ("Modo offline (sin clave de IA). No encontre ese termino en el "
+            "glosario. Conecta tu clave de IA en la pestana Config y te "
             "respondo con el analisis de tu negocio; mientras tanto, mira la "
             "pestana Ayuda para los conceptos base.")
 
@@ -160,13 +160,13 @@ def responder(pregunta, historial=None, max_tokens=1400):
         texto = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
         return {"texto": texto.strip() or _responder_offline(pregunta), "modo": "online"}
     except anthropic.AuthenticationError:
-        return {"texto": "Tu ANTHROPIC_API_KEY fue rechazada. Revisala en Config.\n\n"
+        return {"texto": "Tu clave de IA fue rechazada. Revisala en Config.\n\n"
                          + _responder_offline(pregunta), "modo": "offline"}
     except anthropic.RateLimitError:
-        return {"texto": "Claude esta rate-limited ahora mismo; proba en unos "
+        return {"texto": "La IA esta con mucha demanda ahora mismo; proba en unos "
                          "segundos.\n\n" + _responder_offline(pregunta), "modo": "offline"}
     except Exception as e:
-        return {"texto": f"No pude consultar a Claude ({type(e).__name__}). "
+        return {"texto": f"No pude consultar la IA ({type(e).__name__}). "
                          "Respondo offline:\n\n" + _responder_offline(pregunta),
                 "modo": "offline"}
 

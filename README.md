@@ -86,6 +86,33 @@ tienda de apps). Consume la misma API que el panel de escritorio (`app.py`),
 que ahora tiene CORS habilitado para esto. Ver `mobile/README.md` para probarla
 en 2 minutos.
 
+## Landing web (`landing/`) y dominio propio
+
+La landing (`landing/index.html`) se despliega sola en Vercel en cada push
+(`vercel.json` + `scripts/vercel-build.sh`, que además copia `mobile/` dentro
+de `landing/app/` para que el botón "Probar demo" abra la app real). Hoy vive
+en la URL de preview de la rama — nada en el código depende de esa URL (no
+hay dominios hardcodeados en `landing/index.html` ni en `vercel.json`), así
+que pasar a un dominio propio es una operación de configuración, sin tocar
+código:
+
+1. **Comprá/tené a mano tu dominio** (el registrador no importa).
+2. En el proyecto de Vercel: **Settings → Domains → Add** → escribí el
+   dominio. Vercel te va a pedir un registro DNS (`A` a `76.76.21.21` para un
+   dominio raíz, o `CNAME` a `cname.vercel-dns.com` para un subdominio como
+   `app.tudominio.com`) — lo cargás en tu proveedor de DNS y Vercel emite el
+   certificado SSL solo.
+3. Una vez que el dominio esté activo, actualizá estos dos lugares que SÍ
+   quedan afuera del repo (viven en paneles externos):
+   - **MercadoPago** → tu aplicación → URL del sitio/tienda (hoy tiene la URL
+     de preview de Vercel, cargada como parche temporal).
+   - Cualquier "back_url"/redirect que se configure cuando se conecte el
+     checkout real de MercadoPago (pendiente, ver sección de pagos).
+4. Opcional pero recomendado antes de vender en serio: agregar
+   `<link rel="canonical">` y meta `og:url`/`og:image` en `landing/index.html`
+   con el dominio final (no se agregaron todavía para no hardcodear una URL
+   que iba a cambiar).
+
 ## El panel (13 pestañas)
 
 1. **Investigación** — dos fuentes: el **motor propio embebido** (gratis, sin APIs
