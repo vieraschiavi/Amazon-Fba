@@ -87,7 +87,7 @@ def estado_config():
     """Resumen para el dashboard: que esta conectado y que esta en modo offline.
     NUNCA incluye el valor de una clave (se expone por /health)."""
     return {
-        "llm": "IA avanzada" if ANTHROPIC_API_KEY else "offline (mock)",
+        "llm": "Claude" if ANTHROPIC_API_KEY else "offline (mock)",
         "keepa": "conectado" if KEEPA_API_KEY else "sin clave",
         "cerebro_dir": CEREBRO_CSV_DIR,
         "email": "SMTP real" if (SMTP_USER and SMTP_PASS) else "dry-run (no envia)",

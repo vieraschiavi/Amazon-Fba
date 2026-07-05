@@ -532,7 +532,7 @@ function responderLocal(preg) {
       + "app ya trae el motor propio gratis, asi que las herramientas son para **validar a mano** el "
       + "candidato. (Mas detalle en la pestaña **Config**.)";
   }
-  return "Puedo ayudarte con tu **portafolio**, el **sueldo meseta**, **margen/ROI/ACOS**, la **dedicacion horaria** y como **evaluar un nicho** en Mercado. Para respuestas abiertas fuera de tus datos, cargá una clave de IA en **Config** y con internet te respondo cualquier cosa. ¿Sobre cual querés que profundice?";
+  return "Puedo ayudarte con tu **portafolio**, el **sueldo meseta**, **margen/ROI/ACOS**, la **dedicacion horaria** y como **evaluar un nicho** en Mercado. Para respuestas abiertas fuera de tus datos, cargá una clave de Claude en **Config** y con internet te respondo cualquier cosa. ¿Sobre cual querés que profundice?";
 }
 async function responderClaude(preg) {
   const clave = (estado.claves.claude || "").trim();

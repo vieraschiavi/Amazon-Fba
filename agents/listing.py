@@ -67,7 +67,7 @@ def _generar_con_claude(producto: str, kw: dict, mercado: str):
             texto = texto[4:].strip()
         data = json.loads(texto)
         if all(k in data for k in ("titulo", "bullets", "descripcion", "banner_brief")):
-            data["_motor"] = "IA avanzada"
+            data["_motor"] = "claude:" + MODEL_SONNET
             return data
     except Exception:
         return None

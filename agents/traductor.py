@@ -32,7 +32,7 @@ def traducir(texto, idioma_destino="en"):
                 "mensaje": "Escribí una keyword para traducir."}
     if not config.ANTHROPIC_API_KEY:
         return {"ok": True, "texto": texto, "original": texto, "fuente": "sin traducir",
-                "mensaje": f"Sin clave de IA conectada no traduzco el seed, pero el "
+                "mensaje": f"Sin ANTHROPIC_API_KEY no traduzco el seed, pero el "
                            f"buscador igual trae keywords localizadas del marketplace. "
                            f"Para traducir automáticamente, cargá la clave en Config."}
     try:
@@ -50,7 +50,7 @@ def traducir(texto, idioma_destino="en"):
         if not trad:
             return {"ok": True, "texto": texto, "original": texto, "fuente": "sin traducir",
                     "mensaje": "No obtuve traducción; uso el término original."}
-        return {"ok": True, "texto": trad, "original": texto, "fuente": f"IA → {idioma}",
+        return {"ok": True, "texto": trad, "original": texto, "fuente": f"Claude → {idioma}",
                 "mensaje": f"'{texto}' → '{trad}' ({idioma})."}
     except Exception as e:
         return {"ok": True, "texto": texto, "original": texto, "fuente": "sin traducir",
