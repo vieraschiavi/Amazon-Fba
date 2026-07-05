@@ -3,8 +3,11 @@
 # como funcion serverless de Python -- eso rompia el deploy (500
 # FUNCTION_INVOCATION_FAILED) porque app.py es la API FastAPI del backend
 # (para n8n), no algo pensado para correr en Vercel. Se excluye todo el
-# codigo del programa (PC/Android/iOS/backend) para que Vercel solo vea y
-# sirva landing/.
+# codigo del programa (backend/Android nativo/iOS nativo) para que Vercel
+# solo vea landing/ + mobile/ (esta ultima es solo HTML/CSS/JS estatico:
+# el buildCommand de vercel.json la copia dentro de landing/app/ para que
+# la demo web sea usable desde la landing, sin riesgo de ser detectada
+# como funcion -- no tiene ningun .py).
 *.py
 requirements.txt
 core/
@@ -12,7 +15,6 @@ agents/
 data/
 android/
 ios/
-mobile/
 n8n/
 test/
 installer/
