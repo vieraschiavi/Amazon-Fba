@@ -26,3 +26,4 @@ installer/Output/
 
 # Assets de la app Android que se copian en cada build desde mobile/
 android/app/src/main/assets/
+landing/app/
