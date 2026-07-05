@@ -650,6 +650,21 @@ $("#bienvenida-demo").addEventListener("click", () => {
   $("#btn-demo").click();
 });
 
+// ============================ CONTACTO ============================
+const CONTACTO_EMAIL = "vieraschiavi@gmail.com";
+$("#form-contacto").addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  const pregunta = $("#ct-pregunta").value.trim();
+  if (!pregunta) { mostrarToast("Escribí tu pregunta antes de enviar"); return; }
+  const asunto = $("#ct-asunto").value.trim() || "Consulta desde MV Amazon FBA IA";
+  const contacto = $("#ct-contacto").value.trim() || "(no indicado)";
+  const cuerpo = `${pregunta}\n\nContacto de quien consulta: ${contacto}`;
+  const mailto = `mailto:${CONTACTO_EMAIL}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+  // La WebView nativa reenvia cualquier link no-file:// al sistema (abre la app de mail).
+  window.location.href = mailto;
+  mostrarToast("Abriendo tu app de correo…");
+});
+
 // ============================ ARRANQUE ============================
 (function arranque() {
   estadoConexion();

@@ -133,10 +133,11 @@ a { color: inherit; }
                    <input> hace que la columna crezca mas alla de su 1fr */
 }
 .grid-form label.col-2 { grid-column: span 2; }
-.formulario input[type="text"], .formulario input[type="number"], .formulario input[type="url"] {
+.formulario input[type="text"], .formulario input[type="number"], .formulario input[type="url"],
+.formulario textarea {
   width: 100%; min-width: 0;
   padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px;
-  background: var(--surface); color: var(--ink);
+  background: var(--surface); color: var(--ink); font-family: inherit; resize: vertical;
 }
 .campo-toggle { display: flex; gap: 16px; font-size: 13px; color: var(--ink); font-weight: 500; }
 .campo-toggle label, .campo-check { display: flex; flex-direction: row; align-items: center; gap: 6px; }

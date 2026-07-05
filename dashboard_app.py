@@ -8,6 +8,8 @@ Correr: streamlit run dashboard_app.py
 """
 import os
 import sys
+import urllib.parse
+import webbrowser
 
 import pandas as pd
 import streamlit as st
@@ -1194,3 +1196,38 @@ with tabs[12]:
         "miente. Con techo, se estabiliza en meseta (~techo x neto).\n"
         "- **El score mide ganabilidad, no margen.** Nada reemplaza la orden de prueba "
         "(USD 1.000-2.000) antes de escalar.")
+
+    st.divider()
+    st.markdown(ui.seccion("Contacto y soporte",
+                           "Escribinos tu consulta — se abre tu correo con todo completado"),
+                unsafe_allow_html=True)
+    with st.form("form_contacto"):
+        ct1, ct2 = st.columns(2)
+        ct_asunto = ct1.text_input("Asunto", placeholder="Ej: Consulta sobre licencia Pro",
+                                   key="ct_asunto")
+        ct_contacto = ct2.text_input("Tu teléfono o email de contacto",
+                                     placeholder="Ej: +598 99 123 456 o vos@email.com",
+                                     key="ct_contacto")
+        ct_pregunta = st.text_area("Tu pregunta", height=110,
+                                   placeholder="Contanos en qué te podemos ayudar...",
+                                   key="ct_pregunta")
+        ct_enviar = st.form_submit_button("Enviar consulta", type="primary")
+    if ct_enviar:
+        if not ct_pregunta.strip():
+            st.warning("Escribí tu pregunta antes de enviar.")
+        else:
+            asunto = ct_asunto.strip() or "Consulta desde MV Amazon FBA IA"
+            cuerpo = (f"{ct_pregunta.strip()}\n\n"
+                     f"Contacto de quien consulta: {ct_contacto.strip() or '(no indicado)'}")
+            mailto = ("mailto:" + config.ALERT_TO + "?subject=" + urllib.parse.quote(asunto)
+                      + "&body=" + urllib.parse.quote(cuerpo))
+            try:
+                webbrowser.open(mailto)
+                st.success(f"Abriendo tu programa de correo hacia {config.ALERT_TO} con el "
+                          "mensaje completado. Si no se abrió solo, copiá el texto de abajo "
+                          "y mandalo a mano.")
+            except Exception:
+                st.info("No se pudo abrir el correo automaticamente. Copiá el texto de abajo "
+                       f"y envialo a mano a {config.ALERT_TO}.")
+            st.code(f"Para: {config.ALERT_TO}\nAsunto: {asunto}\n\n{cuerpo}", language=None)
+    st.caption(f"También podés escribir directo a **{config.ALERT_TO}**.")
