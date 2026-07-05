@@ -86,6 +86,26 @@ tienda de apps). Consume la misma API que el panel de escritorio (`app.py`),
 que ahora tiene CORS habilitado para esto. Ver `mobile/README.md` para probarla
 en 2 minutos.
 
+## Activar la IA del DEMO web (proxy con tu clave, 1 paso)
+
+El demo público (`/app/`) trae el asistente con IA **incluida**: cuando el
+visitante no puso su propia clave, la app llama al endpoint `api/ia.js`
+(función serverless de Vercel) que responde con Claude usando **tu** clave
+guardada **solo** como variable de entorno en Vercel — nunca en el repo ni en
+el cliente. Modelo económico (Haiku) + `max_tokens` acotado para cuidar el
+presupuesto. Si la clave no está configurada, el endpoint responde 503 y el
+demo cae solo al asistente local (nunca se rompe).
+
+Para encenderla (una sola vez, ~30 s):
+1. Vercel → tu proyecto → **Settings → Environment Variables**.
+2. Agregá `ANTHROPIC_API_KEY` = tu clave `sk-ant-...` (Production + Preview).
+3. **Redeploy** (o el próximo push). Listo: el asistente del demo responde con
+   IA real. Para apagarla, borrá la variable y redeploy.
+
+En la versión **descargada** (APK/iOS/PC) no hay proxy: cada cliente usa su
+propia clave (BYOK) o el asistente local — por eso el `fetch('/api/ia')` falla
+en `file://` y cae al fallback, que es lo buscado.
+
 ## Landing web (`landing/`) y dominio propio
 
 La landing (`landing/index.html`) se despliega sola en Vercel en cada push

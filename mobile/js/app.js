@@ -541,7 +541,8 @@ async function responderClaude(preg) {
   const contexto = `Datos del negocio del usuario (Amazon FBA): ${r.n} productos, `
     + `sueldo meseta proyectado ${fmtMoney(r.sueldo_meseta_proyectado)}/mes, `
     + `margen promedio ${fmtPct(r.margen_promedio_pct)}, ventas reales ${fmtMoney(r.ingreso_real)}. `
-    + `Respondé en español rioplatense, breve y practico, como asesor FBA.`;
+    + `Respondé en español rioplatense con tono profesional pero amable y cercano, `
+    + `breve y practico, como un asesor FBA de confianza.`;
   const cuerpo = JSON.stringify({
     model: "claude-opus-4-8", max_tokens: 600,
     system: contexto,
@@ -558,6 +559,34 @@ async function responderClaude(preg) {
   const bloque = (data.content || []).find((b) => b.type === "text");
   return bloque ? bloque.text : "No obtuve respuesta del asistente.";
 }
+// Proxy de IA del DEMO web: la clave vive en el servidor (Vercel), no en el
+// cliente. En la app descargada (file://) este fetch falla y se cae al local.
+async function responderProxy(preg) {
+  const r = resumenPortafolio();
+  const contexto = `${r.n} productos, sueldo meseta ${fmtMoney(r.sueldo_meseta_proyectado)}/mes, `
+    + `margen promedio ${fmtPct(r.margen_promedio_pct)}, ventas reales ${fmtMoney(r.ingreso_real)}.`;
+  const idioma = (localStorage.getItem("mvfba_idioma") || (navigator.language || "es").slice(0, 2));
+  const resp = await fetch("/api/ia", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pregunta: preg, contexto, idioma }),
+  });
+  if (!resp.ok) return null;          // 503 no configurada / 502 upstream -> fallback
+  const data = await resp.json();
+  return (data && data.texto) ? data.texto : null;
+}
+// Orquesta: 1) clave propia (versión paga) 2) proxy del demo (IA incluida)
+// 3) asistente local (siempre disponible, sin internet ni clave).
+async function responderIA(texto) {
+  if ((estado.claves.claude || "").trim()) {
+    try { return await responderClaude(texto); } catch (e) { /* sigue */ }
+  }
+  try {
+    const p = await responderProxy(texto);
+    if (p) return p;
+  } catch (e) { /* sigue */ }
+  return responderLocal(texto);
+}
 $("#form-chat").addEventListener("submit", async (ev) => {
   ev.preventDefault();
   const input = $("#chat-input");
@@ -570,7 +599,7 @@ $("#form-chat").addEventListener("submit", async (ev) => {
   pintarChat();
   let respuesta;
   try {
-    respuesta = await responderClaude(texto);       // abierto (si hay clave+internet)
+    respuesta = await responderIA(texto);            // clave propia -> proxy demo -> local
   } catch (e) {
     respuesta = responderLocal(texto);               // local, siempre disponible
   }

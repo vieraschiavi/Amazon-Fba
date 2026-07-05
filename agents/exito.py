@@ -168,9 +168,10 @@ def narrativa(evaluacion, competencia=None):
             model=config.MODEL_OPUS, max_tokens=900,
             system=("Sos el asesor de MV Amazon FBA IA. Analiza la evaluacion de "
                     "exito de un producto FBA y da un veredicto razonado en espanol "
-                    "rioplatense: 3-5 parrafos cortos, concreto, sin humo. Respeta "
-                    "el caveat: es una estimacion, no una garantia, y la orden de "
-                    "prueba es obligatoria antes de escalar."),
+                    "rioplatense, con tono profesional pero amable y cercano: 3-5 "
+                    "parrafos cortos, concreto, sin humo, pero calido y respetuoso. "
+                    "Respeta el caveat: es una estimacion, no una garantia, y la orden "
+                    "de prueba es obligatoria antes de escalar."),
             messages=[{"role": "user", "content":
                        "Evaluacion:\n" + json.dumps(ev, ensure_ascii=False) +
                        ("\nCompetencia:\n" + json.dumps(competencia, ensure_ascii=False)
