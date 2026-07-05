@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>¡Gracias por tu compra! — MV Amazon FBA IA</title>
+<meta name="robots" content="noindex">
+<style>
+  :root{--navy-700:#152a63;--navy-900:#0a1530;--accent:#f0ac3f;--ink:#0f172a;--line:#e2e8f0;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:linear-gradient(165deg,var(--navy-700),var(--navy-900));color:#fff;min-height:100vh;
+    display:flex;align-items:flex-start;justify-content:center;padding:32px 18px 60px}
+  .card{background:#fff;color:var(--ink);border-radius:20px;max-width:560px;width:100%;
+    padding:30px 26px;box-shadow:0 30px 70px -25px rgba(0,0,0,.6)}
+  .mk{display:inline-flex;width:52px;height:52px;border-radius:14px;align-items:center;justify-content:center;
+    font-weight:800;font-size:24px;background:var(--navy-700);color:#fff;margin-bottom:14px}
+  .mk i{color:#63c26b;font-style:normal}
+  h1{font-size:24px;margin:0 0 6px;letter-spacing:-.02em}
+  .sub{color:#475569;font-size:15px;margin:0 0 22px;line-height:1.5}
+  .estado{font-size:14px;color:#475569}
+  .lic-box{background:#f8fafc;border:1px dashed var(--accent);border-radius:14px;padding:18px;text-align:center;margin:18px 0}
+  .lic-label{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8a5407}
+  .lic-key{font-size:24px;font-weight:800;letter-spacing:2px;color:var(--navy-700);margin:8px 0;font-family:ui-monospace,Menlo,Consolas,monospace;user-select:all;word-break:break-all}
+  .copiar{background:var(--navy-700);color:#fff;border:0;border-radius:9px;padding:8px 16px;font-weight:700;font-size:13px;cursor:pointer}
+  .email-note{font-size:13px;color:#475569;margin-top:10px}
+  .dl{display:grid;gap:10px;margin-top:20px}
+  .btn{display:flex;align-items:center;gap:10px;justify-content:center;text-decoration:none;
+    padding:13px 16px;border-radius:11px;font-weight:800;font-size:14.5px}
+  .btn-a{background:var(--accent);color:#241705}
+  .btn-b{background:#fff;color:var(--navy-700);border:1.5px solid var(--line)}
+  .pasos{font-size:13.5px;color:#475569;line-height:1.6;margin-top:20px;background:#f8fafc;border-radius:12px;padding:14px 16px}
+  .pasos b{color:var(--ink)}
+  .err{background:#fef2f2;color:#991b1b;border-radius:12px;padding:16px;font-size:14px}
+  .foot{margin-top:22px;font-size:12.5px;color:#94a3b8;text-align:center}
+  a.link{color:#8a5407;font-weight:700}
+  .spin{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--navy-700);border-radius:50%;animation:sp 1s linear infinite;margin:10px auto}
+  @keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="mk">M<i>V</i></div>
+  <h1 id="titulo">Confirmando tu pago…</h1>
+  <p class="sub" id="sub">Un segundo, estamos verificando el pago con MercadoPago.</p>
+  <div id="cargando"><div class="spin"></div></div>
+  <div id="contenido" style="display:none"></div>
+  <div class="foot">MV Amazon FBA IA · ¿Dudas? <a class="link" href="mailto:vieraschiavi@gmail.com">vieraschiavi@gmail.com</a></div>
+</div>
+<script>
+const APK = "https://github.com/vieraschiavi/Amazon-Fba/raw/main/android/dist/MV-Amazon-FBA-IA.apk";
+const RELEASES = "https://github.com/vieraschiavi/Amazon-Fba/releases";
+const $ = (id) => document.getElementById(id);
+function params(){ const p = new URLSearchParams(location.search); const o={}; for (const [k,v] of p) o[k]=v; return o; }
+
+function mostrarAprobado(d){
+  $("#titulo").textContent = "¡Gracias por tu compra! 🎉";
+  $("#sub").innerHTML = "Tu pago se aprobó. Esta es tu <b>licencia</b> — guardala y usala en la app con el <b>mismo email</b> con el que pagaste.";
+  const email = d.email ? `<p class="email-note">Licencia a nombre de <b>${d.email}</b>. Ingresá ese email al activar.</p>` : "";
+  $("#contenido").innerHTML = `
+    <div class="lic-box">
+      <div class="lic-label">Tu clave de licencia</div>
+      <div class="lic-key" id="lk">${d.licencia}</div>
+      <button class="copiar" id="btnCopiar">Copiar clave</button>
+      ${email}
+    </div>
+    <div class="dl">
+      <a class="btn btn-a" href="${APK}">⬇️ Descargar app Android (APK)</a>
+      <a class="btn btn-b" href="${RELEASES}">💻 Programa para PC (Windows)</a>
+    </div>
+    <div class="pasos">
+      <b>Cómo activarla:</b><br>
+      1. Instalá la app (Android) o el programa (PC).<br>
+      2. Al abrir, entrá a activar la licencia.<br>
+      3. Poné tu email y pegá la clave de arriba. ¡Listo, sin límites!
+    </div>`;
+  $("#cargando").style.display = "none";
+  $("#contenido").style.display = "block";
+  const b = $("#btnCopiar");
+  if (b) b.addEventListener("click", () => {
+    navigator.clipboard.writeText(d.licencia).then(()=>{ b.textContent = "¡Copiada!"; }).catch(()=>{});
+  });
+}
+function mostrarPendiente(estado){
+  $("#titulo").textContent = "Pago en proceso";
+  $("#sub").textContent = "Tu pago todavía se está procesando (estado: " + (estado||"pendiente") + "). Apenas se acredite te llega la licencia; podés volver a esta página o escribirnos.";
+  $("#cargando").style.display = "none";
+}
+function mostrarError(msg){
+  $("#titulo").textContent = "No pudimos confirmar el pago";
+  $("#sub").textContent = "";
+  $("#cargando").style.display = "none";
+  $("#contenido").style.display = "block";
+  $("#contenido").innerHTML = `<div class="err">${msg}</div>`;
+}
+
+(async () => {
+  const p = params();
+  const pid = p.payment_id || p.collection_id;
+  if (!pid){
+    mostrarError("No recibimos el identificador del pago. Si ya pagaste y ves esto, escribinos a vieraschiavi@gmail.com y te enviamos la licencia.");
+    return;
+  }
+  try{
+    const r = await fetch("/api/licencia?payment_id=" + encodeURIComponent(pid));
+    if (r.status === 503){ mostrarError("El cobro todavía no está activado. Escribinos y lo resolvemos."); return; }
+    const d = await r.json();
+    if (d.aprobado) mostrarAprobado(d);
+    else if (d.estado) mostrarPendiente(d.estado);
+    else mostrarError("No pudimos verificar el pago. Escribinos a vieraschiavi@gmail.com con tu comprobante y te ayudamos.");
+  }catch(e){
+    mostrarError("Hubo un problema al verificar el pago. Reintentá en un minuto o escribinos.");
+  }
+})();
+</script>
+</body>
+</html>

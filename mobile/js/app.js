@@ -107,6 +107,7 @@ function irAVista(nombre) {
   $all(".nav-btn").forEach((b) => b.classList.toggle("activa", b.dataset.vista === nombre));
   if (nombre === "inicio") cargarInicio();
   if (nombre === "portafolio") cargarPortafolio();
+  if (nombre === "asistente") pintarChat();   // muestra la bienvenida al entrar
   window.scrollTo(0, 0);
 }
 $all(".nav-btn").forEach((b) => b.addEventListener("click", () => irAVista(b.dataset.vista)));
@@ -476,13 +477,56 @@ $("#form-mercado").addEventListener("submit", async (ev) => {
 
 // ============================ ASISTENTE ============================
 let chatHistorial = [];
+// Render de markdown liviano (negrita, código, listas con viñeta y numeradas,
+// títulos y párrafos) para que las respuestas de la IA se vean prolijas, como
+// en el programa, y no como texto plano con guiones sueltos.
+function _inline(t) {
+  return escapar(t)
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/`(.+?)`/g, "<code>$1</code>");
+}
 function formatearMensaje(texto) {
-  const seguro = escapar(texto);
-  return seguro.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\n/g, "<br>");
+  const lineas = String(texto == null ? "" : texto).split(/\n/);
+  let html = "", ul = false, ol = false;
+  const cerrar = () => { if (ul) { html += "</ul>"; ul = false; } if (ol) { html += "</ol>"; ol = false; } };
+  for (const raw of lineas) {
+    const l = raw.trim();
+    if (!l) { cerrar(); continue; }
+    let m;
+    if ((m = l.match(/^[-•*]\s+(.*)/))) {
+      if (!ul) { cerrar(); html += "<ul>"; ul = true; }
+      html += "<li>" + _inline(m[1]) + "</li>";
+    } else if ((m = l.match(/^\d+[.)]\s+(.*)/))) {
+      if (!ol) { cerrar(); html += "<ol>"; ol = true; }
+      html += "<li>" + _inline(m[1]) + "</li>";
+    } else if ((m = l.match(/^#{1,3}\s+(.*)/))) {
+      cerrar(); html += "<h4>" + _inline(m[1]) + "</h4>";
+    } else {
+      cerrar(); html += "<p>" + _inline(l) + "</p>";
+    }
+  }
+  cerrar();
+  return html;
+}
+function _bienvenidaChat() {
+  const r = resumenPortafolio();
+  const extra = r.n
+    ? `Veo que tenés **${r.n} producto/s** cargados y un sueldo estable proyectado de **${fmtMoney(r.sueldo_meseta_proyectado)}/mes**. `
+    : "Cargá un producto (o tocá **Ver con datos de ejemplo** en Config) y te analizo tus números. ";
+  return "¡Hola! Soy tu asistente de MV Amazon FBA IA. " + extra
+    + "Preguntame lo que quieras: márgenes, precios, qué producto conviene, cuánto podés ganar…";
 }
 function pintarChat() {
   const cont = $("#chat-historial");
-  cont.innerHTML = chatHistorial.map((m) => `<div class="msg ${m.role}">${formatearMensaje(m.content)}</div>`).join("");
+  const items = chatHistorial.length
+    ? chatHistorial
+    : [{ role: "assistant", content: _bienvenidaChat() }];
+  cont.innerHTML = items.map((m) => {
+    if (m.content === "Pensando…") {
+      return '<div class="msg assistant escribiendo"><span></span><span></span><span></span></div>';
+    }
+    return `<div class="msg ${m.role}">${formatearMensaje(m.content)}</div>`;
+  }).join("");
   cont.scrollTop = cont.scrollHeight;
 }
 // Asistente LOCAL: responde desde tus datos y el conocimiento FBA embebido, sin
