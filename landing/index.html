@@ -78,8 +78,8 @@ button{font:inherit}
 .langsel button{border:0;background:transparent;padding:5px 11px;border-radius:999px;font-size:12.5px;
   font-weight:700;color:#9fb0d8;cursor:pointer;letter-spacing:.02em}
 .langsel button.on{background:var(--accent-on-dark);color:#241705}
-.btn{display:inline-flex;align-items:center;gap:8px;border-radius:11px;padding:11px 18px;font-weight:700;
-  font-size:14.5px;cursor:pointer;border:1px solid transparent;text-decoration:none;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:11px;padding:11px 18px;font-weight:700;
+  font-size:14.5px;font-family:inherit;cursor:pointer;border:1px solid transparent;text-decoration:none;white-space:nowrap}
 .btn-primary{background:var(--accent-on-dark);color:#241705;box-shadow:var(--shadow-sm)}
 .btn-primary:hover{background:#ffc266}
 .btn-ghost{background:transparent;border-color:var(--line);color:var(--ink)}
@@ -420,7 +420,7 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
           <li data-t="pricing.starter.f3">Motor de keywords gratis</li>
           <li class="off" data-t="pricing.starter.f4">Sin módulos avanzados de PC</li>
         </ul>
-        <a class="btn btn-ghost" href="#pagos" data-t="pricing.buy">Comprar</a>
+        <button class="btn btn-ghost comprar" data-plan="starter" data-t="pricing.buy">Comprar</button>
       </div>
       <div class="card price-card hot">
         <div class="tag" data-t="pricing.popular">MÁS VENDIDO</div>
@@ -433,7 +433,7 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
           <li data-t="pricing.pro.f3">Multi-idioma / 10 marketplaces</li>
           <li data-t="pricing.pro.f4">IA con tu propia clave</li>
         </ul>
-        <a class="btn btn-primary" href="#pagos" data-t="pricing.buy">Comprar</a>
+        <button class="btn btn-primary comprar" data-plan="pro" data-t="pricing.buy">Comprar</button>
       </div>
       <div class="card price-card">
         <div class="pname" data-t="pricing.ia.name">Pro IA · todo incluido</div>
@@ -445,7 +445,7 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
           <li data-t="pricing.ia.f3">Sin configurar ninguna clave</li>
           <li data-t="pricing.ia.f4">Soporte prioritario</li>
         </ul>
-        <a class="btn btn-ghost" href="#pagos" data-t="pricing.buy">Comprar</a>
+        <button class="btn btn-ghost comprar" data-plan="ia" data-t="pricing.buy">Comprar</button>
       </div>
     </div>
 
@@ -897,6 +897,34 @@ if (formContacto) {
   };
   reset();
 })();
+
+/* ---------- Comprar: Checkout Pro de MercadoPago ---------- */
+document.querySelectorAll(".comprar").forEach((btn) => {
+  btn.addEventListener("click", async () => {
+    const plan = btn.dataset.plan;
+    const original = btn.textContent;
+    btn.disabled = true; btn.textContent = "Abriendo pago…";
+    try {
+      const r = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      });
+      if (r.status === 503) {
+        btn.textContent = "Pago no disponible aún";
+        setTimeout(() => { btn.disabled = false; btn.textContent = original; }, 2500);
+        return;
+      }
+      const d = await r.json();
+      if (d.init_point) { window.location.href = d.init_point; return; }
+      throw new Error(d.error || "sin init_point");
+    } catch (e) {
+      btn.textContent = "Reintentar";
+      btn.disabled = false;
+      setTimeout(() => { btn.textContent = original; }, 2500);
+    }
+  });
+});
 </script>
 
 </body>
