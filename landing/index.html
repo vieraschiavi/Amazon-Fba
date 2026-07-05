@@ -137,6 +137,44 @@ section{padding:76px 0}
   font-size:13.5px;font-weight:700;padding:9px 16px;border-radius:999px;margin:-20px 0 30px;
   text-decoration:none;cursor:pointer;transition:transform .15s}
 .demo-banner:hover{transform:translateY(-1px)}
+/* ---------- video / tour player ---------- */
+#video{background:linear-gradient(180deg,var(--navy-900),var(--navy-700));color:#fff}
+#video .klabel{color:var(--accent-on-dark)}
+#video .h2{color:#fff}
+#video .sublede{color:#b9c4e0}
+.player{max-width:960px;margin:0 auto}
+.stage{position:relative;aspect-ratio:16/9;border-radius:16px;overflow:hidden;
+  background:#0a1020;box-shadow:0 30px 70px -30px rgba(0,0,0,.7);border:1px solid rgba(255,255,255,.08)}
+.scene{position:absolute;inset:0;opacity:0;transition:opacity .6s ease;display:flex;
+  align-items:center;justify-content:center;background:#0a1020}
+.scene.on{opacity:1}
+.scene img{width:100%;height:100%;object-fit:contain;object-position:center}
+.slide{flex-direction:column;text-align:center;padding:8%;gap:14px;
+  background:radial-gradient(120% 90% at 50% 0%,var(--navy-700),var(--navy-900))}
+.slide .mk{display:inline-flex;width:64px;height:64px;border-radius:16px;align-items:center;
+  justify-content:center;font-weight:800;font-size:30px;background:var(--navy-500);
+  color:#fff;border:1px solid rgba(255,255,255,.16);margin:0 auto}
+.slide .mk i{color:var(--green);font-style:normal}
+.slide h3{font-size:clamp(20px,3.4vw,34px);font-weight:800;letter-spacing:-.02em;margin:0;color:#fff}
+.slide p{color:#c6d0ea;font-size:clamp(13px,1.8vw,17px);margin:0;max-width:34ch}
+.slide .pill2{display:inline-flex;gap:7px;align-items:center;background:var(--accent-on-dark);
+  color:#241705;font-weight:800;font-size:13px;padding:8px 15px;border-radius:999px}
+.vcap{position:absolute;left:0;right:0;bottom:0;padding:44px 20px 16px;font-size:clamp(13px,1.9vw,17px);
+  font-weight:600;line-height:1.4;color:#fff;text-align:center;
+  background:linear-gradient(0deg,rgba(5,10,25,.92),rgba(5,10,25,0))}
+.vover{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(5,10,25,.45);cursor:pointer;transition:opacity .3s}
+.vover.hide{opacity:0;pointer-events:none}
+.vplay{width:74px;height:74px;border-radius:50%;border:0;background:var(--accent-on-dark);
+  color:#241705;font-size:26px;cursor:pointer;box-shadow:0 12px 30px -8px rgba(0,0,0,.6);
+  display:flex;align-items:center;justify-content:center;padding-left:5px}
+.vprogwrap{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.14)}
+.vprog{height:100%;width:0;background:var(--accent-on-dark);transition:width .2s linear}
+.vctrls{display:flex;align-items:center;gap:14px;margin-top:14px;color:#b9c4e0;font-size:13px}
+.vctrls button{background:var(--accent-on-dark);color:#241705;border:0;border-radius:9px;
+  padding:9px 16px;font-weight:800;font-size:13.5px;cursor:pointer}
+.vhint{margin-left:auto;font-size:12px;color:#8ea0cc}
+@media(max-width:640px){.vhint{display:none}}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
 .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
@@ -233,6 +271,7 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
   <div class="in">
     <div class="brand"><span class="mk">M<i>V</i></span> MV Amazon FBA IA</div>
     <div class="navlinks">
+      <a href="#video" data-t="nav.video">Video</a>
       <a href="#producto" data-t="nav.product">Producto</a>
       <a href="#precios" data-t="nav.pricing">Precios</a>
       <a href="#plataformas" data-t="nav.platforms">Plataformas</a>
@@ -277,6 +316,44 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
     </div>
   </div>
 </header>
+
+<section id="video">
+  <div class="wrap">
+    <div class="klabel" data-t="video.label">En acción</div>
+    <h2 class="h2" data-t="video.h2">Mirá el programa funcionando, de punta a punta</h2>
+    <p class="sublede" data-t="video.sub">Un recorrido narrado por todo el sistema. El audio sigue el idioma que elijas arriba.</p>
+    <div class="player">
+      <div class="stage" id="vstage">
+        <div class="scene slide" data-scene="intro">
+          <span class="mk">M<i>V</i></span>
+          <h3>MV Amazon FBA IA</h3>
+          <p data-t="video.cap.intro"></p>
+        </div>
+        <div class="scene" data-scene="keywords"><img src="media/escena-investigacion.jpg" alt="" loading="lazy"></div>
+        <div class="scene" data-scene="pricing"><img src="media/escena-pricing.jpg" alt="" loading="lazy"></div>
+        <div class="scene" data-scene="portafolio"><img src="media/escena-portafolio.jpg" alt="" loading="lazy"></div>
+        <div class="scene" data-scene="ganancias"><img src="media/escena-ganancias.jpg" alt="" loading="lazy"></div>
+        <div class="scene" data-scene="mercado"><img src="media/escena-mercado.jpg" alt="" loading="lazy"></div>
+        <div class="scene" data-scene="asistente"><img src="media/escena-asistente.jpg" alt="" loading="lazy"></div>
+        <div class="scene" data-scene="multiplataforma"><img src="media/escena-plataformas.jpg" alt="" loading="lazy"></div>
+        <div class="scene slide" data-scene="cierre">
+          <span class="pill2" data-t="video.slidePill">🎁 3 días gratis</span>
+          <h3 data-t="video.slideCierre">Tu negocio en Amazon, bajo control</h3>
+          <p data-t="video.cap.cierre"></p>
+        </div>
+        <div class="vcap" id="vcap"></div>
+        <div class="vprogwrap"><div class="vprog" id="vprog"></div></div>
+        <div class="vover" id="vover"><button class="vplay" id="vplay" aria-label="Play">▶</button></div>
+      </div>
+      <div class="vctrls">
+        <button id="vtoggle" data-t="video.play">▶ Reproducir</button>
+        <span id="vtime">0:00</span>
+        <span class="vhint" data-t="video.hint">Voz neutra/latina · sin costo de datos</span>
+      </div>
+    </div>
+  </div>
+  <audio id="vaudio" preload="none"></audio>
+</section>
 
 <section id="producto" class="section-alt">
   <div class="wrap">
@@ -513,6 +590,8 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
 const I18N = {
   es: {
     "nav.product":"Producto","nav.pricing":"Precios","nav.platforms":"Plataformas","nav.faq":"Preguntas","nav.contact":"Contacto","nav.cta":"Comprar","nav.demo":"Probar demo",
+    "nav.video":"Video","video.label":"En acción","video.h2":"Mirá el programa funcionando, de punta a punta","video.sub":"Un recorrido narrado por todo el sistema. El audio sigue el idioma que elijas arriba.","video.play":"▶ Reproducir","video.pause":"⏸ Pausar","video.replay":"↻ Ver de nuevo","video.hint":"Voz neutra/latina · sin costo de datos","video.slidePill":"🎁 3 días gratis","video.slideCierre":"Tu negocio en Amazon, bajo control","video.cap.intro":"Tenés el capital y las ganas de vender en Amazon. Lo que falta es un sistema que te diga qué vender, a qué precio, y cuánto vas a ganar. Eso es MV Amazon FBA IA.","video.cap.keywords":"Investigá nichos con nuestro motor propio: keywords reales de Amazon en diez mercados, sin pagar Helium 10 ni Jungle Scout.","video.cap.pricing":"Cargá tu costo real y el sistema calcula el precio, el margen y el retorno, con un semáforo que te dice al toque si el producto conviene.","video.cap.portafolio":"Todos tus productos en un tablero: tu sueldo estable proyectado, el capital en juego y qué producto tira del resto.","video.cap.ganancias":"Poné cuánto invertís y mirá el desglose completo: unidades, ingreso, costos y ganancia real, sin sorpresas.","video.cap.mercado":"Evaluá cualquier producto: competencia, demanda y una probabilidad de éxito honesta, para no jugarte la plata a ciegas.","video.cap.asistente":"Y un asistente con inteligencia artificial que responde sobre tus números, tu portafolio y tu estrategia, cuando lo necesites.","video.cap.multiplataforma":"Todo en tu PC y en tu celular, Android o iPhone. Funciona sin internet y tus datos quedan en tu dispositivo.","video.cap.cierre":"Probalo gratis tres días, con todas las funciones. Sin factura mensual. MV Amazon FBA IA: tu negocio en Amazon, bajo control.",
+
     "hero.eyebrow":"Motor de keywords propio · sin pagar Helium 10",
     "hero.h1":'Vendé en Amazon con <em>tu propia IA</em>, no con su factura mensual',
     "hero.sub":"Investigación de nicho, pricing, portafolio, proyección de caja y asistente IA — en tu PC y en tu Android, en el idioma que necesites. Sin depender de Helium 10 ni Jungle Scout.",
@@ -572,6 +651,8 @@ const I18N = {
   },
   en: {
     "nav.product":"Product","nav.pricing":"Pricing","nav.platforms":"Platforms","nav.faq":"FAQ","nav.contact":"Contact","nav.cta":"Buy now","nav.demo":"Try demo",
+    "nav.video":"Video","video.label":"In action","video.h2":"See the program working, end to end","video.sub":"A narrated tour of the whole system. The audio follows the language you pick above.","video.play":"▶ Play","video.pause":"⏸ Pause","video.replay":"↻ Watch again","video.hint":"Neutral/Latin voice · no data cost","video.slidePill":"🎁 3 days free","video.slideCierre":"Your Amazon business, under control","video.cap.intro":"You've got the capital and the drive to sell on Amazon. What's missing is a system that tells you what to sell, at what price, and how much you'll make. That's MV Amazon FBA IA.","video.cap.keywords":"Research niches with our own engine: real Amazon keywords across ten marketplaces, without paying for Helium 10 or Jungle Scout.","video.cap.pricing":"Enter your real cost and the system computes price, margin and return, with a traffic light that tells you instantly if the product is worth it.","video.cap.portafolio":"All your products on one board: your projected steady salary, the capital at play, and which product carries the rest.","video.cap.ganancias":"Enter how much you invest and see the full breakdown: units, revenue, costs and real profit, with no surprises.","video.cap.mercado":"Evaluate any product: competition, demand and an honest success probability, so you don't bet your money blindly.","video.cap.asistente":"And an AI assistant that answers about your numbers, your portfolio and your strategy, whenever you need it.","video.cap.multiplataforma":"Everything on your PC and your phone, Android or iPhone. It works offline and your data stays on your device.","video.cap.cierre":"Try it free for three days, with every feature. No monthly bill. MV Amazon FBA IA: your Amazon business, under control.",
+
     "hero.eyebrow":"Own keyword engine · no Helium 10 bill",
     "hero.h1":'Sell on Amazon with <em>your own AI</em>, not their monthly invoice',
     "hero.sub":"Niche research, pricing, portfolio, cash-flow projection and an AI assistant — on your PC and your Android, in the language you need. No dependency on Helium 10 or Jungle Scout.",
@@ -631,6 +712,8 @@ const I18N = {
   },
   pt: {
     "nav.product":"Produto","nav.pricing":"Preços","nav.platforms":"Plataformas","nav.faq":"Perguntas","nav.contact":"Contato","nav.cta":"Comprar","nav.demo":"Testar demo",
+    "nav.video":"Vídeo","video.label":"Em ação","video.h2":"Veja o programa funcionando, de ponta a ponta","video.sub":"Um tour narrado por todo o sistema. O áudio segue o idioma que você escolher acima.","video.play":"▶ Reproduzir","video.pause":"⏸ Pausar","video.replay":"↻ Ver de novo","video.hint":"Voz neutra/latina · sem custo de dados","video.slidePill":"🎁 3 dias grátis","video.slideCierre":"Seu negócio na Amazon, sob controle","video.cap.intro":"Você tem o capital e a vontade de vender na Amazon. Falta um sistema que diga o que vender, a que preço, e quanto você vai ganhar. Isso é o MV Amazon FBA IA.","video.cap.keywords":"Pesquise nichos com o nosso motor próprio: palavras-chave reais da Amazon em dez mercados, sem pagar Helium 10 ou Jungle Scout.","video.cap.pricing":"Coloque seu custo real e o sistema calcula o preço, a margem e o retorno, com um semáforo que diz na hora se o produto vale a pena.","video.cap.portafolio":"Todos os seus produtos em um painel: seu salário estável projetado, o capital em jogo e qual produto puxa o resto.","video.cap.ganancias":"Informe quanto investe e veja o detalhamento completo: unidades, receita, custos e lucro real, sem surpresas.","video.cap.mercado":"Avalie qualquer produto: concorrência, demanda e uma probabilidade de sucesso honesta, para não apostar seu dinheiro às cegas.","video.cap.asistente":"E um assistente com inteligência artificial que responde sobre seus números, seu portfólio e sua estratégia, quando você precisar.","video.cap.multiplataforma":"Tudo no seu PC e no seu celular, Android ou iPhone. Funciona sem internet e seus dados ficam no seu dispositivo.","video.cap.cierre":"Experimente grátis por três dias, com todas as funções. Sem fatura mensal. MV Amazon FBA IA: seu negócio na Amazon, sob controle.",
+
     "hero.eyebrow":"Motor de palavras-chave próprio · sem pagar Helium 10",
     "hero.h1":'Venda na Amazon com <em>sua própria IA</em>, não com a fatura mensal deles',
     "hero.sub":"Pesquisa de nicho, precificação, portfólio, projeção de caixa e assistente de IA — no seu PC e no seu Android, no idioma que precisar. Sem depender de Helium 10 ou Jungle Scout.",
@@ -699,6 +782,7 @@ function applyLang(lang){
   });
   document.querySelectorAll("#langsel button").forEach(b=>b.classList.toggle("on", b.dataset.lang===lang));
   try{ localStorage.setItem("mvfba_lang", lang); }catch(e){}
+  if (window.videoOnLang) window.videoOnLang(lang);
 }
 const sel = document.getElementById("langsel");
 LANGS.forEach(([code,label])=>{
@@ -732,6 +816,85 @@ if (formContacto) {
     window.location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
   });
 }
+
+/* ---------- Reproductor del tour (multi-idioma, audio sigue el idioma) ---------- */
+(function(){
+  const AUDIO = { es:"media/narracion-es.mp3", en:"media/narracion-en.mp3", pt:"media/narracion-pt.mp3" };
+  const STARTS = {
+    es:[0,8.59,14.7,21.39,27.26,33.42,39.63,46.3,51.97],
+    en:[0,10.27,18.3,26.91,33.95,41.68,49.1,55.93,63.29],
+    pt:[0,9.55,17.25,25.18,32.16,39.45,47.02,55.06,62.22]
+  };
+  const ORDER = ["intro","keywords","pricing","portafolio","ganancias","mercado","asistente","multiplataforma","cierre"];
+  const audio = document.getElementById("vaudio");
+  const stage = document.getElementById("vstage");
+  const scenes = ORDER.map(id=>stage.querySelector(`.scene[data-scene="${id}"]`));
+  const cap = document.getElementById("vcap");
+  const prog = document.getElementById("vprog");
+  const over = document.getElementById("vover");
+  const toggle = document.getElementById("vtoggle");
+  const timeEl = document.getElementById("vtime");
+  let curLang = document.documentElement.lang || "es";
+  let idx = -1;
+
+  function fmt(t){ t=Math.max(0,t|0); return Math.floor(t/60)+":"+String(t%60).padStart(2,"0"); }
+  function dict(){ return I18N[curLang] || I18N.es; }
+  function showScene(i){
+    if(i===idx) return;
+    idx=i;
+    scenes.forEach((s,k)=>s.classList.toggle("on", k===i));
+    const d=dict();
+    cap.textContent = d["video.cap."+ORDER[i]] || "";
+  }
+  function starts(){ return STARTS[curLang] || STARTS.es; }
+  function sceneAt(t){
+    const s=starts(); let i=0;
+    for(let k=0;k<s.length;k++){ if(t>=s[k]-0.15) i=k; }
+    return i;
+  }
+  function setLangSrc(){
+    audio.src = AUDIO[curLang] || AUDIO.es;
+  }
+  function reset(){
+    audio.pause(); audio.removeAttribute("src"); audio.load();
+    idx=-1; showScene(0); prog.style.width="0%"; timeEl.textContent="0:00";
+    over.classList.remove("hide"); toggle.textContent = dict()["video.play"];
+  }
+  function play(){
+    if(!audio.src) setLangSrc();
+    audio.play().then(()=>{
+      over.classList.add("hide");
+      toggle.textContent = dict()["video.pause"] || "⏸";
+    }).catch(()=>{});
+  }
+  function pause(){ audio.pause(); toggle.textContent = dict()["video.play"]; }
+
+  audio.addEventListener("timeupdate", ()=>{
+    showScene(sceneAt(audio.currentTime));
+    const dur = audio.duration || 1;
+    prog.style.width = Math.min(100,(audio.currentTime/dur)*100)+"%";
+    timeEl.textContent = fmt(audio.currentTime);
+  });
+  audio.addEventListener("ended", ()=>{
+    over.classList.remove("hide");
+    toggle.textContent = dict()["video.replay"] || dict()["video.play"];
+    prog.style.width="100%";
+  });
+  over.addEventListener("click", play);
+  document.getElementById("vplay").addEventListener("click",(e)=>{e.stopPropagation();play();});
+  toggle.addEventListener("click", ()=>{ if(audio.paused) play(); else pause(); });
+
+  // el idioma cambió: reiniciar el tour en el nuevo idioma
+  window.videoOnLang = function(lang){
+    if(!(lang in AUDIO)) return;
+    const wasPlaying = audio.src && !audio.paused;
+    curLang = lang;
+    reset();
+    setLangSrc();
+    if(wasPlaying) play();
+  };
+  reset();
+})();
 </script>
 
 </body>

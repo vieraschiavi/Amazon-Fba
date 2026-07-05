@@ -245,6 +245,24 @@ except Exception:
 _opc_activo = {"— Manual (sin producto) —": None}
 for _p in _cartera:
     _opc_activo[f"{_p['nombre']} · {(_p.get('asin') or 's/ASIN')}"] = _p
+# Demo full-experience: cargar 1 producto de ejemplo con un clic para recorrer
+# TODO el sistema (Pricing, Caja, Ventas, Asistente) con numeros reales.
+from core import demo_seed  # noqa: E402
+st.sidebar.markdown("### 🎁 Probar con un ejemplo")
+if demo_seed.hay_ejemplo():
+    if st.sidebar.button("Quitar producto de ejemplo", use_container_width=True):
+        demo_seed.quitar_ejemplo()
+        st.rerun()
+    st.sidebar.caption("Ejemplo cargado: elegilo abajo en «Producto activo» y "
+                       "recorré las pestañas.")
+else:
+    if st.sidebar.button("Cargar producto de ejemplo", type="primary",
+                         use_container_width=True):
+        demo_seed.cargar_ejemplo()
+        st.rerun()
+    st.sidebar.caption("1 producto listo (costo, precio, margen, ROI y ventas) para "
+                       "ver el sistema completo funcionando.")
+
 st.sidebar.markdown("### 🎯 Producto activo")
 _sel_activo = st.sidebar.selectbox(
     "Sus datos se replican en Pricing, Caja y Ventas",
