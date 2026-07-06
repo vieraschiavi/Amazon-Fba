@@ -170,15 +170,31 @@
       <h1 class="titulo-vista">Config</h1>
       <p class="sub-vista">Todo se guarda en este telefono. Nada sale sin tu permiso.</p>
 
-      <h2 class="titulo-seccion">Claves opcionales (para funciones online)</h2>
+      <h2 class="titulo-seccion">Asistente con IA — elegí tu proveedor</h2>
       <form id="form-config" class="formulario">
-        <label>Clave Keepa (datos reales de demanda)<input type="text" id="cfg-keepa" placeholder="opcional" autocomplete="off"></label>
-        <label>Clave Claude / Anthropic (asistente abierto)<input type="password" id="cfg-claude" placeholder="opcional — sk-ant-..." autocomplete="off"></label>
-        <button type="submit" class="btn-primario">Guardar claves</button>
+        <label>Proveedor de IA
+          <select id="cfg-ia-prov">
+            <option value="claude">Claude / Anthropic — recomendada ★</option>
+            <option value="openai">OpenAI (ChatGPT)</option>
+            <option value="gemini">Google Gemini</option>
+          </select>
+        </label>
+        <label>Clave Claude / Anthropic<input type="password" id="cfg-claude" placeholder="sk-ant-..." autocomplete="off"></label>
+        <label>Clave OpenAI (ChatGPT)<input type="password" id="cfg-openai" placeholder="sk-..." autocomplete="off"></label>
+        <label>Clave Google Gemini<input type="password" id="cfg-gemini" placeholder="AIza..." autocomplete="off"></label>
+        <p class="ayuda-config">Recomendada: <b>Claude</b> (la que mejor razona sobre tus números).
+          Pegás solo la clave del proveedor que elijas; la app usa ese. Sin clave, responde el
+          asistente básico local (o la IA incluida del demo). El asistente da <b>consejo</b>: no
+          busca productos.</p>
+
+        <h2 class="titulo-seccion" style="margin-top:16px">Búsqueda real de productos (por API)</h2>
+        <label>Clave Keepa (productos y ventas reales)<input type="text" id="cfg-keepa" placeholder="opcional — datos reales de Amazon por API" autocomplete="off"></label>
+        <button type="submit" class="btn-primario">Guardar</button>
       </form>
-      <p class="ayuda-config">Sin claves, la app funciona igual: el motor y el asistente basico corren
-        localmente. Las claves solo habilitan keywords/datos en vivo y el asistente abierto,
-        usando el internet del celular.</p>
+      <p class="ayuda-config">Con clave <b>Keepa</b>, Mercado trae productos <b>reales</b> de Amazon
+        (precio, ventas estimadas, reseñas) vía API. Sin clave, ves un <b>ejemplo</b> claramente
+        marcado. Importante: <b>ningún modelo de IA</b> (Claude/ChatGPT/Gemini) da estos datos —
+        los números reales vienen de la API de datos; la IA solo los interpreta.</p>
 
       <details class="tip-keepa">
         <summary>¿Keepa web (19&nbsp;€) o la API (49&nbsp;€)? — cuál conviene</summary>

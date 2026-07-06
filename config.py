@@ -43,11 +43,35 @@ def env_b(k, d=False):
         "1", "true", "yes", "si", "sí", "on")
 
 
-# --- LLM ---
+# --- LLM (asistente multi-proveedor, BYOK) ---
+# Proveedor recomendado: Claude (mejor razonamiento sobre los numeros del negocio).
+# El usuario puede elegir OpenAI (ChatGPT) o Gemini pegando su clave en Config.
+IA_PROVIDER = (env("IA_PROVIDER", "claude") or "claude").strip().lower()
 ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY")
 MODEL_OPUS = env("MODEL_OPUS", "claude-opus-4-8")
 MODEL_SONNET = env("MODEL_SONNET", "claude-sonnet-4-6")
 MODEL_HAIKU = env("MODEL_HAIKU", "claude-haiku-4-5-20251001")
+OPENAI_API_KEY = env("OPENAI_API_KEY")
+OPENAI_MODEL = env("OPENAI_MODEL", "gpt-4o-mini")
+GEMINI_API_KEY = env("GEMINI_API_KEY")
+GEMINI_MODEL = env("GEMINI_MODEL", "gemini-2.0-flash")
+
+
+def ia_provider_activo():
+    """Devuelve (proveedor, clave, modelo) del proveedor elegido si tiene clave;
+    si el elegido no tiene clave, cae al primero que si la tenga. (None, "", "")
+    si no hay ninguna clave -> el asistente responde offline (glosario)."""
+    disp = {
+        "claude": (ANTHROPIC_API_KEY, MODEL_OPUS),
+        "openai": (OPENAI_API_KEY, OPENAI_MODEL),
+        "gemini": (GEMINI_API_KEY, GEMINI_MODEL),
+    }
+    orden = [IA_PROVIDER] + [p for p in ("claude", "openai", "gemini") if p != IA_PROVIDER]
+    for prov in orden:
+        clave, modelo = disp.get(prov, ("", ""))
+        if (clave or "").strip():
+            return prov, clave, modelo
+    return None, "", ""
 
 # --- Datos de mercado ---
 KEEPA_API_KEY = env("KEEPA_API_KEY")
@@ -86,8 +110,11 @@ WHITELIST_BOT = ["envio", "tiempo_entrega", "garantia", "estado_pedido", "caract
 def estado_config():
     """Resumen para el dashboard: que esta conectado y que esta en modo offline.
     NUNCA incluye el valor de una clave (se expone por /health)."""
+    prov, clave, modelo = ia_provider_activo()
+    _nom = {"claude": "Claude", "openai": "OpenAI (ChatGPT)", "gemini": "Gemini"}
     return {
-        "llm": "Claude" if ANTHROPIC_API_KEY else "offline (mock)",
+        "llm": f"{_nom.get(prov, prov)} ({modelo})" if prov else "offline (glosario)",
+        "ia_provider": IA_PROVIDER,
         "keepa": "conectado" if KEEPA_API_KEY else "sin clave",
         "cerebro_dir": CEREBRO_CSV_DIR,
         "email": "SMTP real" if (SMTP_USER and SMTP_PASS) else "dry-run (no envia)",
@@ -102,7 +129,8 @@ def estado_config():
 ENV_PATH = os.path.join(_AQUI, ".env")
 
 # Claves que el panel puede guardar. Nada fuera de esta lista se escribe.
-CLAVES_GUARDABLES = ("ANTHROPIC_API_KEY", "KEEPA_API_KEY", "SMTP_USER",
+CLAVES_GUARDABLES = ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY",
+                     "IA_PROVIDER", "KEEPA_API_KEY", "SMTP_USER",
                      "SMTP_PASS", "ALERT_TO", "CEREBRO_CSV_DIR")
 
 
