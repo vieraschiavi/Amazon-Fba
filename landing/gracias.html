@@ -36,6 +36,17 @@
   a.link{color:#8a5407;font-weight:700}
   .spin{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--navy-700);border-radius:50%;animation:sp 1s linear infinite;margin:10px auto}
   @keyframes sp{to{transform:rotate(360deg)}}
+  .garantia-box{margin-top:18px;border-top:1px solid var(--line);padding-top:16px}
+  .garantia-box summary{cursor:pointer;font-size:13.5px;font-weight:700;color:#475569;list-style:none}
+  .garantia-box summary::-webkit-details-marker{display:none}
+  .garantia-box summary::before{content:"✔ ";color:#3f9142}
+  .garantia-cuerpo{margin-top:12px}
+  .garantia-cuerpo p{font-size:13px;color:#475569;line-height:1.5;margin:0 0 10px}
+  .garantia-cuerpo input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-size:14px;margin-bottom:10px}
+  .btn-reembolso{width:100%;background:#fef2f2;color:#991b1b;border:1px solid #fecaca;border-radius:9px;padding:11px;font-weight:700;font-size:13.5px;cursor:pointer}
+  .reembolso-msg{font-size:13px;margin-top:10px}
+  .reembolso-msg.ok{color:#3f9142;font-weight:700}
+  .reembolso-msg.mal{color:#991b1b}
 </style>
 </head>
 <body>
@@ -73,13 +84,60 @@ function mostrarAprobado(d){
       1. Instalá la app (Android) o el programa (PC).<br>
       2. Al abrir, entrá a activar la licencia.<br>
       3. Poné tu email y pegá la clave de arriba. ¡Listo, sin límites!
-    </div>`;
+    </div>
+    <details class="garantia-box">
+      <summary>7 días de garantía — ¿pedís la devolución?</summary>
+      <div class="garantia-cuerpo">
+        <p>Confirmá el email con el que pagaste. Si estás dentro de los 7 días, te devolvemos el 100% automáticamente por el mismo medio de pago.</p>
+        <input type="email" id="re_email" placeholder="Tu email de pago" autocomplete="email">
+        <button type="button" class="btn-reembolso" id="btnReembolso">Confirmar devolución</button>
+        <div id="reembolsoMsg" class="reembolso-msg"></div>
+      </div>
+    </details>`;
   $("#cargando").style.display = "none";
   $("#contenido").style.display = "block";
   const b = $("#btnCopiar");
   if (b) b.addEventListener("click", () => {
     navigator.clipboard.writeText(d.licencia).then(()=>{ b.textContent = "¡Copiada!"; }).catch(()=>{});
   });
+  const btnR = $("#btnReembolso");
+  if (btnR) btnR.addEventListener("click", () => pedirReembolso(d._pid));
+}
+async function pedirReembolso(paymentId){
+  const email = ($("#re_email").value || "").trim();
+  const msg = $("#reembolsoMsg");
+  const btn = $("#btnReembolso");
+  msg.className = "reembolso-msg";
+  if (!email.includes("@")) { msg.classList.add("mal"); msg.textContent = "Poné el email con el que pagaste."; return; }
+  if (!confirm("¿Confirmás que querés cancelar la compra y pedir la devolución de tu dinero?")) return;
+  btn.disabled = true; btn.textContent = "Procesando…";
+  try{
+    const r = await fetch("/api/reembolso", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-mv-app": "mvfba-web-1" },
+      body: JSON.stringify({ payment_id: paymentId, email }),
+    });
+    const d = await r.json();
+    if (r.ok && d.ok) {
+      msg.classList.add("ok");
+      msg.textContent = "✔ " + d.mensaje;
+      btn.textContent = "Devolución procesada";
+    } else {
+      btn.disabled = false; btn.textContent = "Confirmar devolución";
+      msg.classList.add("mal");
+      const textos = {
+        email_no_coincide: "Ese email no coincide con el del pago. Revisalo o escribinos a vieraschiavi@gmail.com.",
+        fuera_de_plazo: "Ya pasaron más de 7 días desde la compra. Escribinos a vieraschiavi@gmail.com para revisar tu caso.",
+        ya_reembolsado: "Este pago ya fue reembolsado.",
+        no_aprobado: "Este pago no figura como aprobado.",
+      };
+      msg.textContent = textos[d.error] || "No pudimos procesar la devolución automática. Escribinos a vieraschiavi@gmail.com y te ayudamos a mano.";
+    }
+  }catch(e){
+    btn.disabled = false; btn.textContent = "Confirmar devolución";
+    msg.classList.add("mal");
+    msg.textContent = "Hubo un problema de conexión. Reintentá o escribinos a vieraschiavi@gmail.com.";
+  }
 }
 function mostrarPendiente(estado){
   $("#titulo").textContent = "Pago en proceso";
