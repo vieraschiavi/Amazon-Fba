@@ -213,6 +213,7 @@ section{padding:76px 0}
 .price-card .pname{font-size:12.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .price-card .pamt{font-size:33px;font-weight:800;letter-spacing:-.8px}
 .price-card .pamt small{font-size:14px;font-weight:600;color:var(--muted)}
+.fx-ref{font-size:11.5px;color:var(--muted);margin:-4px 0 4px;min-height:14px}
 .price-card ul{margin:4px 0 0;padding:0;list-style:none;font-size:13.8px;color:var(--slate);display:flex;flex-direction:column;gap:8px;flex:1}
 .price-card li{display:flex;gap:9px;align-items:flex-start}
 .price-card li::before{content:"";flex:none;width:16px;height:16px;margin-top:2.5px;border-radius:5px;background:var(--green);opacity:.24}
@@ -292,9 +293,9 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
 <header class="hero">
   <div class="wrap in">
     <div>
-      <div class="eyebrow"><i></i><span data-t="hero.eyebrow">Motor de keywords propio · sin suscripciones mensuales</span></div>
-      <h1 data-t="hero.h1">Vendé en Amazon con <em>tu propia IA</em>, no con su factura mensual</h1>
-      <p class="sub" data-t="hero.sub">Investigación de nicho, pricing, portafolio, proyección de caja y asistente IA — en tu PC y en tu Android, en el idioma que necesites. Sin suscripciones mensuales.</p>
+      <div class="eyebrow"><i></i><span data-t="hero.eyebrow">Sabé cuánto vas a ganar, antes de invertir</span></div>
+      <h1 data-t="hero.h1">Sabé cuánto vas a ganar en Amazon, <em>antes de arriesgar tu plata</em></h1>
+      <p class="sub" data-t="hero.sub">Semáforo de margen, sueldo proyectado y portafolio completo — en español, pago único, sin sorpresas. La investigación de nichos viene incluida.</p>
       <div class="herobtns">
         <a class="btn btn-primary" href="#precios" data-t="hero.ctaPrimary">Ver precios y comprar</a>
         <a class="btn btn-ghost" href="/app/" target="_blank" rel="noopener" data-t="hero.ctaGhost">Probar demo gratis (3 días)</a>
@@ -379,7 +380,7 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
 <section>
   <div class="wrap">
     <div class="klabel" data-t="vs.label">La diferencia</div>
-    <h2 class="h2" data-t="vs.h2">Dejá de pagar US$49–99 por mes por herramientas que no necesitás enteras</h2>
+    <h2 class="h2" data-t="vs.h2">Vas a saber cuánto ganás antes de gastar un dólar en stock</h2>
     <div class="card vs">
       <div class="side bad">
         <div class="klabel" style="color:var(--muted)" data-t="vs.badLabel">Suites por suscripción</div>
@@ -395,9 +396,9 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
         <div class="klabel" data-t="vs.goodLabel">MV Amazon FBA IA</div>
         <div class="price-new tabular">US$129<span style="font-size:15px" data-t="vs.once"> pago único</span></div>
         <ul class="good">
-          <li data-t="vs.good1">Motor de keywords propio incluido</li>
-          <li data-t="vs.good2">PC + Android, todo desbloqueado</li>
-          <li data-t="vs.good3">IA con tu clave o la nuestra, a elección</li>
+          <li data-t="vs.good1">Semáforo de margen y ganancia real antes de comprar</li>
+          <li data-t="vs.good2">Pago único, en tu tarjeta, una vez</li>
+          <li data-t="vs.good3">Investigación incluida (Keepa opcional, no obligatorio)</li>
         </ul>
       </div>
     </div>
@@ -414,6 +415,7 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
       <div class="card price-card">
         <div class="pname" data-t="pricing.starter.name">Starter · Celular</div>
         <div class="pamt tabular">US$29<small data-t="pricing.once"> pago único</small></div>
+        <div class="fx-ref" data-fx-usd="29"></div>
         <div class="klabel" style="margin:-6px 0 0;font-size:12px" data-t="pricing.starter.alt">o US$4,99/mes</div>
         <ul>
           <li data-t="pricing.starter.f1">App Android (APK)</li>
@@ -427,6 +429,7 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
         <div class="tag" data-t="pricing.popular">MÁS VENDIDO</div>
         <div class="pname" data-t="pricing.pro.name">Pro · PC (BYOK)</div>
         <div class="pamt tabular">US$129<small data-t="pricing.once"> pago único</small></div>
+        <div class="fx-ref" data-fx-usd="129"></div>
         <div class="klabel" style="margin:-6px 0 0;font-size:12px" data-t="pricing.pro.alt">o US$14,99/mes</div>
         <ul>
           <li data-t="pricing.pro.f1">App de escritorio completa + APK</li>
@@ -439,6 +442,7 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
       <div class="card price-card">
         <div class="pname" data-t="pricing.ia.name">Pro IA · todo incluido</div>
         <div class="pamt tabular">US$34<small data-t="pricing.mo"> /mes</small></div>
+        <div class="fx-ref" data-fx-usd="34"></div>
         <div class="klabel" style="margin:-6px 0 0;font-size:12px" data-t="pricing.ia.alt">IA embebida con créditos</div>
         <ul>
           <li data-t="pricing.ia.f1">Todo lo del plan Pro</li>
@@ -595,9 +599,9 @@ const I18N = {
     "nav.product":"Producto","nav.pricing":"Precios","nav.platforms":"Plataformas","nav.faq":"Preguntas","nav.contact":"Contacto","nav.cta":"Comprar","nav.demo":"Probar demo",
     "nav.video":"Video","video.label":"En acción","video.h2":"Mirá el programa funcionando, de punta a punta","video.sub":"Un recorrido narrado por todo el sistema. El audio sigue el idioma que elijas arriba.","video.play":"▶ Reproducir","video.pause":"⏸ Pausar","video.replay":"↻ Ver de nuevo","video.hint":"Voz neutra/latina · sin costo de datos","video.slidePill":"🎁 3 días gratis","video.slideCierre":"Tu negocio en Amazon, bajo control","video.cap.intro":"Tenés el capital y las ganas de vender en Amazon. Lo que falta es un sistema que te diga qué vender, a qué precio, y cuánto vas a ganar. Eso es MV Amazon FBA IA.","video.cap.keywords":"Investigá nichos con nuestro motor propio: keywords reales de Amazon en diez mercados, sin suscripciones mensuales.","video.cap.pricing":"Cargá tu costo real y el sistema calcula el precio, el margen y el retorno, con un semáforo que te dice al toque si el producto conviene.","video.cap.portafolio":"Todos tus productos en un tablero: tu sueldo estable proyectado, el capital en juego y qué producto tira del resto.","video.cap.ganancias":"Poné cuánto invertís y mirá el desglose completo: unidades, ingreso, costos y ganancia real, sin sorpresas.","video.cap.mercado":"Evaluá cualquier producto: competencia, demanda y una probabilidad de éxito honesta, para no jugarte la plata a ciegas.","video.cap.asistente":"Y un asistente con inteligencia artificial que responde sobre tus números, tu portafolio y tu estrategia, cuando lo necesites.","video.cap.multiplataforma":"Todo en tu PC y en tu celular, Android o iPhone. Los cálculos y tus datos quedan en tu dispositivo; la búsqueda de keywords y la IA usan internet.","video.cap.cierre":"Probalo gratis tres días, con todas las funciones. Sin factura mensual. MV Amazon FBA IA: tu negocio en Amazon, bajo control.",
 
-    "hero.eyebrow":"Motor de keywords propio · sin suscripciones mensuales",
-    "hero.h1":'Vendé en Amazon con <em>tu propia IA</em>, no con su factura mensual',
-    "hero.sub":"Investigación de nicho, pricing, portafolio, proyección de caja y asistente IA — en tu PC y en tu Android, en el idioma que necesites. Sin suscripciones mensuales.",
+    "hero.eyebrow":"Sabé cuánto vas a ganar, antes de invertir",
+    "hero.h1":'Sabé cuánto vas a ganar en Amazon, <em>antes de arriesgar tu plata</em>',
+    "hero.sub":"Semáforo de margen, sueldo proyectado y portafolio completo — en español, pago único, sin sorpresas. La investigación de nichos viene incluida.",
     "hero.ctaPrimary":"Ver precios y comprar","hero.ctaGhost":"Probar demo gratis (3 días)",
     "hero.trust1":"<b>10</b><em>marketplaces de keywords</em>","hero.trust2":"<b>3</b><em>plataformas: PC · Android · iOS</em>","hero.trust3":"<b>US$0</b><em>de costo en APIs (motor propio)</em>",
     "feat.label":"El producto","feat.h2":"Todo lo que necesitás para decidir qué vender, y cuánto vas a ganar",
@@ -610,10 +614,10 @@ const I18N = {
     "feat.f6.h":"Proyección de caja","feat.f6.p":"Lead time, DD+7, devoluciones y techo de demanda — sabés cuándo cobrás.",
     "feat.f7.h":"PC + Android","feat.f7.p":"App de escritorio nativa y app Android autocontenida — los cálculos corren sin conexión.",
     "feat.f8.h":"Tus datos, tus claves","feat.f8.p":"Guardado seguro y local. Vos elegís si usar tus APIs o las nuestras.",
-    "vs.label":"La diferencia","vs.h2":"Dejá de pagar US$49–99 por mes por herramientas que no necesitás enteras",
+    "vs.label":"La diferencia","vs.h2":"Vas a saber cuánto ganás antes de gastar un dólar en stock",
     "vs.badLabel":"Suites por suscripción","vs.goodLabel":"MV Amazon FBA IA","vs.once":" pago único",
     "vs.bad1":"Suscripción recurrente de por vida","vs.bad2":"Pagás módulos que no usás","vs.bad3":"Sin app nativa de escritorio",
-    "vs.good1":"Motor de keywords propio incluido","vs.good2":"PC + Android, todo desbloqueado","vs.good3":"IA con tu clave o la nuestra, a elección",
+    "vs.good1":"Semáforo de margen y ganancia real antes de comprar","vs.good2":"Pago único, en tu tarjeta, una vez","vs.good3":"Investigación incluida (Keepa opcional, no obligatorio)",
     "pricing.label":"Precios","pricing.h2":"Elegí tu plan","pricing.sub":"Pago único o mensual. Descargás la versión que compraste apenas se confirma el pago.",
     "pricing.demoBanner":"🎁 Demo completa gratis por 3 días — todas las funciones activas, sin tarjeta",
     "pricing.once":" pago único","pricing.mo":" /mes","pricing.buy":"Comprar","pricing.popular":"MÁS VENDIDO",
@@ -656,9 +660,9 @@ const I18N = {
     "nav.product":"Product","nav.pricing":"Pricing","nav.platforms":"Platforms","nav.faq":"FAQ","nav.contact":"Contact","nav.cta":"Buy now","nav.demo":"Try demo",
     "nav.video":"Video","video.label":"In action","video.h2":"See the program working, end to end","video.sub":"A narrated tour of the whole system. The audio follows the language you pick above.","video.play":"▶ Play","video.pause":"⏸ Pause","video.replay":"↻ Watch again","video.hint":"Neutral/Latin voice · no data cost","video.slidePill":"🎁 3 days free","video.slideCierre":"Your Amazon business, under control","video.cap.intro":"You've got the capital and the drive to sell on Amazon. What's missing is a system that tells you what to sell, at what price, and how much you'll make. That's MV Amazon FBA IA.","video.cap.keywords":"Research niches with our own engine: real Amazon keywords across ten marketplaces, with no monthly subscriptions.","video.cap.pricing":"Enter your real cost and the system computes price, margin and return, with a traffic light that tells you instantly if the product is worth it.","video.cap.portafolio":"All your products on one board: your projected steady salary, the capital at play, and which product carries the rest.","video.cap.ganancias":"Enter how much you invest and see the full breakdown: units, revenue, costs and real profit, with no surprises.","video.cap.mercado":"Evaluate any product: competition, demand and an honest success probability, so you don't bet your money blindly.","video.cap.asistente":"And an AI assistant that answers about your numbers, your portfolio and your strategy, whenever you need it.","video.cap.multiplataforma":"Everything on your PC and your phone, Android or iPhone. Calculations and your data stay on your device; keyword research and AI use the internet.","video.cap.cierre":"Try it free for three days, with every feature. No monthly bill. MV Amazon FBA IA: your Amazon business, under control.",
 
-    "hero.eyebrow":"Own keyword engine · no monthly subscriptions",
-    "hero.h1":'Sell on Amazon with <em>your own AI</em>, not their monthly invoice',
-    "hero.sub":"Niche research, pricing, portfolio, cash-flow projection and an AI assistant — on your PC and your Android, in the language you need. No monthly subscriptions.",
+    "hero.eyebrow":"Know your profit, before you invest",
+    "hero.h1":'Know how much you’ll make on Amazon, <em>before you risk your money</em>',
+    "hero.sub":"Margin traffic-light, projected income and a full portfolio — one-time payment, no surprises. Niche research comes included.",
     "hero.ctaPrimary":"See pricing & buy","hero.ctaGhost":"Try free demo (3 days)",
     "hero.trust1":"<b>10</b><em>keyword marketplaces</em>","hero.trust2":"<b>3</b><em>platforms: PC · Android · iOS</em>","hero.trust3":"<b>US$0</b><em>API cost (own engine)</em>",
     "feat.label":"The product","feat.h2":"Everything you need to decide what to sell, and how much you'll make",
@@ -671,10 +675,10 @@ const I18N = {
     "feat.f6.h":"Cash-flow projection","feat.f6.p":"Lead time, DD+7, returns and demand ceiling — know exactly when you get paid.",
     "feat.f7.h":"PC + Android","feat.f7.p":"Native desktop app and self-contained Android app — the calculations run offline.",
     "feat.f8.h":"Your data, your keys","feat.f8.p":"Saved securely and locally. You choose whether to use your own APIs or ours.",
-    "vs.label":"The difference","vs.h2":"Stop paying US$49–99 a month for tools you don't need in full",
+    "vs.label":"The difference","vs.h2":"You'll know your profit before you spend a dollar on stock",
     "vs.badLabel":"Subscription suites","vs.goodLabel":"MV Amazon FBA IA","vs.once":" one-time",
     "vs.bad1":"Recurring subscription forever","vs.bad2":"You pay for modules you don't use","vs.bad3":"No native desktop app",
-    "vs.good1":"Own keyword engine included","vs.good2":"PC + Android, fully unlocked","vs.good3":"AI with your key or ours, your choice",
+    "vs.good1":"Margin traffic-light and real profit before you buy","vs.good2":"One-time payment, on your card, once","vs.good3":"Research included (Keepa optional, never required)",
     "pricing.label":"Pricing","pricing.h2":"Choose your plan","pricing.sub":"One-time or monthly. Download the version you bought as soon as payment is confirmed.",
     "pricing.demoBanner":"🎁 Full 3-day free demo — every feature unlocked, no card required",
     "pricing.once":" one-time","pricing.mo":" /mo","pricing.buy":"Buy now","pricing.popular":"MOST POPULAR",
@@ -717,9 +721,9 @@ const I18N = {
     "nav.product":"Produto","nav.pricing":"Preços","nav.platforms":"Plataformas","nav.faq":"Perguntas","nav.contact":"Contato","nav.cta":"Comprar","nav.demo":"Testar demo",
     "nav.video":"Vídeo","video.label":"Em ação","video.h2":"Veja o programa funcionando, de ponta a ponta","video.sub":"Um tour narrado por todo o sistema. O áudio segue o idioma que você escolher acima.","video.play":"▶ Reproduzir","video.pause":"⏸ Pausar","video.replay":"↻ Ver de novo","video.hint":"Voz neutra/latina · sem custo de dados","video.slidePill":"🎁 3 dias grátis","video.slideCierre":"Seu negócio na Amazon, sob controle","video.cap.intro":"Você tem o capital e a vontade de vender na Amazon. Falta um sistema que diga o que vender, a que preço, e quanto você vai ganhar. Isso é o MV Amazon FBA IA.","video.cap.keywords":"Pesquise nichos com o nosso motor próprio: palavras-chave reais da Amazon em dez mercados, sem assinaturas mensais.","video.cap.pricing":"Coloque seu custo real e o sistema calcula o preço, a margem e o retorno, com um semáforo que diz na hora se o produto vale a pena.","video.cap.portafolio":"Todos os seus produtos em um painel: seu salário estável projetado, o capital em jogo e qual produto puxa o resto.","video.cap.ganancias":"Informe quanto investe e veja o detalhamento completo: unidades, receita, custos e lucro real, sem surpresas.","video.cap.mercado":"Avalie qualquer produto: concorrência, demanda e uma probabilidade de sucesso honesta, para não apostar seu dinheiro às cegas.","video.cap.asistente":"E um assistente com inteligência artificial que responde sobre seus números, seu portfólio e sua estratégia, quando você precisar.","video.cap.multiplataforma":"Tudo no seu PC e no seu celular, Android ou iPhone. Os cálculos e seus dados ficam no seu dispositivo; a busca de palavras-chave e a IA usam internet.","video.cap.cierre":"Experimente grátis por três dias, com todas as funções. Sem fatura mensal. MV Amazon FBA IA: seu negócio na Amazon, sob controle.",
 
-    "hero.eyebrow":"Motor de palavras-chave próprio · sem assinaturas mensais",
-    "hero.h1":'Venda na Amazon com <em>sua própria IA</em>, não com a fatura mensal deles',
-    "hero.sub":"Pesquisa de nicho, precificação, portfólio, projeção de caixa e assistente de IA — no seu PC e no seu Android, no idioma que precisar. Sem assinaturas mensais.",
+    "hero.eyebrow":"Saiba quanto vai ganhar, antes de investir",
+    "hero.h1":'Saiba quanto você vai ganhar na Amazon, <em>antes de arriscar seu dinheiro</em>',
+    "hero.sub":"Semáforo de margem, salário projetado e portfólio completo — pagamento único, sem surpresas. A pesquisa de nichos já vem incluída.",
     "hero.ctaPrimary":"Ver preços e comprar","hero.ctaGhost":"Testar demo grátis (3 dias)",
     "hero.trust1":"<b>10</b><em>marketplaces de palavras-chave</em>","hero.trust2":"<b>3</b><em>plataformas: PC · Android · iOS</em>","hero.trust3":"<b>US$0</b><em>de custo em APIs (motor próprio)</em>",
     "feat.label":"O produto","feat.h2":"Tudo que você precisa para decidir o que vender e quanto vai ganhar",
@@ -732,10 +736,10 @@ const I18N = {
     "feat.f6.h":"Projeção de caixa","feat.f6.p":"Lead time, DD+7, devoluções e teto de demanda — você sabe quando recebe.",
     "feat.f7.h":"PC + Android","feat.f7.p":"App de desktop nativo e app Android autocontido — os cálculos rodam sem internet.",
     "feat.f8.h":"Seus dados, suas chaves","feat.f8.p":"Salvo com segurança e localmente. Você escolhe usar suas APIs ou as nossas.",
-    "vs.label":"A diferença","vs.h2":"Pare de pagar US$49–99 por mês por ferramentas que você não usa por inteiro",
+    "vs.label":"A diferença","vs.h2":"Você vai saber quanto ganha antes de gastar um dólar em estoque",
     "vs.badLabel":"Suítes por assinatura","vs.goodLabel":"MV Amazon FBA IA","vs.once":" pagamento único",
     "vs.bad1":"Assinatura recorrente para sempre","vs.bad2":"Você paga por módulos que não usa","vs.bad3":"Sem app de desktop nativo",
-    "vs.good1":"Motor de palavras-chave próprio incluído","vs.good2":"PC + Android, tudo desbloqueado","vs.good3":"IA com sua chave ou a nossa, à escolha",
+    "vs.good1":"Semáforo de margem e lucro real antes de comprar","vs.good2":"Pagamento único, no seu cartão, uma vez","vs.good3":"Pesquisa incluída (Keepa opcional, nunca obrigatório)",
     "pricing.label":"Preços","pricing.h2":"Escolha seu plano","pricing.sub":"Pagamento único ou mensal. Baixe a versão comprada assim que o pagamento for confirmado.",
     "pricing.demoBanner":"🎁 Demo completo grátis por 3 dias — todas as funções ativas, sem cartão",
     "pricing.once":" pagamento único","pricing.mo":" /mês","pricing.buy":"Comprar","pricing.popular":"MAIS VENDIDO",
@@ -926,6 +930,24 @@ document.querySelectorAll(".comprar").forEach((btn) => {
     }
   });
 });
+
+/* ---------- Precio de referencia en moneda local (informativo, el cobro es en USD) ---------- */
+(function(){
+  const MONEDAS = ["ARS","MXN","COP"];
+  fetch("https://open.er-api.com/v6/latest/USD")
+    .then(r => r.ok ? r.json() : null)
+    .then(d => {
+      if (!d || d.result !== "success" || !d.rates) return; // sin dato -> no se muestra nada (no se inventa)
+      const disponibles = MONEDAS.filter(m => d.rates[m]);
+      if (!disponibles.length) return;
+      document.querySelectorAll("[data-fx-usd]").forEach(el => {
+        const usd = Number(el.dataset.fxUsd);
+        const linea = disponibles.map(m => Math.round(usd * d.rates[m]).toLocaleString("es-AR") + " " + m).join(" · ");
+        el.textContent = "≈ " + linea + " (cotización de hoy, el cobro es en USD)";
+      });
+    })
+    .catch(() => {}); // sin internet/API caida -> la linea queda vacia, nunca rota el precio en USD
+})();
 </script>
 
 </body>

@@ -354,3 +354,54 @@ a { color: inherit; }
 .tip-cuerpo li { margin-bottom: 7px; }
 .tip-cuerpo b { color: var(--ink); }
 .tip-nota { font-size: 12px; color: var(--muted); border-left: 3px solid var(--green); padding-left: 10px; }
+
+/* ---------- Info-icon + tooltip (que es / objetivo / desvio de cada metrica) ---------- */
+.info-ic {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 50%; margin-left: 4px;
+  background: var(--line); color: var(--slate); font-size: 10.5px; font-weight: 800;
+  border: 0; cursor: pointer; flex: none; vertical-align: middle; line-height: 1;
+}
+.info-ic:active { background: var(--navy); color: #fff; }
+.info-pop {
+  position: fixed; z-index: 60; max-width: 300px; width: calc(100vw - 32px);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px 14px; box-shadow: 0 14px 34px -12px rgba(0, 0, 0, .35);
+  font-size: 12.5px; color: var(--slate); line-height: 1.5;
+}
+.info-pop.oculto { display: none; }
+.info-pop b { color: var(--ink); }
+.info-pop .info-fila { margin-bottom: 6px; }
+.info-pop .info-fila:last-child { margin-bottom: 0; }
+.info-pop .info-cerrar {
+  margin-top: 8px; width: 100%; background: var(--bg); border: 1px solid var(--line);
+  border-radius: 8px; padding: 6px; font-size: 12px; font-weight: 700; color: var(--ink);
+}
+
+/* ---------- Tour de primer uso (coachmark inferior) ---------- */
+.tour-card {
+  position: fixed; left: 12px; right: 12px; bottom: calc(70px + var(--safe-bottom));
+  z-index: 90; background: var(--navy-deep); color: #fff; border-radius: 16px;
+  padding: 14px 16px; box-shadow: 0 16px 40px -14px rgba(0, 0, 0, .55);
+}
+.tour-card.oculto { display: none; }
+.tour-card p { margin: 0 0 10px; font-size: 13.5px; line-height: 1.5; }
+.tour-dots { display: flex; gap: 5px; margin-bottom: 8px; }
+.tour-dots span { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, .3); }
+.tour-dots span.on { background: var(--green); }
+.tour-row { display: flex; gap: 8px; }
+.tour-row button { flex: 1; border-radius: 9px; padding: 9px; font-size: 13px; font-weight: 700; border: 0; }
+.tour-siguiente { background: var(--green); color: #0f2b12; }
+.tour-saltar { background: transparent; color: rgba(255, 255, 255, .75); }
+
+/* ---------- Aviso de dia de demo (recordatorio in-app, no email) ---------- */
+.demo-nudge {
+  margin: 0 0 12px; padding: 11px 13px; border-radius: 12px;
+  background: rgba(217, 119, 6, .12); border: 1px solid rgba(217, 119, 6, .3);
+  font-size: 12.5px; color: var(--ink); line-height: 1.45; display: flex;
+  align-items: center; gap: 10px; justify-content: space-between;
+}
+.demo-nudge.urgente { background: rgba(220, 38, 38, .1); border-color: rgba(220, 38, 38, .3); }
+.demo-nudge b { display: block; margin-bottom: 2px; }
+.demo-nudge a { color: var(--navy); font-weight: 700; text-decoration: underline; white-space: nowrap; }
+.demo-nudge.oculto { display: none; }
