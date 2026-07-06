@@ -70,6 +70,16 @@
   </div>
 </div>
 
+<!-- Tour guiado de 3 pasos tras cargar el ejemplo: portafolio (semaforo + KPIs) -> asistente. -->
+<div id="tour-card" class="tour-card oculto">
+  <div class="tour-dots" id="tour-dots"></div>
+  <p id="tour-texto"></p>
+  <div class="tour-row">
+    <button type="button" class="tour-saltar" id="tour-saltar">Saltar</button>
+    <button type="button" class="tour-siguiente" id="tour-siguiente">Siguiente</button>
+  </div>
+</div>
+
 <div id="app">
 
   <header class="topbar">
@@ -92,6 +102,7 @@
     <section id="view-inicio" class="view activa">
       <h1 class="titulo-vista">Resumen ejecutivo</h1>
       <p class="sub-vista">El estado del negocio, de un vistazo</p>
+      <div id="demo-nudge" class="demo-nudge oculto"></div>
       <div id="inicio-kpis" class="grid-kpi">
         <div class="kpi skeleton"></div><div class="kpi skeleton"></div>
         <div class="kpi skeleton"></div><div class="kpi skeleton"></div>

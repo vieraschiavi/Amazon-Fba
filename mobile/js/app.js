@@ -157,11 +157,90 @@ function resumenPortafolio() {
     ingreso_real: ingresoReal, neto_real: netoReal };
 }
 
+// ============================ INFO (que es / valor objetivo / desvio) ============================
+// Fuente unica de verdad: mismos umbrales que config.py (UMBRAL_VERDE=25, UMBRAL_AMARILLO=12)
+// y agents/glosario.py, para no contradecir al panel de PC.
+const INFO_METRICAS = {
+  margen: {
+    que: "Lo que te queda del precio de venta despues de TODOS los costos (producto, flete, arancel, comision Amazon, FBA fee, publicidad).",
+    objetivo: "Bien (verde): 25% o mas.",
+    desvio: "Alerta: 12–25% es ajustado (amarillo); menos de 12% no conviene (rojo).",
+  },
+  roi: {
+    que: "Return on Investment: tu ganancia neta dividida por lo que invertiste (landed cost). Mide cuanto rinde tu plata, no cuanto factura el producto.",
+    objetivo: "Bien: 30% o mas por ciclo de venta.",
+    desvio: "Alerta: menos de 15% — tu plata rinde poco frente al riesgo de inmovilizarla en stock.",
+  },
+  ganancia_neta: {
+    que: "Lo que te queda en el bolsillo despues de TODOS los costos: producto, flete, arancel, prep, comision Amazon, FBA fee y publicidad.",
+    objetivo: "Bien: positiva y con margen de 25% o mas sobre el ingreso.",
+    desvio: "Alerta: cercana a cero o negativa — estas perdiendo plata en cada lote.",
+  },
+  sueldo_meseta: {
+    que: "El ingreso mensual SOSTENIDO cuando reciclas capital: el landed repone stock y el neto se retira.",
+    objetivo: "Se estabiliza en ~techo de demanda x neto por unidad — es tu 'sueldo' real, no un pico.",
+    desvio: "Alerta: sin techo de demanda el numero 'explota' y miente — desconfia de sueldos que crecen sin limite.",
+  },
+  capital_pipeline: {
+    que: "La plata inmovilizada en stock: en produccion, en transito y ya en los depositos de Amazon.",
+    objetivo: "Bien: cubre ~4 meses de reposicion al techo de demanda, sin mas.",
+    desvio: "Alerta: si supera largamente eso, tenes mas plata parada de la que el nicho puede vender.",
+  },
+  exito: {
+    que: "Probabilidad de exito del nicho: formula auditable con demanda (30%), barrera de entrada (25%), hueco de calidad (20%), precio (15%) y margen (10%).",
+    objetivo: "Bien (verde): 70/100 o mas.",
+    desvio: "Alerta: menos de 40/100 — demanda floja, mucha competencia o poco margen.",
+  },
+  landed: {
+    que: "Costo desembarcado: lo que te cuesta poner UNA unidad lista para vender = producto + flete + arancel + prep.",
+    objetivo: "Cuanto mas bajo frente al precio de venta, mejor: es la base del margen.",
+    desvio: "Alerta: si supera ~50–60% del precio de venta, casi no queda margen para Amazon + publicidad.",
+  },
+};
+function _iconoInfo(clave) {
+  return `<button type="button" class="info-ic" data-info="${clave}" aria-label="Que es esta metrica">i</button>`;
+}
+function _mostrarInfo(clave, x, y) {
+  const d = INFO_METRICAS[clave];
+  if (!d) return;
+  let pop = document.getElementById("info-pop-global");
+  if (!pop) {
+    pop = document.createElement("div");
+    pop.id = "info-pop-global";
+    pop.className = "info-pop oculto";
+    document.body.appendChild(pop);
+  }
+  pop.innerHTML = `
+    <div class="info-fila"><b>Que es:</b> ${d.que}</div>
+    <div class="info-fila"><b>Valor objetivo:</b> ${d.objetivo}</div>
+    <div class="info-fila"><b>Desvio / alerta:</b> ${d.desvio}</div>
+    <button type="button" class="info-cerrar">Entendido</button>`;
+  pop.classList.remove("oculto");
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const w = Math.min(300, vw - 32);
+  const left = Math.min(Math.max(8, x - w / 2), vw - w - 8);
+  const top = Math.min(y + 8, vh - 210);
+  pop.style.left = left + "px"; pop.style.top = top + "px";
+  pop.querySelector(".info-cerrar").addEventListener("click", () => pop.classList.add("oculto"));
+}
+document.addEventListener("click", (ev) => {
+  const btn = ev.target.closest(".info-ic");
+  if (btn) {
+    const r = btn.getBoundingClientRect();
+    _mostrarInfo(btn.dataset.info, r.left + r.width / 2, r.bottom);
+    return;
+  }
+  const pop = document.getElementById("info-pop-global");
+  if (pop && !pop.classList.contains("oculto") && !ev.target.closest("#info-pop-global")) {
+    pop.classList.add("oculto");
+  }
+});
+
 // ============================ INICIO ============================
-function kpiHtml(lab, val, sub, tone, hero) {
+function kpiHtml(lab, val, sub, tone, hero, infoKey) {
   const cls = ["kpi"];
   if (hero) cls.push("hero"); else if (tone) cls.push(tone);
-  return `<div class="${cls.join(" ")}"><div class="lab">${lab}</div>
+  return `<div class="${cls.join(" ")}"><div class="lab">${lab}${infoKey ? _iconoInfo(infoKey) : ""}</div>
           <div class="val">${val}</div><div class="sub">${sub || ""}</div></div>`;
 }
 function cargarInicio() {
@@ -176,8 +255,8 @@ function cargarInicio() {
   cont.innerHTML =
     kpiHtml("Facturacion", fmtMoney(facturacion), "ventas registradas", null, true) +
     kpiHtml("Neto", fmtMoney(neto), "despues de costos", neto > 0 ? "good" : null) +
-    kpiHtml("Margen", fmtPct(margenGlobal), facturacion > 0 ? "real" : "proyectado del portafolio", tonoMargen(margenGlobal)) +
-    kpiHtml("Sueldo meseta", fmtMoney(r.sueldo_meseta_proyectado), "proyectado/mes");
+    kpiHtml("Margen", fmtPct(margenGlobal), facturacion > 0 ? "real" : "proyectado del portafolio", tonoMargen(margenGlobal), false, "margen") +
+    kpiHtml("Sueldo meseta", fmtMoney(r.sueldo_meseta_proyectado), "proyectado/mes", null, false, "sueldo_meseta");
 
   if (r.n) {
     const s = r.semaforos;
@@ -185,8 +264,8 @@ function cargarInicio() {
     contPf.innerHTML = `
       <div class="grid-kpi">
         ${kpiHtml("Productos", r.n, `${s.verde || 0} verde · ${s.amarillo || 0} amarillo · ${s.rojo || 0} rojo`, null, true)}
-        ${kpiHtml("Capital en pipeline", fmtMoney(r.capital_pipeline_total), "~4 meses de stock")}
-        ${kpiHtml("Margen promedio", fmtPct(r.margen_promedio_pct), "de todo el portafolio", tonoMargen(r.margen_promedio_pct))}
+        ${kpiHtml("Capital en pipeline", fmtMoney(r.capital_pipeline_total), "~4 meses de stock", null, false, "capital_pipeline")}
+        ${kpiHtml("Margen promedio", fmtPct(r.margen_promedio_pct), "de todo el portafolio", tonoMargen(r.margen_promedio_pct), false, "margen")}
         ${kpiHtml("Ordenes", fmtNum(ordenes), fmtNum(unidades) + " unidades")}
       </div>`;
   } else {
@@ -195,6 +274,7 @@ function cargarInicio() {
       <br><button class="btn-primario" data-ir="portafolio" style="margin-top:10px">Cargar mi primer producto</button>`;
     $("[data-ir]", contPf).addEventListener("click", () => irAVista("portafolio"));
   }
+  pintarNudgeDemo();
 }
 
 // ============================ PORTAFOLIO ============================
@@ -208,8 +288,8 @@ function cargarPortafolio() {
     return;
   }
   kpisEl.innerHTML =
-    kpiHtml("Sueldo meseta", fmtMoney(r.sueldo_meseta_proyectado), "proyectado/mes", null, true) +
-    kpiHtml("Margen promedio", fmtPct(r.margen_promedio_pct), "de todo el portafolio", tonoMargen(r.margen_promedio_pct));
+    kpiHtml("Sueldo meseta", fmtMoney(r.sueldo_meseta_proyectado), "proyectado/mes", null, true, "sueldo_meseta") +
+    kpiHtml("Margen promedio", fmtPct(r.margen_promedio_pct), "de todo el portafolio", tonoMargen(r.margen_promedio_pct), false, "margen");
   listaEl.innerHTML = r.prods.map((p) => `
     <div class="producto-card">
       <div class="fila-top">
@@ -218,8 +298,8 @@ function cargarPortafolio() {
       </div>
       <div class="metricas">
         <span>Precio <b>${fmtMoney2(p.precio)}</b></span>
-        <span>Margen <b>${fmtPct(p.margen)}</b></span>
-        <span>ROI <b>${fmtPct(p.roi)}</b></span>
+        <span>Margen <b>${fmtPct(p.margen)}</b>${_iconoInfo("margen")}</span>
+        <span>ROI <b>${fmtPct(p.roi)}</b>${_iconoInfo("roi")}</span>
         <span>Neto/u <b>${fmtMoney2(p.neto_unidad)}</b></span>
       </div>
       <div class="metricas">
@@ -364,10 +444,10 @@ $("#form-ganancias").addEventListener("submit", (ev) => {
   const tonoG = lo.ganancia_neta > 0 ? "good" : "bad";
   cont.innerHTML = `
     <div class="grid-kpi">
-      ${kpiHtml("Ganancia neta", fmtMoney(lo.ganancia_neta), r.entrada, tonoG, true)}
-      ${kpiHtml("ROI inversion", fmtPct(lo.roi_inversion_pct), fmtMoney(lo.inversion_usada), tonoG)}
-      ${kpiHtml("Ganancia/unidad", fmtMoney2(lo.ganancia_por_unidad), "precio " + fmtMoney2(ue.precio_venta), tonoSemaforo(ue.semaforo))}
-      ${kpiHtml("Sueldo en meseta", fmtMoney(re.sueldo_meseta_mensual), "reciclando capital 12m")}
+      ${kpiHtml("Ganancia neta", fmtMoney(lo.ganancia_neta), r.entrada, tonoG, true, "ganancia_neta")}
+      ${kpiHtml("ROI inversion", fmtPct(lo.roi_inversion_pct), fmtMoney(lo.inversion_usada), tonoG, false, "roi")}
+      ${kpiHtml("Ganancia/unidad", fmtMoney2(lo.ganancia_por_unidad), "precio " + fmtMoney2(ue.precio_venta), tonoSemaforo(ue.semaforo), false, "margen")}
+      ${kpiHtml("Sueldo en meseta", fmtMoney(re.sueldo_meseta_mensual), "reciclando capital 12m", null, false, "sueldo_meseta")}
     </div>
     <div class="card" style="margin-top:12px">
       <table class="tabla-costos">
@@ -476,7 +556,7 @@ $("#form-mercado").addEventListener("submit", async (ev) => {
 
   let html = `
     <div style="margin-bottom:8px">${fuenteBadge}</div>
-    <h2 class="titulo-seccion">Probabilidad de exito</h2>
+    <h2 class="titulo-seccion">Probabilidad de exito${_iconoInfo("exito")}</h2>
     <div class="card">
       <span class="badge ${tono}"><span class="dot"></span>${ev2.veredicto} — ${ev2.probabilidad}/100</span>
       <p style="font-size:13px;color:var(--slate);margin:8px 0">${escapar(ev2.comentario)}</p>
@@ -851,6 +931,35 @@ function pintarBadgeDemo() {
   }
 }
 
+// Recordatorio DENTRO de la app durante los 3 dias de demo (no es email/WhatsApp:
+// no hay backend que dispare esa secuencia; esto usa el mismo reloj local que ya
+// mide diasRestantes y aparece cada vez que se abre Inicio).
+const NUDGE_TXT = {
+  es: { dia2: "Día 2 de tu demo de 3: cargá TU producto real y mirá cuánto podrías ganar.",
+        ultimo: "Último día de tu demo — comprá ahora y seguí sin cortes.", cta: "Ver planes" },
+  en: { dia2: "Day 2 of your 3-day demo: load YOUR real product and see how much you could earn.",
+        ultimo: "Last day of your demo — buy now and keep going without interruption.", cta: "See plans" },
+  pt: { dia2: "Dia 2 da sua demo de 3: carregue SEU produto real e veja quanto poderia ganhar.",
+        ultimo: "Último dia da sua demo — compre agora e continue sem interrupções.", cta: "Ver planos" },
+};
+function pintarNudgeDemo() {
+  const el = $("#demo-nudge");
+  if (!el) return;
+  const st = Licencia.estado();
+  if (st.licencia || !st.registrado) { el.classList.add("oculto"); return; }
+  const t = NUDGE_TXT[idiomaActual()] || NUDGE_TXT.es;
+  const url = "https://amazon-fba-seven.vercel.app/#precios";
+  if (st.diasRestantes <= 1) {
+    el.className = "demo-nudge urgente";
+    el.innerHTML = `<span><b>⏳</b>${escapar(t.ultimo)}</span><a href="${url}" target="_blank" rel="noopener">${escapar(t.cta)}</a>`;
+  } else if (st.diasRestantes === 2) {
+    el.className = "demo-nudge";
+    el.innerHTML = `<span><b>👋</b>${escapar(t.dia2)}</span><a href="${url}" target="_blank" rel="noopener">${escapar(t.cta)}</a>`;
+  } else {
+    el.classList.add("oculto");
+  }
+}
+
 function pintarGateDemo() {
   const idioma = idiomaActual();
   $("#demo-idioma").value = idioma;
@@ -936,7 +1045,37 @@ $("#bienvenida-demo").addEventListener("click", () => {
   localStorage.setItem(LS_VISTO, "1");
   $("#bienvenida").classList.add("oculto");
   $("#btn-demo").click();
+  iniciarTour();
 });
+
+// ============================ TOUR DE PRIMER USO (3 pasos) ============================
+// Sigue al "Ver con datos de ejemplo": cargar ejemplo -> ver semaforo/KPIs en
+// Portafolio -> Asistente. Vive dentro de la app (no un .md tecnico aparte).
+const TOUR_PASOS = [
+  { vista: "portafolio", texto: "Estos son 3 productos de ejemplo. El semáforo (verde/amarillo/rojo) te dice al instante si el margen conviene — tocá el ⓘ para ver el detalle." },
+  { vista: "portafolio", texto: "Arriba tenés el resumen: tu sueldo meseta proyectado y el capital en juego. Es la foto completa de tu negocio, siempre a mano." },
+  { vista: "asistente", texto: "Cualquier duda, preguntale al Asistente sobre tus números. ¡Ya podés explorar el resto de la app!" },
+];
+let _tourPaso = 0;
+function _pintarTour() {
+  const dotsEl = $("#tour-dots");
+  dotsEl.innerHTML = TOUR_PASOS.map((_, i) => `<span class="${i === _tourPaso ? "on" : ""}"></span>`).join("");
+  $("#tour-texto").textContent = TOUR_PASOS[_tourPaso].texto;
+  $("#tour-siguiente").textContent = _tourPaso === TOUR_PASOS.length - 1 ? "Entendido" : "Siguiente";
+  irAVista(TOUR_PASOS[_tourPaso].vista);
+}
+function iniciarTour() {
+  _tourPaso = 0;
+  $("#tour-card").classList.remove("oculto");
+  _pintarTour();
+}
+function _cerrarTour() { $("#tour-card").classList.add("oculto"); }
+$("#tour-siguiente").addEventListener("click", () => {
+  if (_tourPaso >= TOUR_PASOS.length - 1) { _cerrarTour(); return; }
+  _tourPaso += 1;
+  _pintarTour();
+});
+$("#tour-saltar").addEventListener("click", _cerrarTour);
 
 // ============================ CONTACTO ============================
 const CONTACTO_EMAIL = "vieraschiavi@gmail.com";
