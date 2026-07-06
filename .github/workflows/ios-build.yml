@@ -1,4 +1,4 @@
-# Compila la app iOS de MV Amazon FBA IA en un runner macOS (gratis en GitHub
+# Compila la app iOS de MV FBA IA en un runner macOS (gratis en GitHub
 # Actions) para el Simulador de iOS en cada push que toque la app iOS o la UI
 # movil. Esto CONFIRMA que el proyecto compila sin errores, sin necesitar
 # ninguna cuenta de Apple ni certificados (los builds de simulador no se firman).

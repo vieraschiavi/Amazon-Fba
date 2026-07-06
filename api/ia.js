@@ -34,7 +34,7 @@ export default async function handler(req, res) {
   if (!pregunta) return res.status(400).json({ error: "sin_pregunta" });
 
   const system =
-    "Sos el asistente de MV Amazon FBA IA, un cockpit para vender en Amazon FBA. " +
+    "Sos el asistente de MV FBA IA, un cockpit para vender en Amazon FBA. " +
     "Respondés con un tono PROFESIONAL PERO AMABLE y cercano: claro, concreto y sin " +
     "relleno, pero cálido y respetuoso, como un asesor de confianza. En el idioma del " +
     "usuario (" + idioma + "). No prometés retornos garantizados: el resultado FBA es " +

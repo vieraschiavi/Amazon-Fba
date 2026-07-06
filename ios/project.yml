@@ -1,4 +1,4 @@
-# project.yml — especificacion XcodeGen del proyecto iOS de MV Amazon FBA IA.
+# project.yml — especificacion XcodeGen del proyecto iOS de MV FBA IA.
 #
 # Por que XcodeGen: el .xcodeproj (project.pbxproj) es un formato binario/XML
 # fragil y enorme para escribir a mano o versionar bien en git. XcodeGen genera
@@ -40,7 +40,7 @@ targets:
     info:
       path: MVAmazonFBAIA/Info.plist
       properties:
-        CFBundleDisplayName: "MV Amazon FBA IA"
+        CFBundleDisplayName: "MV FBA IA"
         UILaunchScreen:
           UIColorName: AccentColor
     settings:

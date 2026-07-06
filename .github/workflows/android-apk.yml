@@ -1,4 +1,4 @@
-# Compila el APK nativo de MV Amazon FBA IA en cada push que toque la app
+# Compila el APK nativo de MV FBA IA en cada push que toque la app
 # Android o la UI movil. Lo publica de dos formas:
 #   1) como artifact (util para descargar desde la pestana Actions), y
 #   2) como asset de un GitHub Release con tag "android-latest", que sirve el
@@ -54,9 +54,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: android-latest
-          name: MV Amazon FBA IA — App Android
+          name: MV FBA IA — App Android
           body: |
-            APK nativo y autocontenido de MV Amazon FBA IA. Corre 100% en el
+            APK nativo y autocontenido de MV FBA IA. Corre 100% en el
             telefono, sin depender de la PC.
 
             **Instalar desde el celular:**

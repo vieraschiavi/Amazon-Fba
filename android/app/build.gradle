@@ -1,4 +1,4 @@
-// app/build.gradle — MV Amazon FBA IA (app Android nativa).
+// app/build.gradle — MV FBA IA (app Android nativa).
 //
 // Sin dependencias externas: usa el WebView del framework y android.app.Activity
 // a proposito — build rapido, APK chico (~1-2 MB) y cero librerias que mantener.

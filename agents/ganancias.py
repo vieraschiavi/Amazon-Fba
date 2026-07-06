@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-agents/ganancias.py — Simulador de ganancia potencial de MV Amazon FBA IA.
+agents/ganancias.py — Simulador de ganancia potencial de MV FBA IA.
 
 Responde la pregunta del dueno: "si invierto X plata (o compro X unidades) en
 este producto, ¿cuanto gano?" — con DESGLOSE completo de costos y ganancia neta.

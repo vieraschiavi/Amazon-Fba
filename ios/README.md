@@ -1,4 +1,4 @@
-# MV Amazon FBA IA — App iOS (iPhone / iPad / Mac vía Catalyst)
+# MV FBA IA — App iOS (iPhone / iPad / Mac vía Catalyst)
 
 App nativa que hospeda la misma interfaz movil (`mobile/`) en un `WKWebView`,
 con un puente nativo equivalente al de Android (`WebViewContainer.swift`).

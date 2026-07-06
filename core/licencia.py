@@ -3,8 +3,11 @@
 """
 core/licencia.py — Registro y demo de 3 dias por usuario, sin servidor.
 
-Nombre comercial del producto: "MV Amazon FBA IA" (no cambia).
-Dominio/identificador interno usado para la clave de licencia: "MV-Amazon-Fba".
+Nombre comercial del producto: "MV FBA IA" (antes "MV Amazon FBA IA"; se saco
+"Amazon" del nombre de marca para reducir riesgo de marca registrada, ver
+README). El dominio/identificador interno de la licencia se deja SIN TOCAR
+a proposito: "MV-Amazon-Fba". Es invisible para el usuario y cambiar la
+formula HMAC invalidaria las licencias ya emitidas a clientes que ya pagaron.
 
 Como no hay backend de cuentas (el sistema corre 100% local, sin depender de
 internet), el registro y el conteo de dias viven en la base local (SQLite en

@@ -35,7 +35,7 @@ desinstalador — el mismo tipo de experiencia que un programa comercial.
 
 ## Qué hace el instalador
 
-- Instala en `%LOCALAPPDATA%\Programs\MV Amazon FBA IA` (carpeta del usuario,
+- Instala en `%LOCALAPPDATA%\Programs\MV FBA IA` (carpeta del usuario,
   **sin pedir permisos de administrador** — así no choca con el control de
   cuentas de usuario de Windows).
 - Crea accesos directos: abrir el panel (silencioso, sin ventana de consola),

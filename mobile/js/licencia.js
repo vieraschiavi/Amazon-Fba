@@ -1,7 +1,10 @@
 // licencia.js — Registro y demo de 3 dias por usuario (PWA / Android / iOS).
 //
-// Nombre comercial: "MV Amazon FBA IA" (no cambia). Dominio/identificador
-// interno de la licencia: "MV-Amazon-Fba".
+// Nombre comercial: "MV FBA IA" (antes "MV Amazon FBA IA"; se saco "Amazon"
+// del nombre para reducir riesgo de marca). El dominio/identificador interno
+// de la licencia se deja SIN TOCAR a proposito: "MV-Amazon-Fba" — invisible
+// para el usuario, y cambiar la formula HMAC invalidaria licencias ya
+// emitidas a clientes que ya pagaron.
 //
 // Sin servidor de cuentas: el registro y el reloj de 3 dias viven en el
 // localStorage del telefono (misma logica que core/licencia.py para el
@@ -105,13 +108,13 @@ const Licencia = (() => {
 
   const TXT = {
     es: {
-      titulo: "Bienvenido a MV Amazon FBA IA",
+      titulo: "Bienvenido a MV FBA IA",
       sub: "Registrate para arrancar tu demo completa y gratis de 3 días — sin límites de funciones.",
       nombre: "Tu nombre", email: "Tu email",
       empezar: "Empezar mi demo de 3 días",
       falta_email: "Ingresá un email válido para arrancar la demo.",
       vencida_titulo: "Tu demo de 3 días venció",
-      vencida_sub: "Activá tu licencia para seguir usando MV Amazon FBA IA sin límites, o escribinos para comprarla.",
+      vencida_sub: "Activá tu licencia para seguir usando MV FBA IA sin límites, o escribinos para comprarla.",
       clave: "Clave de licencia", activar: "Activar licencia",
       clave_invalida: "Esa clave no es válida para este email.",
       sin_conexion: "Necesitás internet para activar la licencia la primera vez.",
@@ -121,13 +124,13 @@ const Licencia = (() => {
       badge_demo: "Demo: {n} día(s) restante(s)",
     },
     en: {
-      titulo: "Welcome to MV Amazon FBA IA",
+      titulo: "Welcome to MV FBA IA",
       sub: "Register to start your full, free 3-day demo — no feature limits.",
       nombre: "Your name", email: "Your email",
       empezar: "Start my 3-day demo",
       falta_email: "Enter a valid email to start the demo.",
       vencida_titulo: "Your 3-day demo expired",
-      vencida_sub: "Activate your license to keep using MV Amazon FBA IA with no limits, or contact us to buy it.",
+      vencida_sub: "Activate your license to keep using MV FBA IA with no limits, or contact us to buy it.",
       clave: "License key", activar: "Activate license",
       clave_invalida: "That key is not valid for this email.",
       sin_conexion: "You need internet to activate the license the first time.",
@@ -137,13 +140,13 @@ const Licencia = (() => {
       badge_demo: "Demo: {n} day(s) left",
     },
     pt: {
-      titulo: "Bem-vindo ao MV Amazon FBA IA",
+      titulo: "Bem-vindo ao MV FBA IA",
       sub: "Cadastre-se para começar seu demo completo e gratuito de 3 dias — sem limites de funções.",
       nombre: "Seu nome", email: "Seu email",
       empezar: "Começar meu demo de 3 dias",
       falta_email: "Digite um email válido para começar o demo.",
       vencida_titulo: "Seu demo de 3 dias venceu",
-      vencida_sub: "Ative sua licença para continuar usando o MV Amazon FBA IA sem limites, ou fale conosco para comprá-la.",
+      vencida_sub: "Ative sua licença para continuar usando o MV FBA IA sem limites, ou fale conosco para comprá-la.",
       clave: "Chave de licença", activar: "Ativar licença",
       clave_invalida: "Essa chave não é válida para este email.",
       sin_conexion: "Você precisa de internet para ativar a licença na primeira vez.",

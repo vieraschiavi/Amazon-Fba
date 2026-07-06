@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-agents/asistente.py — Asistente IA (Claude) de MV Amazon FBA IA.
+agents/asistente.py — Asistente IA (Claude) de MV FBA IA.
 
 Responde preguntas del negocio, las metricas y la estrategia FBA. Se apoya en los
 datos REALES del sistema (KPIs de ventas, portafolio, config) como contexto, y en
@@ -23,7 +23,7 @@ import config                        # noqa: E402
 from agents import glosario          # noqa: E402
 
 _SYSTEM = (
-    "Sos el asistente de MV Amazon FBA IA, un cockpit para operar un negocio "
+    "Sos el asistente de MV FBA IA, un cockpit para operar un negocio "
     "Amazon FBA (mercado US). Ayudas al dueno a entender sus metricas, su "
     "portafolio y su estrategia. Respondes con un tono PROFESIONAL PERO AMABLE y "
     "cercano: claro, concreto y sin relleno, pero calido y respetuoso, como un asesor "

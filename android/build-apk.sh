@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# build-apk.sh — Compila el APK de MV Amazon FBA IA y lo deja firmado con los
+# build-apk.sh — Compila el APK de MV FBA IA y lo deja firmado con los
 # TRES esquemas (v1 JAR + v2 + v3) para que lo reconozca CUALQUIER instalador de
 # APK y cualquier Android 7+.
 #

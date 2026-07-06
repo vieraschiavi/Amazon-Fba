@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-data/motor_propio.py — Motor de keywords/nichos EMBEBIDO de MV Amazon FBA IA.
+data/motor_propio.py — Motor de keywords/nichos EMBEBIDO de MV FBA IA.
 
 Reemplaza la parte de DESCUBRIMIENTO de Helium 10 / Jungle Scout sin pagar APIs:
 usa el autocompletado publico de Amazon (completion.amazon.com), la misma senal

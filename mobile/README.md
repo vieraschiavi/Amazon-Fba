@@ -1,4 +1,4 @@
-# MV Amazon FBA IA — App móvil NATIVA (corre en el teléfono, sin PC)
+# MV FBA IA — App móvil NATIVA (corre en el teléfono, sin PC)
 
 App autocontenida para **gerentes y compradores**: administrás tu negocio Amazon
 FBA entero desde el celular — portafolio, ganancias, mercado y asistente — **sin

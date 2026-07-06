@@ -1,4 +1,4 @@
-# MV Amazon FBA IA — App Android nativa
+# MV FBA IA — App Android nativa
 
 Proyecto Android **nativo** (Gradle + Java, sin frameworks intermedios): una
 `Activity` con WebView del sistema que embebe la interfaz móvil (`mobile/`)

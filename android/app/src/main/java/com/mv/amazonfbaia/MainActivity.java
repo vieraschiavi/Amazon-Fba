@@ -34,7 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 
 /**
- * MV Amazon FBA IA — actividad unica que hospeda la interfaz movil.
+ * MV FBA IA — actividad unica que hospeda la interfaz movil.
  *
  * La app es NATIVA y AUTOCONTENIDA: toda la UI y el motor de negocio (HTML/CSS/JS
  * de mobile/, incluido js/nucleo.js) viajan DENTRO del APK como assets y corren
@@ -138,7 +138,7 @@ public class MainActivity extends Activity {
     // ------------------------------------------------------ diagnostico de crash
     private void guardarError(Throwable t) {
         try {
-            String txt = "MV Amazon FBA IA — error de arranque\n"
+            String txt = "MV FBA IA — error de arranque\n"
                     + "versionName 1.1.3\n"
                     + "Android " + Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")\n"
                     + Build.MANUFACTURER + " " + Build.MODEL + "\n\n" + traza(t);

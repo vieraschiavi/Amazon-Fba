@@ -2,10 +2,10 @@
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 chcp 65001 >nul 2>&1
-title MV Amazon FBA IA
+title MV FBA IA
 
 rem ============================================================
-rem  MV Amazon FBA IA - App de escritorio (ventana nativa).
+rem  MV FBA IA - App de escritorio (ventana nativa).
 rem  Detecta Python, instala dependencias la primera vez y abre
 rem  la app en su propia ventana (desktop.py, sin navegador).
 rem ============================================================
@@ -31,7 +31,7 @@ if not defined PYTHON (
 set PYTHONIOENCODING=utf-8
 set PYTHONUTF8=1
 
-echo  Preparando MV Amazon FBA IA (la primera vez instala dependencias)...
+echo  Preparando MV FBA IA (la primera vez instala dependencias)...
 "!PYTHON!" -c "import streamlit,pandas,webview" >nul 2>&1
 if errorlevel 1 "!PYTHON!" -m pip install --user -r requirements.txt
 "!PYTHON!" -c "import streamlit,pandas" >nul 2>&1

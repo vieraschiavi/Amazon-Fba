@@ -11,9 +11,9 @@
 import { aplicarCors, clienteValido } from "./_seguridad.js";
 
 const PLANES = {
-  starter: { titulo: "MV Amazon FBA IA — Starter (Celular)", precio: 29 },
-  pro:     { titulo: "MV Amazon FBA IA — Pro (PC + Android)", precio: 129 },
-  ia:      { titulo: "MV Amazon FBA IA — Pro IA (todo incluido)", precio: 34 },
+  starter: { titulo: "MV FBA IA — Starter (Celular)", precio: 29 },
+  pro:     { titulo: "MV FBA IA — Pro (PC + Android)", precio: 129 },
+  ia:      { titulo: "MV FBA IA — Pro IA (todo incluido)", precio: 34 },
 };
 
 export default async function handler(req, res) {

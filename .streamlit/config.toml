@@ -1,4 +1,4 @@
-# Configuracion de MV Amazon FBA IA como software para el usuario final.
+# Configuracion de MV FBA IA como software para el usuario final.
 [client]
 # No mostrar el traceback de Python crudo al usuario (se ve como software, no
 # como un script roto). Los errores conocidos ya se manejan en el codigo; si

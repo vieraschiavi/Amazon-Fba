@@ -1,4 +1,4 @@
-// settings.gradle — proyecto Android nativo de MV Amazon FBA IA.
+// settings.gradle — proyecto Android nativo de MV FBA IA.
 pluginManagement {
     repositories {
         google()
@@ -13,5 +13,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "MV Amazon FBA IA"
+rootProject.name = "MV FBA IA"
 include ':app'
