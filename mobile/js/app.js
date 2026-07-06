@@ -436,7 +436,7 @@ async function mercadoRealKeepa(keyword, min, max) {
   const keepa = (estado.claves.keepa || "").trim();
   if (!keepa) return null;
   const resp = await fetch("/api/mercado", {
-    method: "POST", headers: { "Content-Type": "application/json" },
+    method: "POST", headers: { "Content-Type": "application/json", "x-mv-app": "mvfba-web-1" },
     body: JSON.stringify({ keyword, min, max, keepaKey: keepa }),
   });
   if (!resp.ok) return null;
@@ -718,7 +718,7 @@ async function responderProxy(preg) {
   const idioma = (localStorage.getItem("mvfba_idioma") || (navigator.language || "es").slice(0, 2));
   const resp = await fetch("/api/ia", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "x-mv-app": "mvfba-web-1" },
     body: JSON.stringify({ pregunta: preg, contexto, idioma }),
   });
   if (!resp.ok) return null;          // 503 no configurada / 502 upstream -> fallback

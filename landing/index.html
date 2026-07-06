@@ -908,7 +908,7 @@ document.querySelectorAll(".comprar").forEach((btn) => {
     try {
       const r = await fetch("/api/checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-mv-app": "mvfba-web-1" },
         body: JSON.stringify({ plan }),
       });
       if (r.status === 503) {

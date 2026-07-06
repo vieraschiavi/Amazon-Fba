@@ -5,6 +5,14 @@
 // leyendo el código: la app manda {email, clave} aquí y el servidor responde
 // si es válida. La misma fórmula HMAC la usa api/licencia.js para emitirla tras
 // el pago. La activación pide internet una vez; luego la app funciona offline.
+//
+// A DIFERENCIA de los endpoints web (checkout/ia/mercado/licencia), este NO
+// restringe CORS ni pide el header de aplicación: lo llaman el programa de PC,
+// la app Android y iOS (WebView / file://), donde el navegador no manda el
+// mismo Origin que un sitio web — restringirlo rompería la activación de
+// clientes que ya pagaron. Su protección real es otra: el HMAC es imposible
+// de adivinar por fuerza bruta y no hay ningún costo (Claude/Keepa/pago) detrás
+// de cada intento, así que no es un objetivo valioso para un bot.
 import crypto from "crypto";
 
 const SECRETO = process.env.LICENCIA_SECRETO || "mv-amazon-fba-2026-clave-de-firma";

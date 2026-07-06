@@ -7,6 +7,7 @@
 // queda a nombre del email con el que el comprador pagó: ese mismo email va en
 // la app para activarla.
 import crypto from "crypto";
+import { aplicarCors, clienteValido } from "./_seguridad.js";
 
 const SECRETO = process.env.LICENCIA_SECRETO || "mv-amazon-fba-2026-clave-de-firma";
 const DOMINIO = "MV-Amazon-Fba";
@@ -18,8 +19,13 @@ function generarClave(email) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  aplicarCors(req, res, "GET, OPTIONS");
   if (req.method === "OPTIONS") return res.status(204).end();
+  // Defensa en profundidad: sin esto, un bot podria enumerar payment_id al
+  // azar buscando pagos aprobados de OTRAS personas para pescar su email +
+  // licencia. El header no detiene a un atacante dirigido, pero saca del
+  // medio el escaneo automatico generico.
+  if (!clienteValido(req)) return res.status(403).json({ error: "cliente_no_reconocido" });
 
   const token = process.env.MP_ACCESS_TOKEN;
   if (!token) return res.status(503).json({ error: "pago_no_configurado" });

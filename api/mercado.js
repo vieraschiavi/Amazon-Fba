@@ -13,6 +13,8 @@
 // HONESTIDAD: Keepa da BSR, no ventas exactas. ventas_estim es una estimación por
 // curva BSR->ventas (gruesa), igual que en el programa de PC (data/keepa.py).
 
+import { aplicarCors, clienteValido } from "./_seguridad.js";
+
 const DOMAIN = 1; // amazon.com (US)
 const UA = "mv-amazon-fba-ia/1.0";
 
@@ -34,11 +36,10 @@ function estimVentas(bsr) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  aplicarCors(req, res, "POST, OPTIONS");
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST") return res.status(405).json({ error: "method" });
+  if (!clienteValido(req)) return res.status(403).json({ error: "cliente_no_reconocido" });
 
   let body = req.body;
   if (typeof body === "string") { try { body = JSON.parse(body); } catch (e) { body = {}; } }
