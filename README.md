@@ -119,6 +119,27 @@ En la versión **descargada** (APK/iOS/PC) no hay proxy: cada cliente usa su
 propia clave (BYOK) o el asistente local — por eso el `fetch('/api/ia')` falla
 en `file://` y cae al fallback, que es lo buscado.
 
+## Cuota de IA del plan "Pro IA" (requiere una base de datos, 1 paso)
+
+El plan "Pro IA" ($34, cobro **único** que extiende 30 días de acceso — no es
+una suscripción automática de MercadoPago; se explica por qué en
+`api/_cuotaia.js`) necesita contar cuántos tokens gastó cada cliente para no
+regalar IA sin límite. Ese conteo vive en una base de datos chica (Vercel KV
+o Upstash Redis) que **no viene provisionada por defecto** — sin ella, el
+sistema no inventa una cuota: cae al mismo tope genérico que la demo gratis
+(ver `api/_almacen.js`).
+
+Para activarla (una sola vez, ~2 min):
+1. Vercel → tu proyecto → **Storage → Create Database** → elegí **KV**
+   (o conectá **Upstash for Redis** desde el Marketplace de integraciones).
+2. Conectala a este proyecto. Vercel agrega solo las variables
+   `KV_REST_API_URL` y `KV_REST_API_TOKEN` (Production + Preview).
+3. **Redeploy**. Listo: cada pago del plan "Pro IA" activa 30 días de cuota
+   mensual (tokens reales de la respuesta de Claude, no una estimación), y el
+   cliente elige en **Config → Tu cuota de IA** si prefiere que lo que no usa
+   se resetee cada mes ("tope fijo") o se acumule para el mes siguiente
+   ("acumular", con un techo de 2x para que no crezca sin límite).
+
 ## Landing web (`landing/`) y dominio propio
 
 La landing (`landing/index.html`) se despliega sola en Vercel en cada push
