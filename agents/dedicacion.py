@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-agents/dedicacion.py — Estimador de dedicacion horaria de MV Amazon FBA IA.
+agents/dedicacion.py — Estimador de dedicacion horaria de MV FBA IA.
 
 Responde "¿cuantas horas por semana necesito REALMENTE?" con un desglose por
 tarea, distinguiendo lo que el sistema ya automatiza (bot de FAQ, alertas,

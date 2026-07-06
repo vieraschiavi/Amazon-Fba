@@ -1,4 +1,4 @@
-﻿; MV_Amazon_FBA_IA.iss — Instalador profesional (Inno Setup) de MV Amazon FBA IA.
+﻿; MV_Amazon_FBA_IA.iss — Instalador profesional (Inno Setup) de MV FBA IA.
 ;
 ; Como compilar (en Windows, con Inno Setup 6 — gratis, jrsoftware.org/isinfo.php):
 ;   1. Instala Inno Setup 6.
@@ -9,9 +9,9 @@
 ; Se instala en el perfil del usuario (sin pedir permisos de administrador) para
 ; que el panel pueda escribir su base de datos y su .env sin friccion de UAC.
 
-#define MyAppName "MV Amazon FBA IA"
+#define MyAppName "MV FBA IA"
 #define MyAppVersion "1.0.0"
-#define MyAppPublisher "MV Amazon FBA IA"
+#define MyAppPublisher "MV FBA IA"
 #define MyAppExeDescription "Cockpit inteligente para tu negocio Amazon FBA"
 
 [Setup]
@@ -20,7 +20,7 @@ AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppComments={#MyAppExeDescription}
-DefaultDirName={localappdata}\Programs\MV Amazon FBA IA
+DefaultDirName={localappdata}\Programs\MV FBA IA
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
@@ -104,9 +104,9 @@ begin
       { OJO: ninguna linea de este bloque puede EMPEZAR con #13#10 — el
         preprocesador ISPP interpreta el '#' inicial como directiva y aborta. }
       if MsgBox('No se detecto Python en este equipo.' + #13#10 +
-                'MV Amazon FBA IA necesita Python 3.10 o superior para funcionar.' + #13#10 + #13#10 +
+                'MV FBA IA necesita Python 3.10 o superior para funcionar.' + #13#10 + #13#10 +
                 'Se recomienda instalarlo ahora (tildá "Add python.exe to PATH" ' +
-                'durante su instalacion) y despues abrir MV Amazon FBA IA normalmente.' + #13#10 + #13#10 +
+                'durante su instalacion) y despues abrir MV FBA IA normalmente.' + #13#10 + #13#10 +
                 'Queres abrir la pagina de descarga de Python?',
                 mbConfirmation, MB_YESNO) = IDYES then
         ShellExec('open', 'https://www.python.org/downloads/', '', '', SW_SHOWNORMAL,

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-desktop.py — MV Amazon FBA IA como aplicacion de ESCRITORIO nativa.
+desktop.py — MV FBA IA como aplicacion de ESCRITORIO nativa.
 
 Arranca el servidor Streamlit por dentro (headless, en localhost, en un puerto
 libre) y lo muestra dentro de una VENTANA NATIVA propia (pywebview): abre como un
@@ -23,7 +23,7 @@ import time
 import urllib.request
 
 _RAIZ = os.path.dirname(os.path.abspath(__file__))
-TITULO = "MV Amazon FBA IA"
+TITULO = "MV FBA IA"
 APP = os.path.join(_RAIZ, "dashboard_app.py")
 
 

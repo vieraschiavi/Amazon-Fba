@@ -1,5 +1,5 @@
 {
-  "name": "MV Amazon FBA IA - Sales Alerts",
+  "name": "MV FBA IA - Sales Alerts",
   "nodes": [
     {
       "parameters": { "httpMethod": "POST", "path": "fba-sale" },

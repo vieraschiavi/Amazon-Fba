@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-data/mercado.py — Explorador de mercado de MV Amazon FBA IA.
+data/mercado.py — Explorador de mercado de MV FBA IA.
 
 Completa el modulo estilo Helium 10 / Jungle Scout con datos de PRODUCTOS:
 

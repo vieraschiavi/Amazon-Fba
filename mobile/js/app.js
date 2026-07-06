@@ -1,4 +1,4 @@
-// app.js — MV Amazon FBA IA (app Android NATIVA, sin depender de la PC).
+// app.js — MV FBA IA (app Android NATIVA, sin depender de la PC).
 //
 // TODO el negocio corre EN EL TELEFONO:
 //   - la matematica (pricing, ganancias, exito, caja, dedicacion) la hace
@@ -641,7 +641,7 @@ function _bienvenidaChat() {
   const extra = r.n
     ? `Veo que tenés **${r.n} producto/s** cargados y un sueldo estable proyectado de **${fmtMoney(r.sueldo_meseta_proyectado)}/mes**. `
     : "Cargá un producto (o tocá **Ver con datos de ejemplo** en Config) y te analizo tus números. ";
-  return "¡Hola! Soy tu asistente de MV Amazon FBA IA. " + extra
+  return "¡Hola! Soy tu asistente de MV FBA IA. " + extra
     + "Preguntame lo que quieras: márgenes, precios, qué producto conviene, cuánto podés ganar…";
 }
 function pintarChat() {
@@ -709,7 +709,7 @@ function responderLocal(preg) {
 // Contexto e historial compartidos por todos los proveedores de IA.
 function _contextoIA() {
   const r = resumenPortafolio();
-  return `Sos el asistente de MV Amazon FBA IA, un cockpit para vender en Amazon FBA. `
+  return `Sos el asistente de MV FBA IA, un cockpit para vender en Amazon FBA. `
     + `Datos del negocio del usuario: ${r.n} productos, `
     + `sueldo meseta proyectado ${fmtMoney(r.sueldo_meseta_proyectado)}/mes, `
     + `margen promedio ${fmtPct(r.margen_promedio_pct)}, ventas reales ${fmtMoney(r.ingreso_real)}. `
@@ -1083,7 +1083,7 @@ $("#form-contacto").addEventListener("submit", (ev) => {
   ev.preventDefault();
   const pregunta = $("#ct-pregunta").value.trim();
   if (!pregunta) { mostrarToast("Escribí tu pregunta antes de enviar"); return; }
-  const asunto = $("#ct-asunto").value.trim() || "Consulta desde MV Amazon FBA IA";
+  const asunto = $("#ct-asunto").value.trim() || "Consulta desde MV FBA IA";
   const contacto = $("#ct-contacto").value.trim() || "(no indicado)";
   const cuerpo = `${pregunta}\n\nContacto de quien consulta: ${contacto}`;
   const mailto = `mailto:${CONTACTO_EMAIL}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;

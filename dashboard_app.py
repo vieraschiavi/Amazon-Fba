@@ -41,7 +41,7 @@ from data import motor_propio
 
 db.init()
 
-st.set_page_config(page_title="MV Amazon FBA IA", page_icon="📊", layout="wide",
+st.set_page_config(page_title="MV FBA IA", page_icon="📊", layout="wide",
                    initial_sidebar_state="expanded")
 st.markdown(ui.CSS, unsafe_allow_html=True)
 
@@ -49,18 +49,18 @@ st.markdown(ui.CSS, unsafe_allow_html=True)
 # Sin servidor de cuentas: el registro y el reloj de 3 dias viven en la base local
 # (misma logica en mobile/js/licencia.js para PWA/Android/iOS). El dominio interno
 # del producto para la clave de licencia es "MV-Amazon-Fba" (nombre comercial sin
-# cambios: "MV Amazon FBA IA").
+# cambios: "MV FBA IA").
 _IDIOMAS_DEMO = ["Español", "English", "Português"]
 _COD_IDIOMA_DEMO = {"Español": "es", "English": "en", "Português": "pt"}
 _TXT_DEMO = {
     "es": {
-        "titulo": "Bienvenido a MV Amazon FBA IA",
+        "titulo": "Bienvenido a MV FBA IA",
         "sub": "Registrate para arrancar tu demo completa y gratis de 3 días — sin límites de funciones.",
         "nombre": "Tu nombre", "email": "Tu email",
         "empezar": "Empezar mi demo de 3 días",
         "falta_email": "Ingresá un email válido para arrancar la demo.",
         "vencida_titulo": "Tu demo de 3 días venció",
-        "vencida_sub": "Activá tu licencia para seguir usando MV Amazon FBA IA sin límites, "
+        "vencida_sub": "Activá tu licencia para seguir usando MV FBA IA sin límites, "
                        "o escribinos para comprarla.",
         "clave": "Clave de licencia", "activar": "Activar licencia",
         "clave_invalida": "Esa clave no es válida para este email.",
@@ -70,13 +70,13 @@ _TXT_DEMO = {
         "badge_demo": "Demo: {n} día(s) restante(s)",
     },
     "en": {
-        "titulo": "Welcome to MV Amazon FBA IA",
+        "titulo": "Welcome to MV FBA IA",
         "sub": "Register to start your full, free 3-day demo — no feature limits.",
         "nombre": "Your name", "email": "Your email",
         "empezar": "Start my 3-day demo",
         "falta_email": "Enter a valid email to start the demo.",
         "vencida_titulo": "Your 3-day demo expired",
-        "vencida_sub": "Activate your license to keep using MV Amazon FBA IA with no limits, "
+        "vencida_sub": "Activate your license to keep using MV FBA IA with no limits, "
                        "or contact us to buy it.",
         "clave": "License key", "activar": "Activate license",
         "clave_invalida": "That key is not valid for this email.",
@@ -86,13 +86,13 @@ _TXT_DEMO = {
         "badge_demo": "Demo: {n} day(s) left",
     },
     "pt": {
-        "titulo": "Bem-vindo ao MV Amazon FBA IA",
+        "titulo": "Bem-vindo ao MV FBA IA",
         "sub": "Cadastre-se para começar seu demo completo e gratuito de 3 dias — sem limites de funções.",
         "nombre": "Seu nome", "email": "Seu email",
         "empezar": "Começar meu demo de 3 dias",
         "falta_email": "Digite um email válido para começar o demo.",
         "vencida_titulo": "Seu demo de 3 dias venceu",
-        "vencida_sub": "Ative sua licença para continuar usando o MV Amazon FBA IA sem limites, "
+        "vencida_sub": "Ative sua licença para continuar usando o MV FBA IA sem limites, "
                        "ou fale conosco para comprá-la.",
         "clave": "Chave de licença", "activar": "Ativar licença",
         "clave_invalida": "Essa chave não é válida para este email.",
@@ -1376,7 +1376,7 @@ with tabs[12]:
         if not ct_pregunta.strip():
             st.warning("Escribí tu pregunta antes de enviar.")
         else:
-            asunto = ct_asunto.strip() or "Consulta desde MV Amazon FBA IA"
+            asunto = ct_asunto.strip() or "Consulta desde MV FBA IA"
             cuerpo = (f"{ct_pregunta.strip()}\n\n"
                      f"Contacto de quien consulta: {ct_contacto.strip() or '(no indicado)'}")
             mailto = ("mailto:" + config.ALERT_TO + "?subject=" + urllib.parse.quote(asunto)

@@ -1,4 +1,4 @@
-/* nucleo.js — Motor de negocio de MV Amazon FBA IA, portado a JavaScript para
+/* nucleo.js — Motor de negocio de MV FBA IA, portado a JavaScript para
    que la app Android funcione 100% en el telefono, SIN depender de la PC.
 
    Es un port FIEL de los modulos Python (agents/pricing, ganancias, exito,

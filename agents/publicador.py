@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-agents/publicador.py — Paquete de publicacion end-to-end de MV Amazon FBA IA.
+agents/publicador.py — Paquete de publicacion end-to-end de MV FBA IA.
 
 Arma TODO lo necesario para publicar un producto en Amazon de forma atractiva y
 profesional, con los motores ya validados del sistema (nada se inventa):
@@ -163,7 +163,7 @@ def html_paquete(p):
     m, q = p["pricing"], p["cantidades"]
     return f"""<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Paquete de publicacion — {e(p['producto'])} — MV Amazon FBA IA</title>
+<title>Paquete de publicacion — {e(p['producto'])} — MV FBA IA</title>
 <style>
  body{{font-family:'Segoe UI',Inter,system-ui,sans-serif;color:#0f172a;background:#f1f5f9;margin:0;padding:24px}}
  .wrap{{max-width:860px;margin:0 auto}}
@@ -182,7 +182,7 @@ def html_paquete(p):
  .aviso{{background:#fffbeb;border:1px solid #f59e0b;border-radius:12px;padding:12px 14px;font-size:13px}}
  @media print{{body{{background:#fff}}}}
 </style></head><body><div class="wrap">
-<div class="hero"><h1>MV Amazon FBA <span class="g">IA</span> — Paquete de publicacion</h1>
+<div class="hero"><h1>MV FBA <span class="g">IA</span> — Paquete de publicacion</h1>
 <p>{e(p['producto'])} · mercado {e(p['marketplace'])} · listing: {e(li['motor'])} · keywords: {e(li['fuente_keywords'])}</p>
 <div class="kpis">
  <div class="kpi"><b>USD {m['precio']:.2f}</b><span>precio sugerido ({e(m['estrategia'])})</span></div>
@@ -207,7 +207,7 @@ def html_paquete(p):
 <div class="card"><h2>9. Publicar en Seller Central — paso a paso</h2><ol>{seller}</ol></div>
 <div class="card"><div class="aviso"><b>Nota honesta:</b> {e(p['nota_honesta'])}</div></div>
 <p style="color:#64748b;font-size:12px;text-align:center;margin:16px 0 4px">
-Generado por MV Amazon FBA IA — mismos motores de pricing y listing que el panel.</p>
+Generado por MV FBA IA — mismos motores de pricing y listing que el panel.</p>
 </div></body></html>"""
 
 

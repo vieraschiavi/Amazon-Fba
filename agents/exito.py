@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-agents/exito.py — Asesor de probabilidad de exito de MV Amazon FBA IA.
+agents/exito.py — Asesor de probabilidad de exito de MV FBA IA.
 
 Estima la probabilidad de exito de un producto dado el segmento, la demanda,
 los competidores, las reseñas/calidad y el precio — con una formula de pesos
@@ -166,7 +166,7 @@ def narrativa(evaluacion, competencia=None):
         client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
         resp = client.messages.create(
             model=config.MODEL_OPUS, max_tokens=900,
-            system=("Sos el asesor de MV Amazon FBA IA. Analiza la evaluacion de "
+            system=("Sos el asesor de MV FBA IA. Analiza la evaluacion de "
                     "exito de un producto FBA y da un veredicto razonado en espanol "
                     "rioplatense, con tono profesional pero amable y cercano: 3-5 "
                     "parrafos cortos, concreto, sin humo, pero calido y respetuoso. "

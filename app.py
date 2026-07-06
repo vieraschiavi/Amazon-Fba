@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-app.py — API FastAPI de MV Amazon FBA IA (puente con n8n).
+app.py — API FastAPI de MV FBA IA (puente con n8n).
 Endpoints: /health, /webhook/message, /webhook/sale, /run/research, /dashboard,
 /portfolio, /portfolio/producto, /portfolio/producto/{id}.
 Correr: uvicorn app:app --host 0.0.0.0 --port 8000   (o API.bat)
@@ -41,7 +41,7 @@ from data import mercado
 from data import motor_propio
 
 db.init()
-app = FastAPI(title="MV Amazon FBA IA — API", version="1.1")
+app = FastAPI(title="MV FBA IA — API", version="1.1")
 
 # CORS abierto: la API corre en localhost y la consumen n8n y la app movil
 # (mobile/), que sirve desde otro origen (otro puerto o el navegador del

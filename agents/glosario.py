@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-agents/glosario.py — Glosario y ayudas de MV Amazon FBA IA.
+agents/glosario.py — Glosario y ayudas de MV FBA IA.
 
 Diccionario de terminos FBA + finanzas (en espanol), agrupados por categoria.
 Fuente unica para la pestana Ayuda del panel y para el fallback offline del

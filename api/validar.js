@@ -16,6 +16,9 @@
 import crypto from "crypto";
 
 const SECRETO = process.env.LICENCIA_SECRETO || "mv-amazon-fba-2026-clave-de-firma";
+// Identificador interno, invisible para el usuario. Se deja SIN TOCAR aunque
+// el nombre comercial paso a ser "MV FBA IA": cambiarlo invalidaria las
+// licencias ya emitidas a clientes que ya pagaron.
 const DOMINIO = "MV-Amazon-Fba";
 
 function generarClave(email) {

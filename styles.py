@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-styles.py — Sistema de diseño de MV Amazon FBA IA (cockpit BI).
+styles.py — Sistema de diseño de MV FBA IA (cockpit BI).
 Paleta navy #1e3a8a + verde #8bc34a, tipografia Inter/Segoe UI, KPI cards con
 sombra y acento, semaforos como estado real (verde/amarillo/rojo). Sin emojis.
 La marca (nombre, tagline, logo) esta centralizada aca para todo el sistema.
 """
 
 # --- Identidad de marca (fuente unica) ---
-BRAND = "MV Amazon FBA IA"
-BRAND_PREFIX = "MV Amazon FBA"          # se muestra en tinta normal
+BRAND = "MV FBA IA"
+BRAND_PREFIX = "MV FBA"                # se muestra en tinta normal
 BRAND_ACCENT = "IA"                     # se resalta en verde
 TAGLINE = "Cockpit inteligente para tu negocio Amazon FBA"
 

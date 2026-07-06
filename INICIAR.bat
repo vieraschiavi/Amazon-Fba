@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 chcp 65001 >nul 2>&1
-title MV Amazon FBA IA
+title MV FBA IA
 
 echo.
 echo  ============================================================

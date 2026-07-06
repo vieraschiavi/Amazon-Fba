@@ -4,7 +4,7 @@ Este software se entrega "tal cual" (as-is), sin garantias de ningun tipo,
 expresas o implicitas, incluyendo pero no limitado a garantias de
 comerciabilidad o aptitud para un proposito particular.
 
-MV Amazon FBA IA es una herramienta de apoyo a la gestion de un negocio Amazon
+MV FBA IA es una herramienta de apoyo a la gestion de un negocio Amazon
 FBA: investigacion de nicho, pricing, portafolio, proyeccion de caja, listing
 y publicacion. Ninguna estimacion, proyeccion, score de exito o proyeccion de
 ganancia que muestra el sistema constituye una promesa ni un consejo

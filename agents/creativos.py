@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-agents/creativos.py — Generador de creatividades visuales de MV Amazon FBA IA.
+agents/creativos.py — Generador de creatividades visuales de MV FBA IA.
 
 Genera IMAGENES reales (PNG), no solo un brief de texto: un banner hero para el
 listing/A+ y una infografia de beneficios, con la paleta de marca (navy/verde),
@@ -92,7 +92,7 @@ def _badge(draw, x0, y, texto, fuente):
     return w, h
 
 
-def generar_banner(titulo, badges=None, marca="MV Amazon FBA IA", size=1200):
+def generar_banner(titulo, badges=None, marca="MV FBA IA", size=1200):
     """
     Banner hero cuadrado (para A+ Content / redes / anuncio). Devuelve PNG bytes.
     """
