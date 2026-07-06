@@ -4,5 +4,8 @@
   "buildCommand": "sh scripts/vercel-build.sh",
   "outputDirectory": "landing",
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "crons": [
+    { "path": "/api/cron-recordatorio-demo", "schedule": "0 15 * * *" }
+  ]
 }

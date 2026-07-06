@@ -14,6 +14,7 @@
 // de adivinar por fuerza bruta y no hay ningún costo (Claude/Keepa/pago) detrás
 // de cada intento, así que no es un objetivo valioso para un bot.
 import { claveValida } from "./_licencia.js";
+import { licenciaRevocada } from "./_revocacion.js";
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -29,6 +30,13 @@ export default async function handler(req, res) {
   const clave = String(body.clave || "").slice(0, 40).trim().toUpperCase();
   if (!email || !clave) return res.status(400).json({ valido: false, error: "faltan_datos" });
 
-  const valido = claveValida(email, clave);
-  return res.status(200).json({ valido });
+  if (!claveValida(email, clave)) return res.status(200).json({ valido: false });
+
+  // El HMAC por si solo no sabe si ese pago ya se reembolso -- se chequea
+  // aparte contra el flag que pone api/reembolso.js (best-effort: si el
+  // almacen no esta configurado, licenciaRevocada() devuelve false y el
+  // comportamiento queda igual que antes de esta funcion).
+  let revocada = false;
+  try { revocada = await licenciaRevocada(email); } catch (e) { revocada = false; }
+  return res.status(200).json({ valido: !revocada });
 }
