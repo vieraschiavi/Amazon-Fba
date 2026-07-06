@@ -6,6 +6,19 @@ proyección de caja, ventas/analítica, bot de atención, alertas por email, API
 automatización con n8n. Todo en español; copy del listing en inglés (mercado Amazon US);
 esquema navy `#1e3a8a`; **sin datos inventados**.
 
+## 🔗 Enlaces del proyecto
+
+| Recurso | Enlace |
+|---|---|
+| 🌐 **Web / landing** | https://amazon-fba-seven.vercel.app |
+| ▶️ **Demo real (probar la app)** | https://amazon-fba-seven.vercel.app/app |
+| 💳 **Gracias / post-pago** (licencia automática) | https://amazon-fba-seven.vercel.app/gracias.html |
+| 💻 **Código (GitHub)** | https://github.com/vieraschiavi/Amazon-Fba |
+
+La web se despliega sola en Vercel en cada push a `main`. El dominio es
+configuración externa: cuando conectes uno propio, nada del código cambia
+(no hay URLs hardcodeadas) — ver [Landing web y dominio propio](#landing-web-landing-y-dominio-propio).
+
 ## Arrancar (Windows, doble clic)
 
 **`INICIAR.bat`** → detecta Python (Anaconda o instalación normal), instala las
