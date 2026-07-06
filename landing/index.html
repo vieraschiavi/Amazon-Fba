@@ -412,6 +412,7 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
     <div class="klabel" data-t="pricing.label">Precios</div>
     <h2 class="h2" data-t="pricing.h2">Elegí tu plan</h2>
     <p class="sublede" data-t="pricing.sub">Pago único o mensual. Descargás la versión que compraste apenas se confirma el pago.</p>
+    <p class="klabel" style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--muted);margin:-8px 0 14px" data-t="pricing.monedaAviso">Precio de referencia en USD — MercadoPago procesa el cobro en pesos uruguayos (UYU) al tipo de cambio del día del pago.</p>
     <a class="demo-banner" href="/app/" target="_blank" rel="noopener" data-t="pricing.demoBanner">🎁 Demo completa gratis por 3 días — todas las funciones activas, sin tarjeta</a>
     <div class="g3">
       <div class="card price-card">
@@ -525,7 +526,7 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
       </details>
       <details>
         <summary data-t="faq.q5">¿En qué países funciona el pago?</summary>
-        <p data-t="faq.a5">Tarjeta y PayPal funcionan en cualquier país; MercadoPago cubre LatAm con tarjetas locales y cuotas; transferencia bancaria para pagos grandes.</p>
+        <p data-t="faq.a5">Tarjeta y PayPal funcionan en cualquier país; MercadoPago cubre LatAm con tarjetas locales y cuotas; transferencia bancaria para pagos grandes. Los precios se muestran en USD como referencia, pero MercadoPago procesa el cobro en pesos uruguayos (UYU) al tipo de cambio del día — puede aparecer así en tu resumen de tarjeta.</p>
       </details>
       <details>
         <summary data-t="faq.q6">¿Cómo pido la devolución si no me convence?</summary>
@@ -628,6 +629,7 @@ const I18N = {
     "vs.bad1":"Suscripción recurrente de por vida","vs.bad2":"Pagás módulos que no usás","vs.bad3":"Sin app nativa de escritorio",
     "vs.good1":"Semáforo de margen y ganancia real antes de comprar","vs.good2":"Pago único, en tu tarjeta, una vez","vs.good3":"Investigación incluida (Keepa opcional, no obligatorio)",
     "pricing.label":"Precios","pricing.h2":"Elegí tu plan","pricing.sub":"Pago único o mensual. Descargás la versión que compraste apenas se confirma el pago.",
+    "pricing.monedaAviso":"Precio de referencia en USD — MercadoPago procesa el cobro en pesos uruguayos (UYU) al tipo de cambio del día del pago.",
     "pricing.demoBanner":"🎁 Demo completa gratis por 3 días — todas las funciones activas, sin tarjeta",
     "pricing.once":" pago único","pricing.mo":" /mes","pricing.buy":"Comprar","pricing.popular":"MÁS VENDIDO",
     "pricing.garantia":"✔ 7 días de garantía o te devolvemos el pago",
@@ -637,7 +639,7 @@ const I18N = {
     "pricing.pro.f1":"App de escritorio completa + APK","pricing.pro.f2":"Todos los módulos desbloqueados","pricing.pro.f3":"Multi-idioma / 10 marketplaces","pricing.pro.f4":"IA con tu propia clave",
     "pricing.ia.name":"Pro IA · todo incluido","pricing.ia.alt":"IA embebida con créditos",
     "pricing.ia.f1":"Todo lo del plan Pro","pricing.ia.f2":"Asistente IA incluido (con tope justo)","pricing.ia.f3":"Sin configurar ninguna clave","pricing.ia.f4":"Soporte prioritario",
-    "pay.label":"Medios de pago","pay.sub":"Elegí como pagar. La descarga con tu licencia se habilita apenas se confirma el pago.",
+    "pay.label":"Medios de pago","pay.sub":"Elegí como pagar. La descarga con tu licencia se habilita apenas se confirma el pago. Precios en USD de referencia; MercadoPago cobra en pesos uruguayos (UYU) al tipo de cambio del día.",
     "pay.card":"Tarjeta de crédito/débito","pay.wire":"Transferencia bancaria",
     "pay.step1k":"Paso 1","pay.step1b":"Elegís tu plan","pay.step1s":"Y el medio de pago",
     "pay.step2k":"Paso 2","pay.step2b":"Pagás seguro","pay.step2s":"MercadoPago, tarjeta o transferencia",
@@ -691,6 +693,7 @@ const I18N = {
     "vs.bad1":"Recurring subscription forever","vs.bad2":"You pay for modules you don't use","vs.bad3":"No native desktop app",
     "vs.good1":"Margin traffic-light and real profit before you buy","vs.good2":"One-time payment, on your card, once","vs.good3":"Research included (Keepa optional, never required)",
     "pricing.label":"Pricing","pricing.h2":"Choose your plan","pricing.sub":"One-time or monthly. Download the version you bought as soon as payment is confirmed.",
+    "pricing.monedaAviso":"Reference price in USD — MercadoPago processes the charge in Uruguayan pesos (UYU) at the exchange rate on the day of payment.",
     "pricing.demoBanner":"🎁 Full 3-day free demo — every feature unlocked, no card required",
     "pricing.once":" one-time","pricing.mo":" /mo","pricing.buy":"Buy now","pricing.popular":"MOST POPULAR",
     "pricing.garantia":"✔ 7-day money-back guarantee",
@@ -700,7 +703,7 @@ const I18N = {
     "pricing.pro.f1":"Full desktop app + APK","pricing.pro.f2":"Every module unlocked","pricing.pro.f3":"Multi-language / 10 marketplaces","pricing.pro.f4":"AI with your own key",
     "pricing.ia.name":"Pro AI · all-inclusive","pricing.ia.alt":"Embedded AI with credits",
     "pricing.ia.f1":"Everything in Pro","pricing.ia.f2":"AI assistant included (fair monthly cap)","pricing.ia.f3":"No keys to configure","pricing.ia.f4":"Priority support",
-    "pay.label":"Payment methods","pay.sub":"Choose how to pay. Your download and license unlock as soon as payment is confirmed.",
+    "pay.label":"Payment methods","pay.sub":"Choose how to pay. Your download and license unlock as soon as payment is confirmed. Prices in USD are a reference; MercadoPago charges in Uruguayan pesos (UYU) at the day's exchange rate.",
     "pay.card":"Credit/debit card","pay.wire":"Bank transfer",
     "pay.step1k":"Step 1","pay.step1b":"Pick your plan","pay.step1s":"And payment method",
     "pay.step2k":"Step 2","pay.step2b":"Pay securely","pay.step2s":"MercadoPago, card or transfer",
@@ -716,7 +719,7 @@ const I18N = {
     "faq.q2":"What if I don't want to pay for AI every month?","faq.a2":"Choose the Pro plan (one-time) and use your own AI key, free or paid — you control that cost. Embedded AI is a separate, optional plan.",
     "faq.q3":"How do I download the software after paying?","faq.a3":"Once payment is confirmed, you get an email with the download link and your license key for that version (PC and/or Android, per your plan).",
     "faq.q4":"Is there an unrestricted version for my own use?","faq.a4":"Yes — the Pro license unlocks every module for your own business, with no limits on products or on the own engine's usage.",
-    "faq.q5":"Which countries can pay?","faq.a5":"Card and PayPal work worldwide; MercadoPago covers LatAm with local cards and installments; bank transfer for larger orders.",
+    "faq.q5":"Which countries can pay?","faq.a5":"Card and PayPal work worldwide; MercadoPago covers LatAm with local cards and installments; bank transfer for larger orders. Prices are shown in USD as a reference, but MercadoPago processes the charge in Uruguayan pesos (UYU) at the day's exchange rate — that's how it may appear on your card statement.",
     "faq.q6":"How do I get a refund if it's not for me?","faq.a6":"On the \"Thanks for your purchase\" page (the link you get after paying) you confirm your email and the refund is processed automatically via MercadoPago, within 7 days of purchase. If anything goes wrong, email vieraschiavi@gmail.com and we'll sort it out by hand — try the free 3-day demo first to decide with confidence.",
     "ctaEnd.h2":"Start selling smarter on Amazon, today","ctaEnd.p":"One-time or monthly. Instant download once payment is confirmed.","ctaEnd.btn":"See plans",
     "foot.tag":"An intelligence cockpit for selling on Amazon, with your own AI.",
@@ -754,6 +757,7 @@ const I18N = {
     "vs.bad1":"Assinatura recorrente para sempre","vs.bad2":"Você paga por módulos que não usa","vs.bad3":"Sem app de desktop nativo",
     "vs.good1":"Semáforo de margem e lucro real antes de comprar","vs.good2":"Pagamento único, no seu cartão, uma vez","vs.good3":"Pesquisa incluída (Keepa opcional, nunca obrigatório)",
     "pricing.label":"Preços","pricing.h2":"Escolha seu plano","pricing.sub":"Pagamento único ou mensal. Baixe a versão comprada assim que o pagamento for confirmado.",
+    "pricing.monedaAviso":"Preço de referência em USD — o MercadoPago processa a cobrança em pesos uruguaios (UYU) na cotação do dia do pagamento.",
     "pricing.demoBanner":"🎁 Demo completo grátis por 3 dias — todas as funções ativas, sem cartão",
     "pricing.once":" pagamento único","pricing.mo":" /mês","pricing.buy":"Comprar","pricing.popular":"MAIS VENDIDO",
     "pricing.garantia":"✔ 7 dias de garantia ou devolvemos o pagamento",
@@ -763,7 +767,7 @@ const I18N = {
     "pricing.pro.f1":"App de desktop completo + APK","pricing.pro.f2":"Todos os módulos desbloqueados","pricing.pro.f3":"Multi-idioma / 10 marketplaces","pricing.pro.f4":"IA com sua própria chave",
     "pricing.ia.name":"Pro IA · tudo incluído","pricing.ia.alt":"IA embutida com créditos",
     "pricing.ia.f1":"Tudo do plano Pro","pricing.ia.f2":"Assistente de IA incluído (com limite justo)","pricing.ia.f3":"Sem configurar nenhuma chave","pricing.ia.f4":"Suporte prioritário",
-    "pay.label":"Formas de pagamento","pay.sub":"Escolha como pagar. O download com sua licença libera assim que o pagamento é confirmado.",
+    "pay.label":"Formas de pagamento","pay.sub":"Escolha como pagar. O download com sua licença libera assim que o pagamento é confirmado. Preços em USD são referência; o MercadoPago cobra em pesos uruguaios (UYU) na cotação do dia.",
     "pay.card":"Cartão de crédito/débito","pay.wire":"Transferência bancária",
     "pay.step1k":"Passo 1","pay.step1b":"Escolha seu plano","pay.step1s":"E a forma de pagamento",
     "pay.step2k":"Passo 2","pay.step2b":"Pague com segurança","pay.step2s":"MercadoPago, cartão ou transferência",
@@ -779,7 +783,7 @@ const I18N = {
     "faq.q2":"E se eu não quiser pagar pela IA todo mês?","faq.a2":"Escolha o plano Pro (pagamento único) e use sua própria chave de IA, grátis ou paga — você controla esse custo. A IA incluída é um plano separado, opcional.",
     "faq.q3":"Como faço o download do software depois de pagar?","faq.a3":"Assim que o pagamento é confirmado, você recebe um email com o link de download e sua chave de licença para essa versão (PC e/ou Android, conforme seu plano).",
     "faq.q4":"Existe versão para uso próprio, sem restrições?","faq.a4":"Sim — a licença Pro desbloqueia todos os módulos para o seu próprio negócio, sem limite de produtos nem de uso do motor próprio.",
-    "faq.q5":"Em quais países o pagamento funciona?","faq.a5":"Cartão e PayPal funcionam em qualquer país; MercadoPago cobre a LatAm com cartões locais e parcelamento; transferência bancária para pedidos maiores.",
+    "faq.q5":"Em quais países o pagamento funciona?","faq.a5":"Cartão e PayPal funcionam em qualquer país; MercadoPago cobre a LatAm com cartões locais e parcelamento; transferência bancária para pedidos maiores. Os preços aparecem em USD como referência, mas o MercadoPago processa a cobrança em pesos uruguaios (UYU) na cotação do dia — pode aparecer assim na fatura do seu cartão.",
     "faq.q6":"Como peço o reembolso se não for para mim?","faq.a6":"Na página \"Obrigado pela compra\" (o link que chega após pagar) você confirma seu email e o reembolso é processado automaticamente pelo MercadoPago, dentro de 7 dias da compra. Se algo der errado, escreva para vieraschiavi@gmail.com e resolvemos manualmente — teste antes a demo grátis de 3 dias para decidir com confiança.",
     "ctaEnd.h2":"Comece a vender melhor na Amazon, hoje","ctaEnd.p":"Pagamento único ou mensal. Download imediato após confirmação do pagamento.","ctaEnd.btn":"Ver planos",
     "foot.tag":"Um cockpit de inteligência para vender na Amazon, com sua própria IA.",
