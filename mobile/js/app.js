@@ -19,7 +19,8 @@ const LS_ESTADO = "mvfba_estado_v1";
 const LS_VISTO = "mvfba_bienvenida_v2";
 
 function estadoDefault() {
-  return { productos: [], ventas: [], claves: { keepa: "", claude: "" } };
+  return { productos: [], ventas: [],
+    claves: { keepa: "", claude: "", openai: "", gemini: "", ia_prov: "claude" } };
 }
 function cargarEstado() {
   try {
@@ -383,7 +384,9 @@ $("#form-ganancias").addEventListener("submit", (ev) => {
 });
 
 // ============================ MERCADO ============================
-// Datos pseudo-reales deterministas por keyword (modo demo, 100% offline).
+// EJEMPLO ilustrativo determinista por keyword (sin clave de datos). NO son
+// datos reales de Amazon: se marcan como [EJEMPLO] en pantalla. Los datos
+// reales llegan por la API de Keepa (ver mercadoRealKeepa).
 function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 function competenciaDemo(keyword, min, max) {
   const h = hash(keyword.toLowerCase());
@@ -396,7 +399,7 @@ function competenciaDemo(keyword, min, max) {
   const productos = Array.from({ length: 5 }, (_, i) => {
     const pr = +(precioMed * (0.8 + rnd(6 + i, 0, 0.5))).toFixed(2);
     return {
-      titulo: `${keyword} — variante ${i + 1}`,
+      titulo: `[EJEMPLO] ${keyword} — variante ${i + 1}`,
       precio: Math.min(max + 10, Math.max(min, pr)),
       ventas_estim: Math.floor(ventas * (0.5 + rnd(7 + i, 0, 1)) / 3),
       rating: +(4.0 + rnd(8 + i, 0, 0.8)).toFixed(1),
@@ -406,7 +409,40 @@ function competenciaDemo(keyword, min, max) {
   return {
     ventas_estim_total: ventas, n_competidores: nComp, resenas_mediana: resenasMed,
     rating_promedio: rating, precio_mediana: +precioMed.toFixed(2), productos,
+    real: false,
   };
+}
+// Agrega una lista de productos REALES (Keepa) al resumen que espera evaluarExito.
+function resumenComp(productos) {
+  const val = productos.filter((p) => p.precio);
+  const precios = val.map((p) => p.precio).sort((a, b) => a - b);
+  const resenas = val.map((p) => p.resenas || 0).sort((a, b) => a - b);
+  const ratings = val.map((p) => p.rating).filter(Boolean);
+  const mediana = (a) => a.length ? a[Math.floor(a.length / 2)] : 0;
+  return {
+    ventas_estim_total: val.reduce((s, p) => s + (p.ventas_estim || 0), 0),
+    n_competidores: val.length,
+    resenas_mediana: mediana(resenas),
+    rating_promedio: ratings.length ? +(ratings.reduce((s, r) => s + r, 0) / ratings.length).toFixed(1) : null,
+    precio_mediana: mediana(precios) || 0,
+    productos: val, real: true,
+  };
+}
+// Productos REALES por API de Keepa, vía el proxy serverless /api/mercado
+// (la clave de Keepa no puede llamarse directo desde el navegador). Solo hay
+// proxy en el demo web; en la app descargada (file://) este fetch falla y se
+// cae al EJEMPLO — los datos reales viven en el programa de PC.
+async function mercadoRealKeepa(keyword, min, max) {
+  const keepa = (estado.claves.keepa || "").trim();
+  if (!keepa) return null;
+  const resp = await fetch("/api/mercado", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ keyword, min, max, keepaKey: keepa }),
+  });
+  if (!resp.ok) return null;
+  const data = await resp.json();
+  if (!data || !data.ok || !(data.productos || []).length) return null;
+  return resumenComp(data.productos);
 }
 async function keywordsAmazon(seed) {
   // keywords reales via autocomplete publico de Amazon (necesita internet).
@@ -424,11 +460,22 @@ $("#form-mercado").addEventListener("submit", async (ev) => {
   if (!keyword) { cont.innerHTML = `<div class="card lista-vacia">Escribí un producto o keyword.</div>`; return; }
   cont.innerHTML = `<div class="card lista-vacia">Analizando el nicho…</div>`;
 
-  const comp = competenciaDemo(keyword, min, max);
+  // 1) Datos REALES por API (Keepa) si hay clave; 2) si no, EJEMPLO etiquetado.
+  let comp = null;
+  try { comp = await mercadoRealKeepa(keyword, min, max); } catch (e) { comp = null; }
+  if (!comp) comp = competenciaDemo(keyword, min, max);
+
   const ev2 = MV.evaluarExito(keyword, comp, null, comp.precio_mediana, null);
   const tono = tonoSemaforo({ VERDE: "verde", AMARILLO: "amarillo", ROJO: "rojo" }[ev2.veredicto]);
+  const fuenteBadge = comp.real
+    ? `<span class="chip" style="background:#e7f6ea;color:#1f7a34">● Datos reales · Keepa (API)</span>`
+    : `<span class="chip" style="background:#fdf2e2;color:#8a5407">● Ejemplo ilustrativo — no son datos reales</span>`;
+  const notaFuente = comp.real
+    ? `<p class="ayuda-config">Productos reales de Amazon traídos por la API de Keepa (precio, ventas estimadas por BSR y reseñas).</p>`
+    : `<p class="ayuda-config">Estos productos son un <b>ejemplo</b> para mostrar el análisis. Para ver productos <b>reales</b> de Amazon, cargá tu clave de <b>Keepa</b> en Config (la búsqueda real es por API; ningún modelo de IA da estos datos).</p>`;
 
   let html = `
+    <div style="margin-bottom:8px">${fuenteBadge}</div>
     <h2 class="titulo-seccion">Probabilidad de exito</h2>
     <div class="card">
       <span class="badge ${tono}"><span class="dot"></span>${ev2.veredicto} — ${ev2.probabilidad}/100</span>
@@ -441,6 +488,7 @@ $("#form-mercado").addEventListener("submit", async (ev) => {
       </div>
     </div>
     <h2 class="titulo-seccion">Productos estrella (rango ${fmtMoney(min)}–${fmtMoney(max)})</h2>
+    ${notaFuente}
     <div class="lista-productos">${comp.productos.map((p) => `
       <div class="producto-card">
         <div class="fila-top"><div class="nombre">${escapar(p.titulo)}</div></div>
@@ -578,20 +626,26 @@ function responderLocal(preg) {
   }
   return "Puedo ayudarte con tu **portafolio**, el **sueldo meseta**, **margen/ROI/ACOS**, la **dedicacion horaria** y como **evaluar un nicho** en Mercado. Para respuestas abiertas fuera de tus datos, cargá una clave de Claude en **Config** y con internet te respondo cualquier cosa. ¿Sobre cual querés que profundice?";
 }
-async function responderClaude(preg) {
-  const clave = (estado.claves.claude || "").trim();
-  if (!clave) throw new Error("sin clave");
+// Contexto e historial compartidos por todos los proveedores de IA.
+function _contextoIA() {
   const r = resumenPortafolio();
-  const contexto = `Datos del negocio del usuario (Amazon FBA): ${r.n} productos, `
+  return `Sos el asistente de MV Amazon FBA IA, un cockpit para vender en Amazon FBA. `
+    + `Datos del negocio del usuario: ${r.n} productos, `
     + `sueldo meseta proyectado ${fmtMoney(r.sueldo_meseta_proyectado)}/mes, `
     + `margen promedio ${fmtPct(r.margen_promedio_pct)}, ventas reales ${fmtMoney(r.ingreso_real)}. `
-    + `Respondé en español rioplatense con tono profesional pero amable y cercano, `
-    + `breve y practico, como un asesor FBA de confianza.`;
+    + `Respondé con tono profesional pero amable y cercano, breve y práctico, como un asesor FBA `
+    + `de confianza. No prometas retornos garantizados. No inventes datos de productos/ventas de `
+    + `Amazon: esos vienen de la API de datos (Keepa), no de vos.`;
+}
+function _historialIA() {
+  return chatHistorial.filter((m) => m.content !== "Pensando…").slice(-6)
+    .map((m) => ({ role: m.role, content: m.content }));
+}
+// --- Claude / Anthropic (recomendada) ---
+async function responderClaude(preg, clave) {
   const cuerpo = JSON.stringify({
-    model: "claude-opus-4-8", max_tokens: 600,
-    system: contexto,
-    messages: [...chatHistorial.filter((m) => m.content !== "Pensando…").slice(-6).map((m) => ({ role: m.role, content: m.content })),
-      { role: "user", content: preg }],
+    model: "claude-opus-4-8", max_tokens: 600, system: _contextoIA(),
+    messages: [..._historialIA(), { role: "user", content: preg }],
   });
   const txt = await pedirHTTP("POST", "https://api.anthropic.com/v1/messages", cuerpo, {
     "Content-Type": "application/json",
@@ -602,6 +656,58 @@ async function responderClaude(preg) {
   const data = JSON.parse(txt);
   const bloque = (data.content || []).find((b) => b.type === "text");
   return bloque ? bloque.text : "No obtuve respuesta del asistente.";
+}
+// --- OpenAI (ChatGPT) ---
+async function responderOpenAI(preg, clave) {
+  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + clave },
+    body: JSON.stringify({
+      model: "gpt-4o-mini", max_tokens: 600,
+      messages: [{ role: "system", content: _contextoIA() },
+        ..._historialIA(), { role: "user", content: preg }],
+    }),
+  });
+  if (!resp.ok) throw new Error("openai " + resp.status);
+  const data = await resp.json();
+  const t = data && data.choices && data.choices[0] && data.choices[0].message;
+  return (t && t.content) ? t.content : "No obtuve respuesta del asistente.";
+}
+// --- Google Gemini ---
+async function responderGemini(preg, clave) {
+  const contents = [..._historialIA().map((m) => ({
+    role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] })),
+    { role: "user", parts: [{ text: preg }] }];
+  const url = "https://generativelanguage.googleapis.com/v1beta/models/"
+    + "gemini-2.0-flash:generateContent?key=" + encodeURIComponent(clave);
+  const resp = await fetch(url, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: _contextoIA() }] },
+      contents, generationConfig: { maxOutputTokens: 600 },
+    }),
+  });
+  if (!resp.ok) throw new Error("gemini " + resp.status);
+  const data = await resp.json();
+  const c = data && data.candidates && data.candidates[0];
+  const t = c && c.content && c.content.parts && c.content.parts.map((p) => p.text || "").join("");
+  return t ? t : "No obtuve respuesta del asistente.";
+}
+// Rutea a la clave propia del proveedor elegido (o al primero que tenga clave).
+async function responderBYOK(preg) {
+  const c = estado.claves;
+  const orden = [c.ia_prov || "claude", "claude", "openai", "gemini"];
+  const vistos = new Set();
+  for (const prov of orden) {
+    if (vistos.has(prov)) continue;
+    vistos.add(prov);
+    const clave = (c[prov] || "").trim();
+    if (!clave) continue;
+    if (prov === "claude") return await responderClaude(preg, clave);
+    if (prov === "openai") return await responderOpenAI(preg, clave);
+    if (prov === "gemini") return await responderGemini(preg, clave);
+  }
+  throw new Error("sin clave");
 }
 // Proxy de IA del DEMO web: la clave vive en el servidor (Vercel), no en el
 // cliente. En la app descargada (file://) este fetch falla y se cae al local.
@@ -619,11 +725,12 @@ async function responderProxy(preg) {
   const data = await resp.json();
   return (data && data.texto) ? data.texto : null;
 }
-// Orquesta: 1) clave propia (versión paga) 2) proxy del demo (IA incluida)
-// 3) asistente local (siempre disponible, sin internet ni clave).
+// Orquesta: 1) clave propia del proveedor elegido (Claude/OpenAI/Gemini)
+// 2) proxy del demo (IA incluida, Claude del servidor) 3) asistente local.
 async function responderIA(texto) {
-  if ((estado.claves.claude || "").trim()) {
-    try { return await responderClaude(texto); } catch (e) { /* sigue */ }
+  const c = estado.claves;
+  if ((c.claude || c.openai || c.gemini || "").trim()) {
+    try { return await responderBYOK(texto); } catch (e) { /* sigue */ }
   }
   try {
     const p = await responderProxy(texto);
@@ -655,6 +762,9 @@ $("#form-chat").addEventListener("submit", async (ev) => {
 function pintarConfig() {
   $("#cfg-keepa").value = estado.claves.keepa || "";
   $("#cfg-claude").value = estado.claves.claude || "";
+  if ($("#cfg-openai")) $("#cfg-openai").value = estado.claves.openai || "";
+  if ($("#cfg-gemini")) $("#cfg-gemini").value = estado.claves.gemini || "";
+  if ($("#cfg-ia-prov")) $("#cfg-ia-prov").value = estado.claves.ia_prov || "claude";
   const r = resumenPortafolio();
   $("#cfg-datos").innerHTML = `Tenes <b>${r.n}</b> producto/s y <b>${estado.ventas.length}</b> venta/s registradas en este telefono.`;
 }
@@ -662,8 +772,11 @@ $("#form-config").addEventListener("submit", (ev) => {
   ev.preventDefault();
   estado.claves.keepa = $("#cfg-keepa").value.trim();
   estado.claves.claude = $("#cfg-claude").value.trim();
+  if ($("#cfg-openai")) estado.claves.openai = $("#cfg-openai").value.trim();
+  if ($("#cfg-gemini")) estado.claves.gemini = $("#cfg-gemini").value.trim();
+  if ($("#cfg-ia-prov")) estado.claves.ia_prov = $("#cfg-ia-prov").value || "claude";
   guardarEstado(estado);
-  mostrarToast("Claves guardadas en el telefono");
+  mostrarToast("Guardado en el telefono");
 });
 $("#btn-exportar").addEventListener("click", () => {
   const blob = new Blob([JSON.stringify(estado, null, 2)], { type: "application/json" });

@@ -1215,23 +1215,43 @@ with tabs[10]:
     st.caption("Estado actual — "
                f"KEEPA_API_KEY: {config.mask(config.KEEPA_API_KEY)} · "
                f"ANTHROPIC_API_KEY: {config.mask(config.ANTHROPIC_API_KEY)} · "
-               f"SMTP_USER: {config.mask(config.SMTP_USER)} · "
-               f"SMTP_PASS: {config.mask(config.SMTP_PASS)}")
+               f"OPENAI_API_KEY: {config.mask(config.OPENAI_API_KEY)} · "
+               f"GEMINI_API_KEY: {config.mask(config.GEMINI_API_KEY)} · "
+               f"SMTP_USER: {config.mask(config.SMTP_USER)}")
+    st.markdown("**Asistente con IA — elegí tu proveedor.** El asistente da consejo "
+                "sobre tus números; **no** busca productos (eso es Keepa). Recomendado: "
+                "**Claude** (mejor razonamiento). Pegás solo la clave del que elijas.")
+    _provs = ["claude", "openai", "gemini"]
+    _prov_label = {"claude": "Claude / Anthropic — recomendada ★",
+                   "openai": "OpenAI (ChatGPT)", "gemini": "Google Gemini"}
     with st.form("form_claves"):
+        in_prov = st.selectbox("Proveedor de IA", _provs,
+                               index=_provs.index(config.IA_PROVIDER)
+                               if config.IA_PROVIDER in _provs else 0,
+                               format_func=lambda p: _prov_label[p])
+        a1, a2, a3 = st.columns(3)
+        in_anth = a1.text_input("ANTHROPIC_API_KEY", type="password",
+                                help="console.anthropic.com -> API Keys")
+        in_openai = a2.text_input("OPENAI_API_KEY", type="password",
+                                  help="platform.openai.com -> API keys")
+        in_gemini = a3.text_input("GEMINI_API_KEY", type="password",
+                                  help="aistudio.google.com -> Get API key")
+        st.markdown("**Búsqueda real de productos (por API).** Con Keepa, Mercado trae "
+                    "productos reales de Amazon. Ningún modelo de IA da estos datos.")
         k1, k2 = st.columns(2)
         in_keepa = k1.text_input("KEEPA_API_KEY", type="password",
                                  help="keepa.com -> Keepa API -> Private API access key")
-        in_anth = k2.text_input("ANTHROPIC_API_KEY", type="password",
-                                help="console.anthropic.com -> API Keys")
         k3, k4, k5 = st.columns(3)
         in_su = k3.text_input("SMTP_USER (Gmail)", key="cf_smtp_user")
         in_sp = k4.text_input("SMTP_PASS (App Password)", type="password",
                               key="cf_smtp_pass")
         in_to = k5.text_input("ALERT_TO (destino de alertas)", value=config.ALERT_TO,
                               key="cf_alert_to")
-        guardar_claves = st.form_submit_button("Guardar claves", type="primary")
+        guardar_claves = st.form_submit_button("Guardar", type="primary")
     if guardar_claves:
         r_env = config.guardar_env(KEEPA_API_KEY=in_keepa, ANTHROPIC_API_KEY=in_anth,
+                                   OPENAI_API_KEY=in_openai, GEMINI_API_KEY=in_gemini,
+                                   IA_PROVIDER=(in_prov if in_prov != config.IA_PROVIDER else ""),
                                    SMTP_USER=in_su, SMTP_PASS=in_sp,
                                    ALERT_TO=(in_to if in_to != config.ALERT_TO else ""))
         if r_env["ok"]:
@@ -1248,12 +1268,15 @@ with tabs[10]:
 
 # ============================ 12) ASISTENTE IA ============================ #
 with tabs[11]:
-    st.markdown(ui.seccion("Asistente IA (Claude)",
+    st.markdown(ui.seccion("Asistente IA",
                            "Pregunta sobre tus metricas, tu portafolio o la estrategia FBA"),
                 unsafe_allow_html=True)
     est = asistente.estado()
-    st.markdown(ui.badge("Claude conectado" if est["ok"] else "Modo offline (glosario)",
-                         "verde" if est["ok"] else "amarillo"), unsafe_allow_html=True)
+    _nom_prov = {"claude": "Claude", "openai": "OpenAI", "gemini": "Gemini"}
+    _badge_txt = (f"{_nom_prov.get(est.get('proveedor'), 'IA')} conectado"
+                  if est["ok"] else "Modo offline (glosario)")
+    st.markdown(ui.badge(_badge_txt, "verde" if est["ok"] else "amarillo"),
+                unsafe_allow_html=True)
     st.caption(est["mensaje"])
 
     if "chat_hist" not in st.session_state:

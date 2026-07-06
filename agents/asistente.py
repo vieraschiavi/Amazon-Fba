@@ -81,20 +81,25 @@ def _contexto_negocio():
     return "\n".join(lineas) if lineas else "Sin datos de negocio cargados todavia."
 
 
+_NOMBRE_PROV = {"claude": "Claude", "openai": "OpenAI (ChatGPT)", "gemini": "Gemini"}
+
+
 def estado():
-    """Estado del asistente para el panel: online (Claude) u offline (glosario)."""
-    if not config.ANTHROPIC_API_KEY:
-        return {"ok": False, "modo": "offline",
-                "mensaje": "Sin ANTHROPIC_API_KEY: respondo desde el glosario. "
-                           "Conecta tu clave en Config para respuestas completas."}
-    try:
-        import anthropic  # noqa: F401
-    except ImportError:
-        return {"ok": False, "modo": "offline",
-                "mensaje": "Falta el paquete 'anthropic' (pip install anthropic). "
-                           "Mientras tanto respondo desde el glosario."}
-    return {"ok": True, "modo": "online",
-            "mensaje": f"Asistente Claude conectado ({config.MODEL_OPUS})."}
+    """Estado del asistente para el panel: online (proveedor elegido) u offline."""
+    prov, clave, modelo = config.ia_provider_activo()
+    if not prov:
+        return {"ok": False, "modo": "offline", "proveedor": None,
+                "mensaje": "Sin clave de IA: respondo desde el glosario. Elegí un "
+                           "proveedor (Claude recomendado) y pegá tu clave en Config."}
+    if prov == "claude":
+        try:
+            import anthropic  # noqa: F401
+        except ImportError:
+            return {"ok": False, "modo": "offline", "proveedor": "claude",
+                    "mensaje": "Falta el paquete 'anthropic' (pip install anthropic). "
+                               "Mientras tanto respondo desde el glosario."}
+    return {"ok": True, "modo": "online", "proveedor": prov,
+            "mensaje": f"Asistente {_NOMBRE_PROV.get(prov, prov)} conectado ({modelo})."}
 
 
 _STOP = {"que", "es", "el", "la", "los", "las", "un", "una", "de", "del", "mi", "mis",
@@ -126,50 +131,94 @@ def _responder_offline(pregunta):
             "pestana Ayuda para los conceptos base.")
 
 
+def _http_json(url, payload, headers, timeout=45):
+    """POST JSON con urllib (sin dependencias). Devuelve dict parseado."""
+    import json
+    import urllib.request
+    req = urllib.request.Request(
+        url, data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json", **headers})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+
+def _responder_claude(system, mensajes, clave, modelo, max_tokens):
+    import anthropic
+    client = anthropic.Anthropic(api_key=clave)
+    resp = client.messages.create(model=modelo, max_tokens=max_tokens,
+                                  system=system, messages=mensajes)
+    return "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
+
+
+def _responder_openai(system, mensajes, clave, modelo, max_tokens):
+    payload = {"model": modelo, "max_tokens": max_tokens,
+               "messages": [{"role": "system", "content": system}] + mensajes}
+    data = _http_json("https://api.openai.com/v1/chat/completions", payload,
+                      {"Authorization": "Bearer " + clave})
+    return (data.get("choices") or [{}])[0].get("message", {}).get("content", "")
+
+
+def _responder_gemini(system, mensajes, clave, modelo, max_tokens):
+    import urllib.parse
+    contents = [{"role": "model" if m["role"] == "assistant" else "user",
+                 "parts": [{"text": m["content"]}]} for m in mensajes]
+    payload = {"systemInstruction": {"parts": [{"text": system}]},
+               "contents": contents,
+               "generationConfig": {"maxOutputTokens": max_tokens}}
+    url = ("https://generativelanguage.googleapis.com/v1beta/models/"
+           + urllib.parse.quote(modelo) + ":generateContent?key="
+           + urllib.parse.quote(clave))
+    data = _http_json(url, payload, {})
+    cand = (data.get("candidates") or [{}])[0]
+    parts = (cand.get("content") or {}).get("parts") or []
+    return "".join(p.get("text", "") for p in parts)
+
+
+_DISPATCH = {"claude": _responder_claude, "openai": _responder_openai,
+             "gemini": _responder_gemini}
+
+
 def responder(pregunta, historial=None, max_tokens=1400):
     """
-    Responde `pregunta`. `historial`: lista de {"role","content"} previos (opcional).
-    Devuelve {"texto", "modo"}. Nunca lanza: si Claude falla, cae a offline.
+    Responde `pregunta` con el proveedor de IA elegido (Claude/OpenAI/Gemini).
+    `historial`: lista de {"role","content"} previos (opcional).
+    Devuelve {"texto", "modo", "proveedor"}. Nunca lanza: si la IA falla, cae a offline.
     """
     pregunta = (pregunta or "").strip()
     if not pregunta:
         return {"texto": "Escribime una pregunta sobre tu negocio FBA.", "modo": "offline"}
 
-    if not config.ANTHROPIC_API_KEY:
+    prov, clave, modelo = config.ia_provider_activo()
+    if not prov:
         return {"texto": _responder_offline(pregunta), "modo": "offline"}
-    try:
-        import anthropic
-    except ImportError:
-        return {"texto": _responder_offline(pregunta), "modo": "offline"}
+    if prov == "claude":
+        try:
+            import anthropic  # noqa: F401
+        except ImportError:
+            return {"texto": _responder_offline(pregunta), "modo": "offline"}
+
+    system = (_SYSTEM
+              + "\n\n=== DATOS DEL NEGOCIO (reales, del sistema) ===\n"
+              + _contexto_negocio()
+              + "\n\n=== GLOSARIO DE REFERENCIA ===\n"
+              + glosario.contexto_para_ia())
+    mensajes = []
+    for m in (historial or [])[-8:]:
+        rol = m.get("role")
+        if rol in ("user", "assistant") and m.get("content"):
+            mensajes.append({"role": rol, "content": m["content"]})
+    mensajes.append({"role": "user", "content": pregunta})
 
     try:
-        client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
-        system = (_SYSTEM
-                  + "\n\n=== DATOS DEL NEGOCIO (reales, del sistema) ===\n"
-                  + _contexto_negocio()
-                  + "\n\n=== GLOSARIO DE REFERENCIA ===\n"
-                  + glosario.contexto_para_ia())
-        mensajes = []
-        for m in (historial or [])[-8:]:
-            rol = m.get("role")
-            if rol in ("user", "assistant") and m.get("content"):
-                mensajes.append({"role": rol, "content": m["content"]})
-        mensajes.append({"role": "user", "content": pregunta})
-        resp = client.messages.create(
-            model=config.MODEL_OPUS, max_tokens=max_tokens,
-            system=system, messages=mensajes)
-        texto = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
-        return {"texto": texto.strip() or _responder_offline(pregunta), "modo": "online"}
-    except anthropic.AuthenticationError:
-        return {"texto": "Tu ANTHROPIC_API_KEY fue rechazada. Revisala en Config.\n\n"
-                         + _responder_offline(pregunta), "modo": "offline"}
-    except anthropic.RateLimitError:
-        return {"texto": "Claude esta rate-limited ahora mismo; proba en unos "
-                         "segundos.\n\n" + _responder_offline(pregunta), "modo": "offline"}
+        texto = _DISPATCH[prov](system, mensajes, clave, modelo, max_tokens)
+        return {"texto": (texto or "").strip() or _responder_offline(pregunta),
+                "modo": "online", "proveedor": prov}
     except Exception as e:
-        return {"texto": f"No pude consultar a Claude ({type(e).__name__}). "
-                         "Respondo offline:\n\n" + _responder_offline(pregunta),
-                "modo": "offline"}
+        nom = _NOMBRE_PROV.get(prov, prov)
+        return {"texto": f"No pude consultar a {nom} ({type(e).__name__}). "
+                         "Revisá tu clave en Config. Respondo offline:\n\n"
+                         + _responder_offline(pregunta),
+                "modo": "offline", "proveedor": prov}
 
 
 if __name__ == "__main__":

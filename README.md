@@ -185,9 +185,12 @@ código:
    alertas ya automatizan) + reinversión compuesta.
 10. **Alertas** — outbox de emails (dry-run sin SMTP).
 11. **Config** — estado de conexiones, prueba en vivo y **guardado seguro de claves**.
-12. **Asistente IA (Claude)** — chat que responde sobre tus métricas, tu portafolio y
-    la estrategia FBA, usando tus **datos reales** como contexto. Con `ANTHROPIC_API_KEY`
-    responde Claude; sin clave, modo offline desde el glosario (nunca rompe).
+12. **Asistente IA (multi-proveedor, BYOK)** — chat que responde sobre tus métricas, tu
+    portafolio y la estrategia FBA, usando tus **datos reales** como contexto. Elegís el
+    proveedor en Config: **Claude (recomendada)**, OpenAI (ChatGPT) o Gemini — pegás la
+    clave del que elijas. Sin clave, modo offline desde el glosario (nunca rompe). El
+    asistente da **consejo**: no busca productos (los datos de mercado son de Keepa, no de
+    un LLM — un modelo de lenguaje los inventaría).
 13. **Ayuda** — guía de inicio en 3 pasos + **glosario** buscable de FBA y finanzas
     (ROI, BSR, landed cost, techo de demanda, ACoS…).
 
