@@ -18,8 +18,10 @@
 // /api/paypal-retorno, que cobra de verdad y redirige a
 // /gracias.html?payment_id=...&proc=paypal.
 
+import crypto from "crypto";
 import { aplicarCors, clienteValido } from "./_seguridad.js";
 import { crearOrden, paypalConfigurado } from "./_paypal.js";
+import { guardarUtm } from "./_atribucion.js";
 
 const PLANES = {
   starter: { titulo: "MV FBA IA — Starter (Celular)", precio: 29 },
@@ -42,6 +44,14 @@ export default async function handler(req, res) {
   const proto = (req.headers["x-forwarded-proto"] || "https").split(",")[0];
   const base = `${proto}://${req.headers.host}`;
 
+  // cid: id de correlacion para atribucion de ventas (api/_atribucion.js) --
+  // guarda el UTM que mando el cliente ANTES de salir a pagar, y ese mismo cid
+  // viaja dentro del pago para poder releerlo cuando se confirme la compra.
+  // Si el cliente no mando utm (o el almacen no esta configurado) esto es un
+  // no-op silencioso: nunca bloquea el checkout.
+  const cid = crypto.randomUUID();
+  try { await guardarUtm(cid, body.utm); } catch (e) { /* almacen no configurado: no bloquea el pago */ }
+
   if (String(body.proc || "") === "paypal") {
     if (!paypalConfigurado()) return res.status(503).json({ error: "pago_no_configurado" });
     try {
@@ -52,6 +62,7 @@ export default async function handler(req, res) {
         returnUrl: `${base}/api/paypal-retorno`,
         cancelUrl: `${base}/#precios`,
         descripcion: plan.titulo,
+        cid,
       });
       if (!aprobarUrl) return res.status(502).json({ error: "paypal_sin_link" });
       return res.status(200).json({ init_point: aprobarUrl });
@@ -75,7 +86,7 @@ export default async function handler(req, res) {
     auto_return: "approved",
     external_reference: String(body.plan),
     statement_descriptor: "MV FBA IA",
-    metadata: { plan: String(body.plan) },
+    metadata: { plan: String(body.plan), cid },
   };
 
   try {

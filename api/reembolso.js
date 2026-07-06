@@ -16,11 +16,15 @@
 // POST /v1/payments/{id}/refunds; PayPal: POST /v2/payments/captures/{id}/refund
 // via api/_paypal.js).
 //
-// LIMITE HONESTO (documentado, no escondido): esto devuelve la plata pero NO
-// revoca la licencia emitida — no hay una lista de "revocadas". Agregar
-// revocacion real es una mejora futura aparte.
+// Ademas de devolver la plata, revoca la licencia (api/_revocacion.js): sin
+// esto alguien podia reembolsar y seguir usando la app para siempre, porque
+// el HMAC de la licencia no sabe que el pago se devolvio. Requiere el mismo
+// almacen (Vercel KV/Upstash) que ya usa la cuota de IA -- si no esta
+// configurado, el reembolso igual se procesa (la plata se devuelve siempre),
+// simplemente no queda revocada la licencia.
 import { aplicarCors, clienteValido } from "./_seguridad.js";
 import { obtenerOrden, leerOrden, reembolsarCaptura, paypalConfigurado } from "./_paypal.js";
+import { revocarLicencia } from "./_revocacion.js";
 
 const VENTANA_DIAS = 7;
 
@@ -55,6 +59,7 @@ export default async function handler(req, res) {
       if (dias > VENTANA_DIAS) return res.status(403).json({ error: "fuera_de_plazo", dias: Math.floor(dias) });
 
       await reembolsarCaptura(captura.id);
+      try { await revocarLicencia(email); } catch (e) { /* almacen no configurado: la plata igual se devolvio */ }
       return res.status(200).json({
         ok: true,
         mensaje: "Reembolso procesado. Puede tardar unos días en verse reflejado según tu medio de pago.",
@@ -106,6 +111,7 @@ export default async function handler(req, res) {
       const err = await rr.json().catch(() => ({}));
       return res.status(502).json({ error: "reembolso_fallo", detalle: err && err.message });
     }
+    try { await revocarLicencia(email); } catch (e) { /* almacen no configurado: la plata igual se devolvio */ }
     return res.status(200).json({
       ok: true,
       mensaje: "Reembolso procesado. Puede tardar unos días en verse reflejado según tu medio de pago.",

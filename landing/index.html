@@ -237,6 +237,19 @@ section{padding:76px 0}
 .flow .st span{font-size:12.5px;color:var(--slate)}
 .flow .ar{align-self:center;color:var(--green-ink);font-weight:800;padding:0 2px}
 
+/* calculadora de ahorro */
+.ahorro-row{display:flex;flex-wrap:wrap;gap:14px;margin-top:16px;align-items:flex-end}
+.ahorro-campo{display:flex;flex-direction:column;gap:6px;flex:1 1 200px}
+.ahorro-campo label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.ahorro-campo select,.ahorro-campo input{padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-size:14px;background:var(--card);color:var(--ink)}
+.ahorro-resultado{display:flex;flex-wrap:wrap;gap:14px;margin-top:18px}
+.ahorro-tile{flex:1 1 160px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center}
+.ahorro-tile .k{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.ahorro-tile .v{font-size:22px;font-weight:800;margin-top:4px}
+.ahorro-tile.ganas{border-color:var(--green-ink);box-shadow:0 0 0 1.5px var(--green-ink)}
+.ahorro-tile.ganas .v{color:var(--green-ink)}
+.ahorro-nota{font-size:11.5px;color:var(--muted);margin-top:12px}
+
 /* platforms table */
 .plattable{width:100%;border-collapse:collapse;font-size:14px}
 .plattable th,.plattable td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--line)}
@@ -466,6 +479,49 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
       </div>
     </div>
 
+    <div class="card" id="ahorro" style="margin-top:26px">
+      <div class="klabel" data-t="ahorro.label">Calculá tu ahorro</div>
+      <h3 style="margin:4px 0 2px" data-t="ahorro.h3">¿Cuánto gastás hoy en herramientas de suscripción?</h3>
+      <p class="sublede" style="margin:0" data-t="ahorro.sub">Elegí qué herramienta usás y por cuántos meses — te mostramos cuánto pagarías ahí vs. el pago único de MV FBA IA.</p>
+      <div class="ahorro-row">
+        <div class="ahorro-campo">
+          <label data-t="ahorro.herramienta">Herramienta actual</label>
+          <select id="ahorroHerramienta">
+            <option value="99" data-t="ahorro.h10plat">Helium 10 Platinum — US$99/mes</option>
+            <option value="279" data-t="ahorro.h10diam">Helium 10 Diamond — US$279/mes</option>
+            <option value="49" data-t="ahorro.jsstart">Jungle Scout Starter — US$49/mes</option>
+            <option value="79" data-t="ahorro.jsgrowth">Jungle Scout Growth — US$79/mes</option>
+          </select>
+        </div>
+        <div class="ahorro-campo">
+          <label data-t="ahorro.meses">Meses de uso</label>
+          <input type="number" id="ahorroMeses" value="12" min="1" max="60">
+        </div>
+        <div class="ahorro-campo">
+          <label data-t="ahorro.plan">Plan MV FBA IA a comparar</label>
+          <select id="ahorroPlan">
+            <option value="129" data-t="ahorro.planPro">Pro — US$129 pago único</option>
+            <option value="29" data-t="ahorro.planStarter">Starter — US$29 pago único</option>
+          </select>
+        </div>
+      </div>
+      <div class="ahorro-resultado">
+        <div class="ahorro-tile">
+          <div class="k" data-t="ahorro.gastasOtro">Gastarías en esa herramienta</div>
+          <div class="v" id="ahorroOtro">US$0</div>
+        </div>
+        <div class="ahorro-tile">
+          <div class="k" data-t="ahorro.pagasNosotros">Pagás con MV FBA IA (una vez)</div>
+          <div class="v" id="ahorroNosotros">US$0</div>
+        </div>
+        <div class="ahorro-tile ganas">
+          <div class="k" data-t="ahorro.teAhorras">Te ahorrás</div>
+          <div class="v" id="ahorroDiferencia">US$0</div>
+        </div>
+      </div>
+      <p class="ahorro-nota" data-t="ahorro.nota">Precios de referencia (planes mensuales publicados por cada herramienta al momento de escribir esto) — comprobalo vos mismo en sus sitios, pueden cambiar. No incluye descuentos por pago anual.</p>
+    </div>
+
     <div class="card" id="pagos" style="margin-top:26px;scroll-margin-top:90px">
       <div class="klabel" data-t="pay.label">Medios de pago</div>
       <p style="color:var(--slate);font-size:14.5px;margin:0" data-t="pay.sub">Elegí como pagar. La descarga con tu licencia se habilita apenas se confirma el pago.</p>
@@ -647,6 +703,13 @@ const I18N = {
     "pricing.ia.f1":"Todo lo del plan Pro","pricing.ia.f2":"Asistente IA incluido (con tope justo)","pricing.ia.f3":"Sin configurar ninguna clave","pricing.ia.f4":"Soporte prioritario",
     "pay.label":"Medios de pago","pay.sub":"Elegí como pagar. La descarga con tu licencia se habilita apenas se confirma el pago. Precios en USD de referencia; MercadoPago cobra en pesos uruguayos (UYU) al tipo de cambio del día.",
     "pay.card":"Tarjeta de crédito/débito","pay.wire":"Transferencia bancaria","pay.paypalBtn":"o pagar con PayPal (USD)",
+    "ahorro.label":"Calculá tu ahorro","ahorro.h3":"¿Cuánto gastás hoy en herramientas de suscripción?",
+    "ahorro.sub":"Elegí qué herramienta usás y por cuántos meses — te mostramos cuánto pagarías ahí vs. el pago único de MV FBA IA.",
+    "ahorro.herramienta":"Herramienta actual","ahorro.h10plat":"Helium 10 Platinum — US$99/mes","ahorro.h10diam":"Helium 10 Diamond — US$279/mes",
+    "ahorro.jsstart":"Jungle Scout Starter — US$49/mes","ahorro.jsgrowth":"Jungle Scout Growth — US$79/mes",
+    "ahorro.meses":"Meses de uso","ahorro.plan":"Plan MV FBA IA a comparar","ahorro.planPro":"Pro — US$129 pago único","ahorro.planStarter":"Starter — US$29 pago único",
+    "ahorro.gastasOtro":"Gastarías en esa herramienta","ahorro.pagasNosotros":"Pagás con MV FBA IA (una vez)","ahorro.teAhorras":"Te ahorrás",
+    "ahorro.nota":"Precios de referencia (planes mensuales publicados por cada herramienta al momento de escribir esto) — comprobalo vos mismo en sus sitios, pueden cambiar. No incluye descuentos por pago anual.",
     "pay.step1k":"Paso 1","pay.step1b":"Elegís tu plan","pay.step1s":"Y el medio de pago",
     "pay.step2k":"Paso 2","pay.step2b":"Pagás seguro","pay.step2s":"MercadoPago, tarjeta o transferencia",
     "pay.step3k":"Paso 3","pay.step3b":"Recibís la licencia","pay.step3s":"Por email, al instante",
@@ -711,6 +774,13 @@ const I18N = {
     "pricing.ia.f1":"Everything in Pro","pricing.ia.f2":"AI assistant included (fair monthly cap)","pricing.ia.f3":"No keys to configure","pricing.ia.f4":"Priority support",
     "pay.label":"Payment methods","pay.sub":"Choose how to pay. Your download and license unlock as soon as payment is confirmed. Prices in USD are a reference; MercadoPago charges in Uruguayan pesos (UYU) at the day's exchange rate.",
     "pay.card":"Credit/debit card","pay.wire":"Bank transfer","pay.paypalBtn":"or pay with PayPal (USD)",
+    "ahorro.label":"Calculate your savings","ahorro.h3":"How much are you spending on subscription tools today?",
+    "ahorro.sub":"Pick which tool you use and for how many months — we'll show what you'd pay there vs. MV FBA IA's one-time price.",
+    "ahorro.herramienta":"Current tool","ahorro.h10plat":"Helium 10 Platinum — US$99/mo","ahorro.h10diam":"Helium 10 Diamond — US$279/mo",
+    "ahorro.jsstart":"Jungle Scout Starter — US$49/mo","ahorro.jsgrowth":"Jungle Scout Growth — US$79/mo",
+    "ahorro.meses":"Months of use","ahorro.plan":"MV FBA IA plan to compare","ahorro.planPro":"Pro — US$129 one-time","ahorro.planStarter":"Starter — US$29 one-time",
+    "ahorro.gastasOtro":"You'd spend on that tool","ahorro.pagasNosotros":"You pay with MV FBA IA (once)","ahorro.teAhorras":"You save",
+    "ahorro.nota":"Reference prices (monthly plans published by each tool at the time of writing) — verify on their sites yourself, prices can change. Doesn't include annual billing discounts.",
     "pay.step1k":"Step 1","pay.step1b":"Pick your plan","pay.step1s":"And payment method",
     "pay.step2k":"Step 2","pay.step2b":"Pay securely","pay.step2s":"MercadoPago, card or transfer",
     "pay.step3k":"Step 3","pay.step3b":"Get your license","pay.step3s":"By email, instantly",
@@ -775,6 +845,13 @@ const I18N = {
     "pricing.ia.f1":"Tudo do plano Pro","pricing.ia.f2":"Assistente de IA incluído (com limite justo)","pricing.ia.f3":"Sem configurar nenhuma chave","pricing.ia.f4":"Suporte prioritário",
     "pay.label":"Formas de pagamento","pay.sub":"Escolha como pagar. O download com sua licença libera assim que o pagamento é confirmado. Preços em USD são referência; o MercadoPago cobra em pesos uruguaios (UYU) na cotação do dia.",
     "pay.card":"Cartão de crédito/débito","pay.wire":"Transferência bancária","pay.paypalBtn":"ou pagar com PayPal (USD)",
+    "ahorro.label":"Calcule sua economia","ahorro.h3":"Quanto você gasta hoje em ferramentas por assinatura?",
+    "ahorro.sub":"Escolha qual ferramenta você usa e por quantos meses — mostramos quanto pagaria lá vs. o pagamento único do MV FBA IA.",
+    "ahorro.herramienta":"Ferramenta atual","ahorro.h10plat":"Helium 10 Platinum — US$99/mês","ahorro.h10diam":"Helium 10 Diamond — US$279/mês",
+    "ahorro.jsstart":"Jungle Scout Starter — US$49/mês","ahorro.jsgrowth":"Jungle Scout Growth — US$79/mês",
+    "ahorro.meses":"Meses de uso","ahorro.plan":"Plano MV FBA IA para comparar","ahorro.planPro":"Pro — US$129 pagamento único","ahorro.planStarter":"Starter — US$29 pagamento único",
+    "ahorro.gastasOtro":"Você gastaria nessa ferramenta","ahorro.pagasNosotros":"Você paga com MV FBA IA (uma vez)","ahorro.teAhorras":"Você economiza",
+    "ahorro.nota":"Preços de referência (planos mensais publicados por cada ferramenta no momento em que isto foi escrito) — confira você mesmo nos sites deles, podem mudar. Não inclui descontos de pagamento anual.",
     "pay.step1k":"Passo 1","pay.step1b":"Escolha seu plano","pay.step1s":"E a forma de pagamento",
     "pay.step2k":"Passo 2","pay.step2b":"Pague com segurança","pay.step2s":"MercadoPago, cartão ou transferência",
     "pay.step3k":"Passo 3","pay.step3b":"Receba a licença","pay.step3s":"Por email, na hora",
@@ -928,6 +1005,22 @@ if (formContacto) {
   reset();
 })();
 
+/* ---------- Atribucion: de que red social/campana vino la visita ---------- */
+/* Se guarda al aterrizar (ej. ?utm_source=instagram&utm_campaign=post1) y se */
+/* manda con el checkout para poder comparar ventas por canal (api/ventas.js).*/
+const LS_UTM = "mvfba_utm_v1";
+(function(){
+  const p = new URLSearchParams(location.search);
+  const campos = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
+  const utm = {};
+  let hayAlgo = false;
+  campos.forEach((c) => { if (p.has(c)) { utm[c] = p.get(c).slice(0, 100); hayAlgo = true; } });
+  if (hayAlgo) { try { sessionStorage.setItem(LS_UTM, JSON.stringify(utm)); } catch (e) {} }
+})();
+function utmActual() {
+  try { return JSON.parse(sessionStorage.getItem(LS_UTM) || "null") || {}; } catch (e) { return {}; }
+}
+
 /* ---------- Comprar: Checkout Pro de MercadoPago ---------- */
 document.querySelectorAll(".comprar").forEach((btn) => {
   btn.addEventListener("click", async () => {
@@ -938,7 +1031,7 @@ document.querySelectorAll(".comprar").forEach((btn) => {
       const r = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-mv-app": "mvfba-web-1" },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan, utm: utmActual() }),
       });
       if (r.status === 503) {
         btn.textContent = "Pago no disponible aún";
@@ -966,7 +1059,7 @@ document.querySelectorAll(".comprar-paypal").forEach((btn) => {
       const r = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-mv-app": "mvfba-web-1" },
-        body: JSON.stringify({ plan, proc: "paypal" }),
+        body: JSON.stringify({ plan, proc: "paypal", utm: utmActual() }),
       });
       if (r.status === 503) {
         btn.textContent = "PayPal no disponible aún";
@@ -983,6 +1076,29 @@ document.querySelectorAll(".comprar-paypal").forEach((btn) => {
     }
   });
 });
+
+/* ---------- Calculadora de ahorro vs. Helium10/Jungle Scout ---------- */
+(function(){
+  const sel = document.getElementById("ahorroHerramienta");
+  const meses = document.getElementById("ahorroMeses");
+  const plan = document.getElementById("ahorroPlan");
+  const outOtro = document.getElementById("ahorroOtro");
+  const outNosotros = document.getElementById("ahorroNosotros");
+  const outDif = document.getElementById("ahorroDiferencia");
+  if (!sel || !meses || !plan) return;
+  const fmt = (n) => "US$" + Math.round(n).toLocaleString("es-AR");
+  function calcular() {
+    const mensual = Number(sel.value) || 0;
+    const m = Math.max(1, Number(meses.value) || 1);
+    const precioNuestro = Number(plan.value) || 0;
+    const totalOtro = mensual * m;
+    outOtro.textContent = fmt(totalOtro);
+    outNosotros.textContent = fmt(precioNuestro);
+    outDif.textContent = fmt(Math.max(0, totalOtro - precioNuestro));
+  }
+  [sel, meses, plan].forEach((el) => el.addEventListener("input", calcular));
+  calcular();
+})();
 
 /* ---------- Precio de referencia: UYU primero (lo que REALMENTE cobra MercadoPago), ---------- */
 /* otras monedas de Latam solo como referencia informal para el visitante extranjero.       */

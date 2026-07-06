@@ -10,6 +10,8 @@ import { aplicarCors, clienteValido } from "./_seguridad.js";
 import { generarClave } from "./_licencia.js";
 import { renovarPlanIASiNuevo } from "./_cuotaia.js";
 import { obtenerOrden, leerOrden, paypalConfigurado } from "./_paypal.js";
+import { limpiarRevocacion } from "./_revocacion.js";
+import { registrarVenta } from "./_atribucion.js";
 
 export default async function handler(req, res) {
   aplicarCors(req, res, "GET, OPTIONS");
@@ -54,6 +56,7 @@ export default async function handler(req, res) {
     }
     const email = (p.payer && p.payer.email) || "";
     const plan = p.external_reference || (p.metadata && p.metadata.plan) || "";
+    const cid = (p.metadata && p.metadata.cid) || "";
     // Plan "Pro IA": cada pago aprobado extiende 30 dias de acceso a IA
     // incluida. No hay suscripcion automatica que "cancelar" -- si no vuelve
     // a pagar, el acceso vence solo (ver api/_cuotaia.js). Idempotente por
@@ -61,6 +64,12 @@ export default async function handler(req, res) {
     if (plan === "ia" && email) {
       try { await renovarPlanIASiNuevo(email, paymentId); } catch (e) { /* almacen no configurado aun: no bloquea la licencia */ }
     }
+    // Un pago nuevo y aprobado es una compra legitima: si ese email tenia una
+    // licencia revocada por un reembolso anterior, la levanta (api/_revocacion.js).
+    try { await limpiarRevocacion(email); } catch (e) { /* almacen no configurado: no bloquea */ }
+    // Atribucion de venta (api/_atribucion.js): idempotente por paymentId.
+    try { await registrarVenta({ idPago: paymentId, plan, email, monto: p.transaction_amount, proc: "mercadopago", cid }); }
+    catch (e) { /* almacen no configurado: no bloquea la licencia */ }
     return res.status(200).json({
       aprobado: true,
       plan,

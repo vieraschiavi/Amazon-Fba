@@ -9,6 +9,8 @@
 // "ya capturada" en vez de fallar.
 import { capturarOrden, obtenerOrden, leerOrden, paypalConfigurado } from "./_paypal.js";
 import { renovarPlanIASiNuevo } from "./_cuotaia.js";
+import { registrarVenta } from "./_atribucion.js";
+import { limpiarRevocacion } from "./_revocacion.js";
 
 export default async function handler(req, res) {
   if (!paypalConfigurado()) {
@@ -25,7 +27,7 @@ export default async function handler(req, res) {
   try {
     const { yaCapturada, data } = await capturarOrden(ordenId);
     const orden = yaCapturada ? await obtenerOrden(ordenId) : data;
-    const { plan, email, completado } = leerOrden(orden);
+    const { plan, email, completado, cid, monto } = leerOrden(orden);
     if (!completado) {
       res.setHeader("Location", "/#precios");
       return res.status(302).end();
@@ -38,6 +40,13 @@ export default async function handler(req, res) {
     if (plan === "ia" && email) {
       try { await renovarPlanIASiNuevo(email, ordenId); } catch (e) { /* almacen no configurado aun: no bloquea */ }
     }
+    // Atribucion de venta (api/_atribucion.js): idempotente por ordenId, asi
+    // que recargar esta pagina no la cuenta dos veces.
+    try { await registrarVenta({ idPago: ordenId, plan, email, monto, proc: "paypal", cid }); }
+    catch (e) { /* almacen no configurado: no bloquea el flujo de compra */ }
+    // Un pago nuevo y aprobado es una compra legitima: levanta cualquier
+    // revocacion previa de ese email (api/_revocacion.js).
+    try { await limpiarRevocacion(email); } catch (e) { /* almacen no configurado: no bloquea */ }
     res.setHeader("Location", `/gracias.html?payment_id=${encodeURIComponent(ordenId)}&proc=paypal`);
     return res.status(302).end();
   } catch (e) {

@@ -41,6 +41,18 @@ const Licencia = (() => {
       claveLicencia: null, fechaActivacion: null,
     };
     _guardar(reg);
+    // Copia lateral best-effort en el servidor (api/demo-registro.js), SOLO
+    // para poder mandar el recordatorio de "tu demo vence mañana" -- el
+    // reloj real de los 3 dias sigue siendo el localStorage de arriba. Si
+    // esto falla (sin internet en este instante, etc.) la demo funciona
+    // exactamente igual: nunca se espera esta respuesta.
+    try {
+      fetch(API_BASE + "/api/demo-registro", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: reg.nombre, email: reg.email }),
+      }).catch(() => {});
+    } catch (e) { /* sin fetch disponible o similar: no bloquea la demo */ }
     return reg;
   }
 

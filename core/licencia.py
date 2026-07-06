@@ -60,7 +60,28 @@ def registrar(nombre, email):
     db.insert("registro", nombre=(nombre or "").strip(), email=(email or "").strip(),
                dominio=DOMINIO, fecha_registro=_ahora().isoformat(),
                clave_licencia=None, fecha_activacion=None)
+    _avisar_registro_demo((nombre or "").strip(), (email or "").strip())
     return obtener()
+
+
+def _avisar_registro_demo(nombre, email):
+    """Copia lateral best-effort en el servidor (api/demo-registro.js), SOLO
+    para poder mandar el recordatorio de "tu demo vence mañana" -- el reloj
+    real de los 3 dias sigue siendo la fila de arriba en SQLite. Si esto
+    falla (sin internet en este instante, etc.) la demo funciona exactamente
+    igual: nunca se espera ni se revisa esta respuesta."""
+    if not email:
+        return
+    import json
+    import urllib.request
+    try:
+        base = _API_VALIDAR.rsplit("/api/", 1)[0]
+        cuerpo = json.dumps({"nombre": nombre, "email": email}).encode("utf-8")
+        req = urllib.request.Request(base + "/api/demo-registro", data=cuerpo, method="POST",
+                                     headers={"Content-Type": "application/json"})
+        urllib.request.urlopen(req, timeout=5)
+    except Exception:
+        pass
 
 
 def dias_restantes(reg=None):

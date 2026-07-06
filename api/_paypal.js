@@ -30,7 +30,7 @@ async function obtenerToken() {
 
 // Crea una orden (intent CAPTURE) y devuelve el link de aprobacion al que
 // hay que redirigir al comprador — mismo rol que "init_point" de MercadoPago.
-export async function crearOrden({ monto, moneda, referencia, returnUrl, cancelUrl, descripcion }) {
+export async function crearOrden({ monto, moneda, referencia, returnUrl, cancelUrl, descripcion, cid }) {
   const token = await obtenerToken();
   const r = await fetch(`${BASE}/v2/checkout/orders`, {
     method: "POST",
@@ -39,7 +39,10 @@ export async function crearOrden({ monto, moneda, referencia, returnUrl, cancelU
       intent: "CAPTURE",
       purchase_units: [{
         reference_id: referencia,
-        custom_id: referencia,
+        // custom_id lleva el "cid" de atribucion (que campana/red trajo esta
+        // venta, ver api/_atribucion.js) cuando hay uno; si no, repite el plan
+        // como antes para no perder el fallback que usa leerOrden().
+        custom_id: cid || referencia,
         description: descripcion,
         amount: { currency_code: moneda, value: monto },
       }],
@@ -84,10 +87,11 @@ export async function obtenerOrden(ordenId) {
   return d;
 }
 
-// Extrae {plan, email, completado, captura} de una orden (recien creada,
-// capturada, o consultada) de forma uniforme, sin repetir esta logica en
-// cada endpoint. "captura" trae el id + fecha + si ya fue reembolsada, que
-// necesita api/reembolso.js.
+// Extrae {plan, email, completado, captura, cid, monto} de una orden (recien
+// creada, capturada, o consultada) de forma uniforme, sin repetir esta logica
+// en cada endpoint. "captura" trae el id + fecha + si ya fue reembolsada, que
+// necesita api/reembolso.js. "cid"/"monto" los usa api/licencia.js para la
+// atribucion de ventas (api/_atribucion.js).
 export function leerOrden(orden) {
   const pu = (orden.purchase_units || [])[0] || {};
   const capturas = (pu.payments && pu.payments.captures) || [];
@@ -103,6 +107,8 @@ export function leerOrden(orden) {
       creada: capturaOk.create_time,
       reembolsada: (capturas.find((c) => c.status === "REFUNDED")) ? true : false,
     } : null,
+    cid: pu.custom_id && pu.custom_id !== pu.reference_id ? pu.custom_id : "",
+    monto: (pu.amount && Number(pu.amount.value)) || null,
   };
 }
 

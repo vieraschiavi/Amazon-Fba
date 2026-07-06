@@ -170,6 +170,66 @@ Para activarlo (una sola vez, ~5 min):
    vive en `api/_paypal.js` y los endpoints que ya conocés (`checkout`,
    `licencia`, `descarga`, `reembolso`) simplemente detectan `proc=paypal`.
 
+## Revocación de licencia al reembolsar
+
+Antes, un reembolso devolvía la plata pero la licencia seguía funcionando
+para siempre (limitación documentada a propósito). Ahora `api/reembolso.js`
+marca la licencia como revocada (`api/_revocacion.js`) y `api/validar.js` la
+chequea además del HMAC. Si el mismo email vuelve a pagar de verdad más
+adelante, esa compra nueva levanta la revocación sola — no hace falta nada
+manual. **Requiere el mismo almacén (Vercel KV/Upstash)** que ya usás para la
+cuota de IA; si no está configurado, el reembolso se sigue procesando igual
+(la plata se devuelve siempre), solo que sin revocar la licencia.
+
+## Atribución de ventas: qué canal/red social trae clientes
+
+Cada botón de "Comprar" guarda los parámetros `utm_source`/`utm_medium`/
+`utm_campaign` (si el link que trajo al visitante los tenía, ej.
+`...?utm_source=instagram&utm_campaign=post1`) y los asocia al pago. Cuando
+el pago se confirma, queda un registro en el almacén con plan, monto y de
+dónde vino. Para verlo:
+
+```
+GET /api/ventas
+Header: x-admin-secret: <tu ADMIN_SECRET>
+```
+
+Devuelve el total facturado y un desglose por canal (`utm_source`) y por
+plan. Necesita `ADMIN_SECRET` (elegí cualquier string largo y agregalo en
+Vercel → Environment Variables) — sin esa variable, el endpoint responde 503
+en vez de quedar abierto sin protección.
+
+## Recordatorio de la demo antes de que venza (email)
+
+Quien arranca la demo de 3 días ahora también queda registrado
+server-side (solo para esto, no cambia cómo funciona la demo en sí — ver
+`api/_demo.js`). Un cron job diario revisa quién está en su segundo día sin
+haber comprado todavía y le manda un email recordándole que la demo vence
+mañana, con el link a precios.
+
+Para activarlo:
+1. Creá una cuenta gratis en [resend.com](https://resend.com) (no pide
+   tarjeta) y sacá una API key.
+2. Vercel → **Environment Variables**, agregá:
+   - `RESEND_API_KEY` — la clave de Resend.
+   - `RESEND_FROM` (opcional) — ej. `MV FBA IA <hola@tudominio.com>`, una vez
+     que verifiques un dominio propio en Resend. Sin esto, manda desde
+     `onboarding@resend.dev` (funciona pero con límites más bajos).
+   - `CRON_SECRET` — cualquier string largo; Vercel lo manda solo como
+     header al disparar el cron, así nadie más puede activar el envío de
+     emails pegándole a la URL.
+3. **Redeploy**. El cron (`vercel.json` → `crons`) ya está configurado para
+   correr una vez por día. Sin `RESEND_API_KEY` o sin el almacén (KV/Upstash)
+   configurados, el cron corre igual pero no manda nada — no rompe nada.
+
+## Calculadora de ahorro en la landing
+
+En la sección de precios hay una calculadora que compara cuánto gastaría el
+visitante en Helium 10/Jungle Scout (según el plan y meses que elija) contra
+el pago único de MV FBA IA. Es 100% client-side (no llama a ningún API), con
+precios de referencia hardcodeados que conviene revisar cada tanto — quedó
+aclarado en la propia página que son precios de referencia y pueden cambiar.
+
 ## Landing web (`landing/`) y dominio propio
 
 La landing (`landing/index.html`) se despliega sola en Vercel en cada push
