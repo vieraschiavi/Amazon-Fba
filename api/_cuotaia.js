@@ -23,6 +23,22 @@ const TOPE_ACUMULADO_VECES = 2; // en modo "acumular", el saldo no pasa de 2x el
 function clave(email) {
   return "cuota:" + String(email || "").trim().toLowerCase();
 }
+function claveIdPago(idPago) {
+  return "pago_procesado:" + String(idPago || "").trim();
+}
+
+// Version idempotente de renovarPlanIA: si gracias.html se recarga (o el
+// comprador vuelve atras y adelante), NO hay que regalar otros 30 dias por
+// el MISMO pago. Se marca el id de pago/orden como procesado antes de
+// renovar, y si ya estaba marcado, no hace nada.
+export async function renovarPlanIASiNuevo(email, idPago) {
+  if (!almacenConfigurado() || !idPago) return null;
+  const marcador = claveIdPago(idPago);
+  const yaProcesado = await kvGet(marcador);
+  if (yaProcesado) return null;
+  await kvSet(marcador, true);
+  return renovarPlanIA(email);
+}
 
 export async function renovarPlanIA(email) {
   if (!almacenConfigurado()) return null;

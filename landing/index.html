@@ -221,6 +221,9 @@ section{padding:76px 0}
 .price-card li.off::before{background:var(--muted);opacity:.18}
 .garantia{display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:700;
   color:var(--green-ink);text-align:center;margin-top:-4px}
+.paypal-alt{background:transparent;border:0;color:#0070ba;font-size:12.5px;font-weight:700;cursor:pointer;
+  text-decoration:underline;text-underline-offset:2px;padding:0;margin-top:-4px}
+.paypal-alt:disabled{opacity:.6;cursor:default}
 
 /* payments */
 .pay-row{display:flex;flex-wrap:wrap;gap:12px;margin:22px 0 6px}
@@ -427,6 +430,7 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
           <li class="off" data-t="pricing.starter.f4">Sin módulos avanzados de PC</li>
         </ul>
         <button class="btn btn-ghost comprar" data-plan="starter" data-t="pricing.buy">Comprar</button>
+        <button class="paypal-alt comprar-paypal" data-plan="starter" data-t="pay.paypalBtn">o pagar con PayPal (USD)</button>
         <div class="garantia" data-t="pricing.garantia">✔ 7 días de garantía o te devolvemos el pago</div>
       </div>
       <div class="card price-card hot">
@@ -442,6 +446,7 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
           <li data-t="pricing.pro.f4">IA con tu propia clave</li>
         </ul>
         <button class="btn btn-primary comprar" data-plan="pro" data-t="pricing.buy">Comprar</button>
+        <button class="paypal-alt comprar-paypal" data-plan="pro" data-t="pay.paypalBtn">o pagar con PayPal (USD)</button>
         <div class="garantia" data-t="pricing.garantia">✔ 7 días de garantía o te devolvemos el pago</div>
       </div>
       <div class="card price-card">
@@ -456,6 +461,7 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
           <li data-t="pricing.ia.f4">Soporte prioritario</li>
         </ul>
         <button class="btn btn-ghost comprar" data-plan="ia" data-t="pricing.buy">Comprar</button>
+        <button class="paypal-alt comprar-paypal" data-plan="ia" data-t="pay.paypalBtn">o pagar con PayPal (USD)</button>
         <div class="garantia" data-t="pricing.garantia">✔ 7 días de garantía o te devolvemos el pago</div>
       </div>
     </div>
@@ -640,7 +646,7 @@ const I18N = {
     "pricing.ia.name":"Pro IA · todo incluido","pricing.ia.alt":"IA embebida con créditos",
     "pricing.ia.f1":"Todo lo del plan Pro","pricing.ia.f2":"Asistente IA incluido (con tope justo)","pricing.ia.f3":"Sin configurar ninguna clave","pricing.ia.f4":"Soporte prioritario",
     "pay.label":"Medios de pago","pay.sub":"Elegí como pagar. La descarga con tu licencia se habilita apenas se confirma el pago. Precios en USD de referencia; MercadoPago cobra en pesos uruguayos (UYU) al tipo de cambio del día.",
-    "pay.card":"Tarjeta de crédito/débito","pay.wire":"Transferencia bancaria",
+    "pay.card":"Tarjeta de crédito/débito","pay.wire":"Transferencia bancaria","pay.paypalBtn":"o pagar con PayPal (USD)",
     "pay.step1k":"Paso 1","pay.step1b":"Elegís tu plan","pay.step1s":"Y el medio de pago",
     "pay.step2k":"Paso 2","pay.step2b":"Pagás seguro","pay.step2s":"MercadoPago, tarjeta o transferencia",
     "pay.step3k":"Paso 3","pay.step3b":"Recibís la licencia","pay.step3s":"Por email, al instante",
@@ -704,7 +710,7 @@ const I18N = {
     "pricing.ia.name":"Pro AI · all-inclusive","pricing.ia.alt":"Embedded AI with credits",
     "pricing.ia.f1":"Everything in Pro","pricing.ia.f2":"AI assistant included (fair monthly cap)","pricing.ia.f3":"No keys to configure","pricing.ia.f4":"Priority support",
     "pay.label":"Payment methods","pay.sub":"Choose how to pay. Your download and license unlock as soon as payment is confirmed. Prices in USD are a reference; MercadoPago charges in Uruguayan pesos (UYU) at the day's exchange rate.",
-    "pay.card":"Credit/debit card","pay.wire":"Bank transfer",
+    "pay.card":"Credit/debit card","pay.wire":"Bank transfer","pay.paypalBtn":"or pay with PayPal (USD)",
     "pay.step1k":"Step 1","pay.step1b":"Pick your plan","pay.step1s":"And payment method",
     "pay.step2k":"Step 2","pay.step2b":"Pay securely","pay.step2s":"MercadoPago, card or transfer",
     "pay.step3k":"Step 3","pay.step3b":"Get your license","pay.step3s":"By email, instantly",
@@ -768,7 +774,7 @@ const I18N = {
     "pricing.ia.name":"Pro IA · tudo incluído","pricing.ia.alt":"IA embutida com créditos",
     "pricing.ia.f1":"Tudo do plano Pro","pricing.ia.f2":"Assistente de IA incluído (com limite justo)","pricing.ia.f3":"Sem configurar nenhuma chave","pricing.ia.f4":"Suporte prioritário",
     "pay.label":"Formas de pagamento","pay.sub":"Escolha como pagar. O download com sua licença libera assim que o pagamento é confirmado. Preços em USD são referência; o MercadoPago cobra em pesos uruguaios (UYU) na cotação do dia.",
-    "pay.card":"Cartão de crédito/débito","pay.wire":"Transferência bancária",
+    "pay.card":"Cartão de crédito/débito","pay.wire":"Transferência bancária","pay.paypalBtn":"ou pagar com PayPal (USD)",
     "pay.step1k":"Passo 1","pay.step1b":"Escolha seu plano","pay.step1s":"E a forma de pagamento",
     "pay.step2k":"Passo 2","pay.step2b":"Pague com segurança","pay.step2s":"MercadoPago, cartão ou transferência",
     "pay.step3k":"Passo 3","pay.step3b":"Receba a licença","pay.step3s":"Por email, na hora",
@@ -936,6 +942,34 @@ document.querySelectorAll(".comprar").forEach((btn) => {
       });
       if (r.status === 503) {
         btn.textContent = "Pago no disponible aún";
+        setTimeout(() => { btn.disabled = false; btn.textContent = original; }, 2500);
+        return;
+      }
+      const d = await r.json();
+      if (d.init_point) { window.location.href = d.init_point; return; }
+      throw new Error(d.error || "sin init_point");
+    } catch (e) {
+      btn.textContent = "Reintentar";
+      btn.disabled = false;
+      setTimeout(() => { btn.textContent = original; }, 2500);
+    }
+  });
+});
+
+/* ---------- Comprar: PayPal (cobra USD real, sin conversión) ---------- */
+document.querySelectorAll(".comprar-paypal").forEach((btn) => {
+  btn.addEventListener("click", async () => {
+    const plan = btn.dataset.plan;
+    const original = btn.textContent;
+    btn.disabled = true; btn.textContent = "Abriendo PayPal…";
+    try {
+      const r = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-mv-app": "mvfba-web-1" },
+        body: JSON.stringify({ plan, proc: "paypal" }),
+      });
+      if (r.status === 503) {
+        btn.textContent = "PayPal no disponible aún";
         setTimeout(() => { btn.disabled = false; btn.textContent = original; }, 2500);
         return;
       }
