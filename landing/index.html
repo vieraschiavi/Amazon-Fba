@@ -984,19 +984,29 @@ document.querySelectorAll(".comprar-paypal").forEach((btn) => {
   });
 });
 
-/* ---------- Precio de referencia en moneda local (informativo, el cobro es en USD) ---------- */
+/* ---------- Precio de referencia: UYU primero (lo que REALMENTE cobra MercadoPago), ---------- */
+/* otras monedas de Latam solo como referencia informal para el visitante extranjero.       */
 (function(){
-  const MONEDAS = ["ARS","MXN","COP"];
+  const OTRAS = ["ARS","MXN","COP"];
   fetch("https://open.er-api.com/v6/latest/USD")
     .then(r => r.ok ? r.json() : null)
     .then(d => {
       if (!d || d.result !== "success" || !d.rates) return; // sin dato -> no se muestra nada (no se inventa)
-      const disponibles = MONEDAS.filter(m => d.rates[m]);
-      if (!disponibles.length) return;
+      const hayUyu = Boolean(d.rates.UYU);
+      const otrasDisponibles = OTRAS.filter(m => d.rates[m]);
+      if (!hayUyu && !otrasDisponibles.length) return;
       document.querySelectorAll("[data-fx-usd]").forEach(el => {
         const usd = Number(el.dataset.fxUsd);
-        const linea = disponibles.map(m => Math.round(usd * d.rates[m]).toLocaleString("es-AR") + " " + m).join(" · ");
-        el.textContent = "≈ " + linea + " (cotización de hoy, el cobro es en USD)";
+        const partes = [];
+        if (hayUyu) {
+          const uyu = Math.round(usd * d.rates.UYU).toLocaleString("es-UY");
+          partes.push(`<b>≈ ${uyu} UYU</b> (esto es lo que te cobra MercadoPago hoy)`);
+        }
+        if (otrasDisponibles.length) {
+          const ref = otrasDisponibles.map(m => Math.round(usd * d.rates[m]).toLocaleString("es-AR") + " " + m).join(" · ");
+          partes.push(`ref. ${ref}`);
+        }
+        el.innerHTML = partes.join(" · ");
       });
     })
     .catch(() => {}); // sin internet/API caida -> la linea queda vacia, nunca rota el precio en USD
