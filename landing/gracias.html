@@ -102,7 +102,9 @@ function mostrarError(msg){
     return;
   }
   try{
-    const r = await fetch("/api/licencia?payment_id=" + encodeURIComponent(pid));
+    const r = await fetch("/api/licencia?payment_id=" + encodeURIComponent(pid), {
+      headers: { "x-mv-app": "mvfba-web-1" },
+    });
     if (r.status === 503){ mostrarError("El cobro todavía no está activado. Escribinos y lo resolvemos."); return; }
     const d = await r.json();
     if (d.aprobado) { d._pid = pid; mostrarAprobado(d); }

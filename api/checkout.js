@@ -8,6 +8,8 @@
 // MercadoPago) -> el cliente paga -> MP redirige a /gracias.html?payment_id=...
 // -> gracias.html verifica el pago con /api/licencia y muestra la licencia.
 
+import { aplicarCors, clienteValido } from "./_seguridad.js";
+
 const PLANES = {
   starter: { titulo: "MV Amazon FBA IA — Starter (Celular)", precio: 29 },
   pro:     { titulo: "MV Amazon FBA IA — Pro (PC + Android)", precio: 129 },
@@ -15,11 +17,10 @@ const PLANES = {
 };
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  aplicarCors(req, res, "POST, OPTIONS");
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST") return res.status(405).json({ error: "method" });
+  if (!clienteValido(req)) return res.status(403).json({ error: "cliente_no_reconocido" });
 
   const token = process.env.MP_ACCESS_TOKEN;
   if (!token) return res.status(503).json({ error: "pago_no_configurado" });

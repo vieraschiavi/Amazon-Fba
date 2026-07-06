@@ -11,15 +11,16 @@
 // clave propia del cliente (BYOK) o el asistente local. Por eso el fetch a
 // /api/ia falla en file:// y cae al fallback — es el comportamiento buscado.
 
+import { aplicarCors, clienteValido } from "./_seguridad.js";
+
 const MODELO = "claude-haiku-4-5-20251001";   // económico, ideal para el demo
 const MAX_TOKENS = 500;
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  aplicarCors(req, res, "POST, OPTIONS");
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST") return res.status(405).json({ error: "method" });
+  if (!clienteValido(req)) return res.status(403).json({ error: "cliente_no_reconocido" });
 
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) return res.status(503).json({ error: "ia_no_configurada" });
