@@ -789,19 +789,48 @@ async function responderBYOK(preg) {
   }
   throw new Error("sin clave");
 }
-// Proxy de IA del DEMO web: la clave vive en el servidor (Vercel), no en el
-// cliente. En la app descargada (file://) este fetch falla y se cae al local.
+// Id de dispositivo (no personal, solo para topear el uso gratis del proxy
+// de IA por instalacion). Generado una vez, vive en localStorage.
+const LS_DISPOSITIVO = "mvfba_dispositivo_id";
+function idDispositivo() {
+  let id = localStorage.getItem(LS_DISPOSITIVO);
+  if (!id) {
+    id = "d-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem(LS_DISPOSITIVO, id);
+  }
+  return id;
+}
+// Proxy de IA del DEMO web / plan Pro IA: la clave de Claude vive en el
+// servidor (Vercel), no en el cliente. En la app descargada (file://) este
+// fetch falla y se cae al local. Si hay una licencia activada, se manda
+// email+clave para que el servidor aplique la cuota del plan Pro IA en vez
+// del tope generico de demo (ver api/ia.js).
 async function responderProxy(preg) {
   const r = resumenPortafolio();
   const contexto = `${r.n} productos, sueldo meseta ${fmtMoney(r.sueldo_meseta_proyectado)}/mes, `
     + `margen promedio ${fmtPct(r.margen_promedio_pct)}, ventas reales ${fmtMoney(r.ingreso_real)}.`;
   const idioma = (localStorage.getItem("mvfba_idioma") || (navigator.language || "es").slice(0, 2));
+  const cuerpo = { pregunta: preg, contexto, idioma, dispositivo: idDispositivo() };
+  const reg = Licencia.obtenerRegistro();
+  if (reg && reg.email && reg.claveLicencia) {
+    cuerpo.email = reg.email;
+    cuerpo.clave = reg.claveLicencia;
+  }
   const resp = await fetch("/api/ia", {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-mv-app": "mvfba-web-1" },
-    body: JSON.stringify({ pregunta: preg, contexto, idioma }),
+    body: JSON.stringify(cuerpo),
   });
-  if (!resp.ok) return null;          // 503 no configurada / 502 upstream -> fallback
+  if (!resp.ok) {
+    // 429 (cuota/tope alcanzado) trae un mensaje amigable: mostrarlo en vez
+    // de caer en silencio al asistente local, para que el usuario entienda
+    // por que dejo de responder la IA.
+    try {
+      const err = await resp.json();
+      if (err && err.mensaje) return err.mensaje;
+    } catch (e) { /* sigue */ }
+    return null; // 503 no configurada / 502 upstream -> fallback silencioso
+  }
   const data = await resp.json();
   return (data && data.texto) ? data.texto : null;
 }
@@ -847,6 +876,47 @@ function pintarConfig() {
   if ($("#cfg-ia-prov")) $("#cfg-ia-prov").value = estado.claves.ia_prov || "claude";
   const r = resumenPortafolio();
   $("#cfg-datos").innerHTML = `Tenes <b>${r.n}</b> producto/s y <b>${estado.ventas.length}</b> venta/s registradas en este telefono.`;
+  pintarCuotaIA();
+}
+// Cuota del plan Pro IA: se muestra SOLO si hay una licencia activada (no
+// tiene sentido para quien todavia esta en la demo de 3 dias sin comprar).
+async function pintarCuotaIA() {
+  const box = $("#cuota-ia-box");
+  if (!box) return;
+  const reg = Licencia.obtenerRegistro();
+  if (!reg || !reg.email || !reg.claveLicencia) { box.classList.add("oculto"); return; }
+  try {
+    const url = `/api/cuota?email=${encodeURIComponent(reg.email)}&clave=${encodeURIComponent(reg.claveLicencia)}`;
+    const r = await fetch(url, { headers: { "x-mv-app": "mvfba-web-1" } });
+    if (!r.ok) { box.classList.add("oculto"); return; }
+    const d = await r.json();
+    if (d.motivo === "sin_plan_ia" || d.motivo === "almacen_no_configurado") { box.classList.add("oculto"); return; }
+    box.classList.remove("oculto");
+    const info = d.registro || {};
+    if ($("#cuota-ia-modo")) $("#cuota-ia-modo").value = info.cuota_modo || "topear";
+    if (d.activo) {
+      const venc = info.vigente_hasta ? new Date(info.vigente_hasta).toLocaleDateString() : "";
+      $("#cuota-ia-estado").textContent = `Cuota disponible: ${fmtNum(d.disponible)} tokens · vence ${venc}`;
+    } else {
+      $("#cuota-ia-estado").textContent = "Tu plan Pro IA venció. Comprálo de nuevo para reactivar la cuota.";
+    }
+  } catch (e) { box.classList.add("oculto"); }
+}
+if ($("#cuota-ia-guardar")) {
+  $("#cuota-ia-guardar").addEventListener("click", async () => {
+    const reg = Licencia.obtenerRegistro();
+    if (!reg || !reg.email || !reg.claveLicencia) return;
+    const modo = $("#cuota-ia-modo").value;
+    try {
+      await fetch("/api/cuota", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-mv-app": "mvfba-web-1" },
+        body: JSON.stringify({ email: reg.email, clave: reg.claveLicencia, modo }),
+      });
+      mostrarToast("Preferencia guardada");
+      pintarCuotaIA();
+    } catch (e) { mostrarToast("No se pudo guardar. Reintentá."); }
+  });
 }
 $("#form-config").addEventListener("submit", (ev) => {
   ev.preventDefault();

@@ -198,6 +198,18 @@
           asistente básico local (o la IA incluida del demo). El asistente da <b>consejo</b>: no
           busca productos.</p>
 
+        <div id="cuota-ia-box" class="card oculto" style="margin:4px 0 14px">
+          <div class="klabel" style="margin:0 0 6px">Tu cuota de IA — plan Pro IA</div>
+          <p id="cuota-ia-estado" class="ayuda-config" style="margin:0 0 10px">Consultando…</p>
+          <label>¿Cómo manejar lo que no usás en el mes?
+            <select id="cuota-ia-modo">
+              <option value="topear">Tope fijo (se resetea cada mes)</option>
+              <option value="acumular">Acumular (se suma al mes siguiente, hasta 2x)</option>
+            </select>
+          </label>
+          <button type="button" class="mini" id="cuota-ia-guardar" style="margin-top:8px">Guardar preferencia</button>
+        </div>
+
         <h2 class="titulo-seccion" style="margin-top:16px">Búsqueda real de productos (por API)</h2>
         <label>Clave Keepa (productos y ventas reales)<input type="text" id="cfg-keepa" placeholder="opcional — datos reales de Amazon por API" autocomplete="off"></label>
         <button type="submit" class="btn-primario">Guardar</button>

@@ -13,19 +13,7 @@
 // clientes que ya pagaron. Su protección real es otra: el HMAC es imposible
 // de adivinar por fuerza bruta y no hay ningún costo (Claude/Keepa/pago) detrás
 // de cada intento, así que no es un objetivo valioso para un bot.
-import crypto from "crypto";
-
-const SECRETO = process.env.LICENCIA_SECRETO || "mv-amazon-fba-2026-clave-de-firma";
-// Identificador interno, invisible para el usuario. Se deja SIN TOCAR aunque
-// el nombre comercial paso a ser "MV FBA IA": cambiarlo invalidaria las
-// licencias ya emitidas a clientes que ya pagaron.
-const DOMINIO = "MV-Amazon-Fba";
-
-function generarClave(email) {
-  const base = String(email || "").trim().toLowerCase() + DOMINIO;
-  const hex = crypto.createHmac("sha256", SECRETO).update(base).digest("hex").toUpperCase().slice(0, 16);
-  return "MVFBA-" + [hex.slice(0, 4), hex.slice(4, 8), hex.slice(8, 12), hex.slice(12, 16)].join("-");
-}
+import { claveValida } from "./_licencia.js";
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -41,6 +29,6 @@ export default async function handler(req, res) {
   const clave = String(body.clave || "").slice(0, 40).trim().toUpperCase();
   if (!email || !clave) return res.status(400).json({ valido: false, error: "faltan_datos" });
 
-  const valido = clave === generarClave(email);
+  const valido = claveValida(email, clave);
   return res.status(200).json({ valido });
 }

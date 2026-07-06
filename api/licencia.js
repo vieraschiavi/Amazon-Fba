@@ -6,20 +6,9 @@
 // la app para validarla (core/licencia.py y mobile/js/licencia.js). La licencia
 // queda a nombre del email con el que el comprador pagó: ese mismo email va en
 // la app para activarla.
-import crypto from "crypto";
 import { aplicarCors, clienteValido } from "./_seguridad.js";
-
-const SECRETO = process.env.LICENCIA_SECRETO || "mv-amazon-fba-2026-clave-de-firma";
-// Identificador interno, invisible para el usuario. Se deja SIN TOCAR aunque
-// el nombre comercial paso a ser "MV FBA IA": cambiarlo invalidaria las
-// licencias ya emitidas a clientes que ya pagaron.
-const DOMINIO = "MV-Amazon-Fba";
-
-function generarClave(email) {
-  const base = String(email || "").trim().toLowerCase() + DOMINIO;
-  const hex = crypto.createHmac("sha256", SECRETO).update(base).digest("hex").toUpperCase().slice(0, 16);
-  return "MVFBA-" + [hex.slice(0, 4), hex.slice(4, 8), hex.slice(8, 12), hex.slice(12, 16)].join("-");
-}
+import { generarClave } from "./_licencia.js";
+import { renovarPlanIA } from "./_cuotaia.js";
 
 export default async function handler(req, res) {
   aplicarCors(req, res, "GET, OPTIONS");
@@ -48,6 +37,12 @@ export default async function handler(req, res) {
     }
     const email = (p.payer && p.payer.email) || "";
     const plan = p.external_reference || (p.metadata && p.metadata.plan) || "";
+    // Plan "Pro IA": cada pago aprobado extiende 30 dias de acceso a IA
+    // incluida. No hay suscripcion automatica que "cancelar" -- si no vuelve
+    // a pagar, el acceso vence solo (ver api/_cuotaia.js).
+    if (plan === "ia" && email) {
+      try { await renovarPlanIA(email); } catch (e) { /* almacen no configurado aun: no bloquea la licencia */ }
+    }
     return res.status(200).json({
       aprobado: true,
       plan,

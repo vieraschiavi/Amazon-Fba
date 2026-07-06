@@ -1,20 +1,44 @@
-// api/ia.js — Proxy de IA para el DEMO web (asistente "IA incluida").
+// api/ia.js — Proxy de IA para el DEMO web y para el plan "Pro IA" (asistente
+// "IA incluida" pagado).
 //
 // La clave de Claude vive SOLO en la variable de entorno ANTHROPIC_API_KEY del
 // proyecto de Vercel: nunca está en el repositorio ni se expone al visitante.
-// Así el demo público de la web puede responder con IA real sin que nadie vea
-// la clave. Topes puestos para proteger el presupuesto (modelo económico +
-// max_tokens + largo de entrada acotado). Si la clave no está configurada, el
-// endpoint responde 503 y la app cae sola al asistente local (sin romperse).
+// Dos niveles de acceso, cada uno con su tope real (nunca ilimitado):
 //
-// En la versión DESCARGADA (APK/iOS/PC) este endpoint no existe: la app usa la
-// clave propia del cliente (BYOK) o el asistente local. Por eso el fetch a
-// /api/ia falla en file:// y cae al fallback — es el comportamiento buscado.
-
+//   1) Con {email, clave} de una licencia real CON el plan "Pro IA" pago y
+//      vigente: cuota mensual de tokens (ver api/_cuotaia.js). Se cuenta el
+//      consumo REAL de la respuesta de Claude (data.usage), no una estimacion.
+//      Sin base de datos (Vercel KV/Upstash) configurada, esto no se puede
+//      contar de verdad -> cae al nivel 2 en vez de fingir una cuota.
+//   2) Sin licencia de IA activa (demo de 3 dias, u otro plan sin IA
+//      incluida): tope generico por dispositivo, bajo, para que nadie use
+//      esto gratis sin limite. Es un tope "blando" (localStorage puede
+//      reinstalarse) -- frena el abuso casual, no a un atacante dedicado;
+//      para eso corresponde el Firewall de Vercel (ver api/_seguridad.js).
+//
+// En la versión DESCARGADA (APK/iOS/PC) sin clave propia (BYOK), la app llama
+// a este mismo endpoint como fallback -- por eso valida licencia acá y no
+// confía en lo que diga el cliente.
 import { aplicarCors, clienteValido } from "./_seguridad.js";
+import { claveValida } from "./_licencia.js";
+import { revisarCuota, registrarConsumo } from "./_cuotaia.js";
+import { kvGet, kvSet, almacenConfigurado } from "./_almacen.js";
 
-const MODELO = "claude-haiku-4-5-20251001";   // económico, ideal para el demo
+const MODELO = "claude-haiku-4-5-20251001";   // económico
 const MAX_TOKENS = 500;
+const TOPE_ANONIMO = 30; // preguntas totales para quien no tiene plan Pro IA activo
+
+async function revisarAnonimo(id) {
+  // Sin almacen o sin id de dispositivo, no hay forma honesta de contar --
+  // no se bloquea (mejor eso a inventar un conteo), pero queda documentado.
+  if (!almacenConfigurado() || !id) return { permitido: true, sinConteo: true };
+  const k = "anon:" + String(id).slice(0, 80);
+  const actual = (await kvGet(k)) || { usadas: 0 };
+  if (actual.usadas >= TOPE_ANONIMO) return { permitido: false };
+  actual.usadas += 1;
+  await kvSet(k, actual);
+  return { permitido: true, restantes: TOPE_ANONIMO - actual.usadas };
+}
 
 export default async function handler(req, res) {
   aplicarCors(req, res, "POST, OPTIONS");
@@ -31,7 +55,43 @@ export default async function handler(req, res) {
   const pregunta = String(body.pregunta || "").slice(0, 1500).trim();
   const contexto = String(body.contexto || "").slice(0, 4000);
   const idioma = String(body.idioma || "es").slice(0, 5);
+  const email = String(body.email || "").trim().toLowerCase();
+  const clave = String(body.clave || "").trim();
+  const dispositivo = String(body.dispositivo || "").trim();
   if (!pregunta) return res.status(400).json({ error: "sin_pregunta" });
+
+  // Si mandan email+clave tienen que ser una licencia REAL: si no valida, no
+  // se sigue de largo (podria ser alguien probando datos inventados).
+  const dijoTenerLicencia = Boolean(email && clave);
+  if (dijoTenerLicencia && !claveValida(email, clave)) {
+    return res.status(403).json({ error: "licencia_invalida" });
+  }
+
+  let modo = "demo"; // "ia_incluida" | "demo"
+  if (dijoTenerLicencia) {
+    const cuota = await revisarCuota(email);
+    if (cuota.activo) {
+      modo = "ia_incluida";
+    } else if (cuota.motivo === "cuota_agotada") {
+      return res.status(429).json({
+        error: "cuota_agotada",
+        mensaje: "Alcanzaste tu cuota de IA de este mes. Se renueva con tu próximo pago del plan Pro IA, o seguí usando el asistente local mientras tanto.",
+      });
+    }
+    // "plan_vencido" / "sin_plan_ia" / "almacen_no_configurado": esta
+    // licencia es real pero no tiene el plan IA activo -> cae al tope
+    // generico de abajo en vez de cortar de golpe.
+  }
+
+  if (modo === "demo") {
+    const chequeo = await revisarAnonimo(dispositivo || email);
+    if (!chequeo.permitido) {
+      return res.status(429).json({
+        error: "tope_alcanzado",
+        mensaje: "Llegaste al límite de preguntas gratis. Con el plan Pro IA tenés cuota mensual completa incluida.",
+      });
+    }
+  }
 
   const system =
     "Sos el asistente de MV FBA IA, un cockpit para vender en Amazon FBA. " +
@@ -62,6 +122,14 @@ export default async function handler(req, res) {
     }
     const texto = (data.content || [])
       .filter((b) => b.type === "text").map((b) => b.text).join("").trim();
+    if (modo === "ia_incluida" && data.usage) {
+      // Esperar el registro ANTES de responder: en serverless la funcion puede
+      // congelarse apenas se manda la respuesta, y un registro "fire and
+      // forget" se perderia silenciosamente -- exactamente el uso que no se
+      // quiere regalar gratis.
+      const tokens = (data.usage.input_tokens || 0) + (data.usage.output_tokens || 0);
+      try { await registrarConsumo(email, tokens); } catch (e) { /* almacen caido: no rompe la respuesta ya generada */ }
+    }
     return res.status(200).json({ texto: texto || "" });
   } catch (e) {
     return res.status(502).json({ error: "fetch_fail" });
