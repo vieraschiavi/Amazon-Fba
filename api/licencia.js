@@ -8,7 +8,8 @@
 // la app para activarla.
 import { aplicarCors, clienteValido } from "./_seguridad.js";
 import { generarClave } from "./_licencia.js";
-import { renovarPlanIA } from "./_cuotaia.js";
+import { renovarPlanIASiNuevo } from "./_cuotaia.js";
+import { obtenerOrden, leerOrden, paypalConfigurado } from "./_paypal.js";
 
 export default async function handler(req, res) {
   aplicarCors(req, res, "GET, OPTIONS");
@@ -19,12 +20,28 @@ export default async function handler(req, res) {
   // medio el escaneo automatico generico.
   if (!clienteValido(req)) return res.status(403).json({ error: "cliente_no_reconocido" });
 
-  const token = process.env.MP_ACCESS_TOKEN;
-  if (!token) return res.status(503).json({ error: "pago_no_configurado" });
-
   const q = req.query || {};
   const paymentId = q.payment_id || q.collection_id || q.paymentId;
   if (!paymentId) return res.status(400).json({ error: "sin_pago" });
+
+  // PayPal: la orden ya se capturo en api/paypal-retorno.js (y esa vez ya
+  // renovo la cuota de IA). Aca solo se relee el estado para mostrar la
+  // licencia -- NO se vuelve a renovar, para no regalar 30 dias de mas si
+  // el comprador recarga gracias.html.
+  if (String(q.proc || "") === "paypal") {
+    if (!paypalConfigurado()) return res.status(503).json({ error: "pago_no_configurado" });
+    try {
+      const orden = await obtenerOrden(paymentId);
+      const { plan, email, completado, estado } = leerOrden(orden);
+      if (!completado) return res.status(200).json({ aprobado: false, estado });
+      return res.status(200).json({ aprobado: true, plan, email, licencia: generarClave(email) });
+    } catch (e) {
+      return res.status(502).json({ error: "paypal_error" });
+    }
+  }
+
+  const token = process.env.MP_ACCESS_TOKEN;
+  if (!token) return res.status(503).json({ error: "pago_no_configurado" });
 
   try {
     const r = await fetch(`https://api.mercadopago.com/v1/payments/${encodeURIComponent(paymentId)}`, {
@@ -39,9 +56,10 @@ export default async function handler(req, res) {
     const plan = p.external_reference || (p.metadata && p.metadata.plan) || "";
     // Plan "Pro IA": cada pago aprobado extiende 30 dias de acceso a IA
     // incluida. No hay suscripcion automatica que "cancelar" -- si no vuelve
-    // a pagar, el acceso vence solo (ver api/_cuotaia.js).
+    // a pagar, el acceso vence solo (ver api/_cuotaia.js). Idempotente por
+    // paymentId: recargar gracias.html no regala dias de mas.
     if (plan === "ia" && email) {
-      try { await renovarPlanIA(email); } catch (e) { /* almacen no configurado aun: no bloquea la licencia */ }
+      try { await renovarPlanIASiNuevo(email, paymentId); } catch (e) { /* almacen no configurado aun: no bloquea la licencia */ }
     }
     return res.status(200).json({
       aprobado: true,

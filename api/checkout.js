@@ -1,14 +1,25 @@
-// api/checkout.js — Crea un pago de MercadoPago (Checkout Pro) para un plan.
+// api/checkout.js — Crea un pago para un plan, en MercadoPago (Checkout Pro,
+// cobra en pesos uruguayos pese a mostrar USD) o PayPal (cobra USD real, sin
+// conversion para el comprador — ver la aclaracion de moneda en la landing).
 //
-// El Access Token vive SOLO en la variable de entorno MP_ACCESS_TOKEN de Vercel
-// (nunca en el repo ni en el cliente). Si no está configurada, responde 503 y el
-// botón avisa que el pago todavía no está activo. Cobra en USD.
+// El Access Token de MercadoPago vive SOLO en MP_ACCESS_TOKEN; las
+// credenciales de PayPal en PAYPAL_CLIENT_ID/PAYPAL_CLIENT_SECRET (ver
+// api/_paypal.js) — ninguna en el repo ni en el cliente. Si el procesador
+// pedido no esta configurado, responde 503 y el boton avisa que el pago
+// todavia no esta activo.
 //
-// Flujo: el botón "Comprar" hace POST aquí -> devolvemos init_point (URL de
-// MercadoPago) -> el cliente paga -> MP redirige a /gracias.html?payment_id=...
+// Flujo MercadoPago: el boton "Comprar" hace POST aqui -> devolvemos
+// init_point -> el cliente paga -> MP redirige a /gracias.html?payment_id=...
 // -> gracias.html verifica el pago con /api/licencia y muestra la licencia.
+//
+// Flujo PayPal: mismo POST con {plan, proc:"paypal"} -> devolvemos el link
+// de aprobacion de PayPal (mismo campo "init_point" para no bifurcar el
+// cliente) -> el comprador aprueba en PayPal -> vuelve a
+// /api/paypal-retorno, que cobra de verdad y redirige a
+// /gracias.html?payment_id=...&proc=paypal.
 
 import { aplicarCors, clienteValido } from "./_seguridad.js";
+import { crearOrden, paypalConfigurado } from "./_paypal.js";
 
 const PLANES = {
   starter: { titulo: "MV FBA IA — Starter (Celular)", precio: 29 },
@@ -22,9 +33,6 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "method" });
   if (!clienteValido(req)) return res.status(403).json({ error: "cliente_no_reconocido" });
 
-  const token = process.env.MP_ACCESS_TOKEN;
-  if (!token) return res.status(503).json({ error: "pago_no_configurado" });
-
   let body = req.body;
   if (typeof body === "string") { try { body = JSON.parse(body); } catch (e) { body = {}; } }
   body = body || {};
@@ -33,6 +41,27 @@ export default async function handler(req, res) {
 
   const proto = (req.headers["x-forwarded-proto"] || "https").split(",")[0];
   const base = `${proto}://${req.headers.host}`;
+
+  if (String(body.proc || "") === "paypal") {
+    if (!paypalConfigurado()) return res.status(503).json({ error: "pago_no_configurado" });
+    try {
+      const { aprobarUrl } = await crearOrden({
+        monto: plan.precio.toFixed(2),
+        moneda: "USD",
+        referencia: String(body.plan),
+        returnUrl: `${base}/api/paypal-retorno`,
+        cancelUrl: `${base}/#precios`,
+        descripcion: plan.titulo,
+      });
+      if (!aprobarUrl) return res.status(502).json({ error: "paypal_sin_link" });
+      return res.status(200).json({ init_point: aprobarUrl });
+    } catch (e) {
+      return res.status(502).json({ error: "paypal_error", detail: String((e && e.message) || e) });
+    }
+  }
+
+  const token = process.env.MP_ACCESS_TOKEN;
+  if (!token) return res.status(503).json({ error: "pago_no_configurado" });
 
   const pref = {
     items: [{

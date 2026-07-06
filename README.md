@@ -140,6 +140,36 @@ Para activarla (una sola vez, ~2 min):
    se resetee cada mes ("tope fijo") o se acumule para el mes siguiente
    ("acumular", con un techo de 2x para que no crezca sin límite).
 
+## Pagos con PayPal (opcional, para no perder ventas de extranjeros)
+
+MercadoPago cobra siempre en **pesos uruguayos** (aunque muestre USD), lo cual
+puede generar fricción o desconfianza en un comprador de otro país. Por eso
+existe un segundo botón "o pagar con PayPal (USD)" en cada plan de la landing
+— PayPal cobra en dólares reales, sin conversión para el comprador. Es
+**opcional**: si no configurás las variables de abajo, el botón responde
+"PayPal no disponible aún" y el resto del sitio sigue funcionando normal con
+MercadoPago.
+
+Costo real de PayPal a tener en cuenta: no cobra fee mensual ni de alta, pero
+sí ~5.4% + US$0.30 por transacción, más ~3.5% adicional si retirás a pesos en
+vez de gastar el saldo en USD (ej. para pagar servicios en dólares) — conviene
+sobre todo para no perder la venta, no para maximizar margen en esa venta.
+
+Para activarlo (una sola vez, ~5 min):
+1. Creá una cuenta **PayPal Business** (developer.paypal.com si no la tenés).
+2. **Developer Dashboard → Apps & Credentials** → creá una app REST.
+   Primero probá en **Sandbox** antes de pasar a Live.
+3. Vercel → tu proyecto → **Settings → Environment Variables**, agregá:
+   - `PAYPAL_CLIENT_ID` y `PAYPAL_CLIENT_SECRET` (de la app creada arriba).
+   - `PAYPAL_SANDBOX` = `true` mientras probás (usa `api-m.sandbox.paypal.com`
+     y no mueve plata real); quitala o poné cualquier otro valor para pasar a
+     producción real (`api-m.paypal.com`).
+4. **Redeploy**. Listo: el botón de PayPal queda activo, comparte la misma
+   licencia (`api/_licencia.js`), cuota de IA (`api/_cuotaia.js`) y garantía de
+   7 días (`api/reembolso.js`) que el flujo de MercadoPago — todo el código
+   vive en `api/_paypal.js` y los endpoints que ya conocés (`checkout`,
+   `licencia`, `descarga`, `reembolso`) simplemente detectan `proc=paypal`.
+
 ## Landing web (`landing/`) y dominio propio
 
 La landing (`landing/index.html`) se despliega sola en Vercel en cada push

@@ -77,7 +77,7 @@ function mostrarAprobado(d){
     </div>
     <div class="dl">
       <a class="btn btn-a" href="${APK}">⬇️ Descargar app Android (APK)</a>
-      <a class="btn btn-b" href="/api/descarga?payment_id=${encodeURIComponent(d._pid || "")}">💻 Programa para PC (Windows)</a>
+      <a class="btn btn-b" href="/api/descarga?payment_id=${encodeURIComponent(d._pid || "")}${d._proc ? "&proc=" + encodeURIComponent(d._proc) : ""}">💻 Programa para PC (Windows)</a>
     </div>
     <div class="pasos">
       <b>Cómo activarla:</b><br>
@@ -101,9 +101,9 @@ function mostrarAprobado(d){
     navigator.clipboard.writeText(d.licencia).then(()=>{ b.textContent = "¡Copiada!"; }).catch(()=>{});
   });
   const btnR = $("#btnReembolso");
-  if (btnR) btnR.addEventListener("click", () => pedirReembolso(d._pid));
+  if (btnR) btnR.addEventListener("click", () => pedirReembolso(d._pid, d._proc));
 }
-async function pedirReembolso(paymentId){
+async function pedirReembolso(paymentId, proc){
   const email = ($("#re_email").value || "").trim();
   const msg = $("#reembolsoMsg");
   const btn = $("#btnReembolso");
@@ -115,7 +115,7 @@ async function pedirReembolso(paymentId){
     const r = await fetch("/api/reembolso", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-mv-app": "mvfba-web-1" },
-      body: JSON.stringify({ payment_id: paymentId, email }),
+      body: JSON.stringify({ payment_id: paymentId, email, proc: proc || undefined }),
     });
     const d = await r.json();
     if (r.ok && d.ok) {
@@ -155,17 +155,19 @@ function mostrarError(msg){
 (async () => {
   const p = params();
   const pid = p.payment_id || p.collection_id;
+  const proc = p.proc || "";
   if (!pid){
     mostrarError("No recibimos el identificador del pago. Si ya pagaste y ves esto, escribinos a vieraschiavi@gmail.com y te enviamos la licencia.");
     return;
   }
   try{
-    const r = await fetch("/api/licencia?payment_id=" + encodeURIComponent(pid), {
+    const q = "payment_id=" + encodeURIComponent(pid) + (proc ? "&proc=" + encodeURIComponent(proc) : "");
+    const r = await fetch("/api/licencia?" + q, {
       headers: { "x-mv-app": "mvfba-web-1" },
     });
     if (r.status === 503){ mostrarError("El cobro todavía no está activado. Escribinos y lo resolvemos."); return; }
     const d = await r.json();
-    if (d.aprobado) { d._pid = pid; mostrarAprobado(d); }
+    if (d.aprobado) { d._pid = pid; d._proc = proc; mostrarAprobado(d); }
     else if (d.estado) mostrarPendiente(d.estado);
     else mostrarError("No pudimos verificar el pago. Escribinos a vieraschiavi@gmail.com con tu comprobante y te ayudamos.");
   }catch(e){
