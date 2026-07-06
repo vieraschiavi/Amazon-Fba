@@ -219,6 +219,8 @@ section{padding:76px 0}
 .price-card li::before{content:"";flex:none;width:16px;height:16px;margin-top:2.5px;border-radius:5px;background:var(--green);opacity:.24}
 .price-card li.off{color:var(--muted)}
 .price-card li.off::before{background:var(--muted);opacity:.18}
+.garantia{display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:700;
+  color:var(--green-ink);text-align:center;margin-top:-4px}
 
 /* payments */
 .pay-row{display:flex;flex-wrap:wrap;gap:12px;margin:22px 0 6px}
@@ -424,6 +426,7 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
           <li class="off" data-t="pricing.starter.f4">Sin módulos avanzados de PC</li>
         </ul>
         <button class="btn btn-ghost comprar" data-plan="starter" data-t="pricing.buy">Comprar</button>
+        <div class="garantia" data-t="pricing.garantia">✔ 7 días de garantía o te devolvemos el pago</div>
       </div>
       <div class="card price-card hot">
         <div class="tag" data-t="pricing.popular">MÁS VENDIDO</div>
@@ -438,6 +441,7 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
           <li data-t="pricing.pro.f4">IA con tu propia clave</li>
         </ul>
         <button class="btn btn-primary comprar" data-plan="pro" data-t="pricing.buy">Comprar</button>
+        <div class="garantia" data-t="pricing.garantia">✔ 7 días de garantía o te devolvemos el pago</div>
       </div>
       <div class="card price-card">
         <div class="pname" data-t="pricing.ia.name">Pro IA · todo incluido</div>
@@ -451,6 +455,7 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
           <li data-t="pricing.ia.f4">Soporte prioritario</li>
         </ul>
         <button class="btn btn-ghost comprar" data-plan="ia" data-t="pricing.buy">Comprar</button>
+        <div class="garantia" data-t="pricing.garantia">✔ 7 días de garantía o te devolvemos el pago</div>
       </div>
     </div>
 
@@ -521,6 +526,10 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
       <details>
         <summary data-t="faq.q5">¿En qué países funciona el pago?</summary>
         <p data-t="faq.a5">Tarjeta y PayPal funcionan en cualquier país; MercadoPago cubre LatAm con tarjetas locales y cuotas; transferencia bancaria para pagos grandes.</p>
+      </details>
+      <details>
+        <summary data-t="faq.q6">¿Cómo pido la devolución si no me convence?</summary>
+        <p data-t="faq.a6">Escribinos a vieraschiavi@gmail.com dentro de los 7 días de la compra con tu email de pago. Te devolvemos el 100% por el mismo medio, sin vueltas — probá primero la demo gratis de 3 días para decidir con confianza.</p>
       </details>
     </div>
   </div>
@@ -621,6 +630,7 @@ const I18N = {
     "pricing.label":"Precios","pricing.h2":"Elegí tu plan","pricing.sub":"Pago único o mensual. Descargás la versión que compraste apenas se confirma el pago.",
     "pricing.demoBanner":"🎁 Demo completa gratis por 3 días — todas las funciones activas, sin tarjeta",
     "pricing.once":" pago único","pricing.mo":" /mes","pricing.buy":"Comprar","pricing.popular":"MÁS VENDIDO",
+    "pricing.garantia":"✔ 7 días de garantía o te devolvemos el pago",
     "pricing.starter.name":"Starter · Celular","pricing.starter.alt":"o US$4,99/mes",
     "pricing.starter.f1":"App Android (APK)","pricing.starter.f2":"Pricing, portafolio, ganancias, mercado","pricing.starter.f3":"Motor de keywords gratis","pricing.starter.f4":"Sin módulos avanzados de PC",
     "pricing.pro.name":"Pro · PC (BYOK)","pricing.pro.alt":"o US$14,99/mes",
@@ -644,6 +654,7 @@ const I18N = {
     "faq.q3":"¿Cómo descargo el software después de pagar?","faq.a3":"Al confirmarse el pago te llega un email con el link de descarga y tu clave de licencia para esa versión (PC y/o Android, según tu plan).",
     "faq.q4":"¿Hay versión para uso propio, sin restricciones?","faq.a4":"Sí — la licencia Pro desbloquea todos los módulos para tu propio negocio, sin límites de productos ni de uso del motor propio.",
     "faq.q5":"¿En qué países funciona el pago?","faq.a5":"Tarjeta y PayPal funcionan en cualquier país; MercadoPago cubre LatAm con tarjetas locales y cuotas; transferencia bancaria para pagos grandes.",
+    "faq.q6":"¿Cómo pido la devolución si no me convence?","faq.a6":"Escribinos a vieraschiavi@gmail.com dentro de los 7 días de la compra con tu email de pago. Te devolvemos el 100% por el mismo medio, sin vueltas — probá primero la demo gratis de 3 días para decidir con confianza.",
     "ctaEnd.h2":"Empezá a vender mejor en Amazon, hoy","ctaEnd.p":"Pago único o mensual. Descarga inmediata al confirmarse el pago.","ctaEnd.btn":"Ver planes",
     "foot.tag":"Cockpit de inteligencia para vender en Amazon, con tu propia IA.",
     "foot.h1":"Producto","foot.l1":"Funciones","foot.l2":"Precios","foot.l3":"Plataformas",
@@ -682,6 +693,7 @@ const I18N = {
     "pricing.label":"Pricing","pricing.h2":"Choose your plan","pricing.sub":"One-time or monthly. Download the version you bought as soon as payment is confirmed.",
     "pricing.demoBanner":"🎁 Full 3-day free demo — every feature unlocked, no card required",
     "pricing.once":" one-time","pricing.mo":" /mo","pricing.buy":"Buy now","pricing.popular":"MOST POPULAR",
+    "pricing.garantia":"✔ 7-day money-back guarantee",
     "pricing.starter.name":"Starter · Mobile","pricing.starter.alt":"or US$4.99/mo",
     "pricing.starter.f1":"Android app (APK)","pricing.starter.f2":"Pricing, portfolio, profit, market research","pricing.starter.f3":"Free keyword engine","pricing.starter.f4":"No advanced desktop modules",
     "pricing.pro.name":"Pro · Desktop (BYOK)","pricing.pro.alt":"or US$14.99/mo",
@@ -705,6 +717,7 @@ const I18N = {
     "faq.q3":"How do I download the software after paying?","faq.a3":"Once payment is confirmed, you get an email with the download link and your license key for that version (PC and/or Android, per your plan).",
     "faq.q4":"Is there an unrestricted version for my own use?","faq.a4":"Yes — the Pro license unlocks every module for your own business, with no limits on products or on the own engine's usage.",
     "faq.q5":"Which countries can pay?","faq.a5":"Card and PayPal work worldwide; MercadoPago covers LatAm with local cards and installments; bank transfer for larger orders.",
+    "faq.q6":"How do I get a refund if it's not for me?","faq.a6":"Email vieraschiavi@gmail.com within 7 days of purchase with your payment email. We refund 100% the same way you paid, no hassle — try the free 3-day demo first to decide with confidence.",
     "ctaEnd.h2":"Start selling smarter on Amazon, today","ctaEnd.p":"One-time or monthly. Instant download once payment is confirmed.","ctaEnd.btn":"See plans",
     "foot.tag":"An intelligence cockpit for selling on Amazon, with your own AI.",
     "foot.h1":"Product","foot.l1":"Features","foot.l2":"Pricing","foot.l3":"Platforms",
@@ -743,6 +756,7 @@ const I18N = {
     "pricing.label":"Preços","pricing.h2":"Escolha seu plano","pricing.sub":"Pagamento único ou mensal. Baixe a versão comprada assim que o pagamento for confirmado.",
     "pricing.demoBanner":"🎁 Demo completo grátis por 3 dias — todas as funções ativas, sem cartão",
     "pricing.once":" pagamento único","pricing.mo":" /mês","pricing.buy":"Comprar","pricing.popular":"MAIS VENDIDO",
+    "pricing.garantia":"✔ 7 dias de garantia ou devolvemos o pagamento",
     "pricing.starter.name":"Starter · Celular","pricing.starter.alt":"ou US$4,99/mês",
     "pricing.starter.f1":"App Android (APK)","pricing.starter.f2":"Preço, portfólio, lucro, mercado","pricing.starter.f3":"Motor de palavras-chave grátis","pricing.starter.f4":"Sem módulos avançados de PC",
     "pricing.pro.name":"Pro · PC (BYOK)","pricing.pro.alt":"ou US$14,99/mês",
@@ -766,6 +780,7 @@ const I18N = {
     "faq.q3":"Como faço o download do software depois de pagar?","faq.a3":"Assim que o pagamento é confirmado, você recebe um email com o link de download e sua chave de licença para essa versão (PC e/ou Android, conforme seu plano).",
     "faq.q4":"Existe versão para uso próprio, sem restrições?","faq.a4":"Sim — a licença Pro desbloqueia todos os módulos para o seu próprio negócio, sem limite de produtos nem de uso do motor próprio.",
     "faq.q5":"Em quais países o pagamento funciona?","faq.a5":"Cartão e PayPal funcionam em qualquer país; MercadoPago cobre a LatAm com cartões locais e parcelamento; transferência bancária para pedidos maiores.",
+    "faq.q6":"Como peço o reembolso se não for para mim?","faq.a6":"Escreva para vieraschiavi@gmail.com em até 7 dias da compra com seu email de pagamento. Devolvemos 100% pelo mesmo meio, sem complicação — teste antes a demo grátis de 3 dias para decidir com confiança.",
     "ctaEnd.h2":"Comece a vender melhor na Amazon, hoje","ctaEnd.p":"Pagamento único ou mensal. Download imediato após confirmação do pagamento.","ctaEnd.btn":"Ver planos",
     "foot.tag":"Um cockpit de inteligência para vender na Amazon, com sua própria IA.",
     "foot.h1":"Produto","foot.l1":"Funcionalidades","foot.l2":"Preços","foot.l3":"Plataformas",
