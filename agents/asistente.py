@@ -221,6 +221,111 @@ def responder(pregunta, historial=None, max_tokens=1400):
                 "modo": "offline", "proveedor": prov}
 
 
+_SYSTEM_PROGRAMA = (
+    "Sos el asistente de AYUDA de MV FBA IA: respondes dudas sobre COMO USAR el "
+    "programa (que hace cada pestana, donde esta cada funcion, como encadenar el "
+    "flujo, demo/licencia/idioma). Tono profesional pero amable, claro y concreto, "
+    "en espanol rioplatense — pero si te preguntan en ingles o portugues, "
+    "respondes en ese idioma.\n\n"
+    "REGLAS: Respondete SOLO desde el manual que se te pasa abajo; si algo no "
+    "esta en el manual, decilo honestamente y sugeri escribir a soporte desde la "
+    "seccion Contacto de la pestana Ayuda. Guia con pasos concretos ('anda a la "
+    "pestana X, toca Y'). No inventes funciones que el programa no tiene. Si la "
+    "pregunta es del NEGOCIO (sus numeros, estrategia FBA), deriva amablemente a "
+    "la pestana Asistente IA, que tiene los datos reales del negocio."
+)
+
+
+_OFFLINE_PROGRAMA_TXT = {
+    "es": {"pre": "Modo offline (sin clave de IA). Del manual, ",
+           "post": "Para respuestas conversacionales, conecta una clave de IA en Config.",
+           "nada": "Modo offline (sin clave de IA). No encontre esa duda en el manual: "
+                   "revisa el tutorial de arriba seccion por seccion, o escribinos desde "
+                   "la seccion Contacto de esta misma pestana."},
+    "en": {"pre": "Offline mode (no AI key). From the manual, ",
+           "post": "For conversational answers, connect an AI key in Settings.",
+           "nada": "Offline mode (no AI key). I couldn't find that in the manual: "
+                   "check the tutorial above section by section, or write to us from "
+                   "the Contact section on this same tab."},
+    "pt": {"pre": "Modo offline (sem chave de IA). Do manual, ",
+           "post": "Para respostas conversacionais, conecte uma chave de IA em Config.",
+           "nada": "Modo offline (sem chave de IA). Nao encontrei essa duvida no manual: "
+                   "confira o tutorial acima secao por secao, ou escreva para nos pela "
+                   "secao Contato desta mesma aba."},
+}
+
+
+def _responder_programa_offline(pregunta, idioma="es"):
+    """Fallback sin clave: busca la seccion del tutorial que mejor matchee."""
+    from agents import tutorial
+    txt = _OFFLINE_PROGRAMA_TXT.get(idioma, _OFFLINE_PROGRAMA_TXT["es"])
+    hits = tutorial.buscar(pregunta, idioma)
+    if not hits:
+        vistos, out = set(), []
+        for w in "".join(c if c.isalnum() else " " for c in pregunta.lower()).split():
+            if len(w) > 3 and w not in _STOP:
+                for s in tutorial.buscar(w, idioma):
+                    if s["clave"] not in vistos:
+                        vistos.add(s["clave"])
+                        out.append(s)
+        hits = out
+    if hits:
+        s = hits[0]
+        pasos = "\n".join(f"{i}. {p}" for i, p in enumerate(s["pasos"], 1))
+        return (f"{txt['pre']}**{s['titulo']}**:\n\n"
+                f"_{s['para_que']}_\n\n{pasos}\n\n{txt['post']}")
+    return txt["nada"]
+
+
+_IDIOMA_NOMBRE = {"es": "espanol", "en": "ingles (English)", "pt": "portugues (Portuguese)"}
+
+
+def responder_programa(pregunta, historial=None, max_tokens=1000, idioma="es"):
+    """
+    Responde dudas sobre COMO USAR el programa (pestana Ayuda), con el manual
+    completo (agents/tutorial.py) como unico contexto, en el `idioma` activo
+    del panel. Mismo patron honesto que responder(): con clave usa el
+    proveedor elegido; sin clave/error cae al tutorial offline. Nunca lanza.
+    """
+    from agents import tutorial
+    pregunta = (pregunta or "").strip()
+    if not pregunta:
+        return {"texto": "Escribime tu duda sobre el programa.", "modo": "offline"}
+
+    prov, clave, modelo = config.ia_provider_activo()
+    if not prov:
+        return {"texto": _responder_programa_offline(pregunta, idioma), "modo": "offline"}
+    if prov == "claude":
+        try:
+            import anthropic  # noqa: F401
+        except ImportError:
+            return {"texto": _responder_programa_offline(pregunta, idioma), "modo": "offline"}
+
+    system = (_SYSTEM_PROGRAMA
+              + f"\n\nIDIOMA DEL PANEL: el usuario tiene el programa en "
+                f"{_IDIOMA_NOMBRE.get(idioma, 'espanol')} — responde en ese idioma "
+                "salvo que pregunte en otro.\n\n=== MANUAL COMPLETO DEL PROGRAMA ===\n"
+              + tutorial.contexto_para_ia(idioma))
+    mensajes = []
+    for m in (historial or [])[-8:]:
+        rol = m.get("role")
+        if rol in ("user", "assistant") and m.get("content"):
+            mensajes.append({"role": rol, "content": m["content"]})
+    mensajes.append({"role": "user", "content": pregunta})
+
+    try:
+        texto = _DISPATCH[prov](system, mensajes, clave, modelo, max_tokens)
+        return {"texto": (texto or "").strip() or _responder_programa_offline(pregunta, idioma),
+                "modo": "online", "proveedor": prov}
+    except Exception as e:
+        nom = _NOMBRE_PROV.get(prov, prov)
+        return {"texto": f"No pude consultar a {nom} ({type(e).__name__}). "
+                         "Respondo desde el manual:\n\n"
+                         + _responder_programa_offline(pregunta, idioma),
+                "modo": "offline", "proveedor": prov}
+
+
 if __name__ == "__main__":
     print("Estado:", estado())
     print(responder("Que es el techo de demanda?")["texto"][:200])
+    print(responder_programa("Como uso el recomendador?")["texto"][:200])

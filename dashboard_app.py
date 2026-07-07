@@ -32,6 +32,7 @@ from agents import analytics
 from agents import productos
 from agents import asistente
 from agents import glosario
+from agents import tutorial
 from agents import publicador
 from agents import exito
 from agents import ganancias
@@ -1391,14 +1392,55 @@ with tabs[13]:
     st.markdown(ui.seccion(t_ui("ayu_titulo"), t_ui("ayu_sub")),
                 unsafe_allow_html=True)
 
-    st.markdown(ui.seccion("Como empezar (3 pasos)"), unsafe_allow_html=True)
-    st.markdown(
-        "1. **Investiga** un nicho (o subi un CSV de Cerebro) y mira el score y el veredicto.\n"
-        "2. **Calcula el pricing** con tus costos reales y **guarda el producto** en el portafolio.\n"
-        "3. **Segui el negocio**: registra ventas, revisa el analisis por producto y "
-        "proyecta la caja. Conecta tus claves en **Config** para datos reales y el asistente IA.")
+    st.markdown(ui.seccion(t_ui("ayu_tut_titulo"), t_ui("ayu_tut_sub")),
+                unsafe_allow_html=True)
     st.info("Modo DEMO (toggle del sidebar) muestra datos ilustrativos para ver el "
             "flujo sin gastar nada. Apagalo para produccion: el sistema no inventa datos.")
+    _idioma_ayuda = st.session_state.get("idioma", "es")
+    for _sec in tutorial.secciones(_idioma_ayuda):
+        _abierto = _sec["clave"] == "flujo"   # la vision general arranca abierta
+        with st.expander(_sec["titulo"], expanded=_abierto):
+            st.caption(_sec["para_que"])
+            for _i, _paso in enumerate(_sec["pasos"], 1):
+                st.markdown(f"{_i}. {_paso}")
+            for _tip in _sec["tips"]:
+                st.markdown(f"> **{t_ui('ayu_tip_label')}:** {_tip}")
+
+    st.divider()
+    st.markdown(ui.seccion(t_ui("ayu_ia_titulo"), t_ui("ayu_ia_sub")),
+                unsafe_allow_html=True)
+    _est_ayuda = asistente.estado()
+    if _est_ayuda["ok"]:
+        st.caption(_est_ayuda["mensaje"] + " Este chat responde SOLO sobre el uso del "
+                   "programa; para tus numeros del negocio usa la pestana Asistente IA.")
+    else:
+        st.caption("Sin clave de IA responde desde el manual (offline). " +
+                   _est_ayuda["mensaje"])
+    if "ayuda_chat" not in st.session_state:
+        st.session_state.ayuda_chat = []
+    for _m in st.session_state.ayuda_chat:
+        with st.chat_message(_m["role"]):
+            st.markdown(_m["content"])
+    _cols_ayuda = st.columns(3)
+    _sugeridas_ayuda = [t_ui("ayu_sug_1"), t_ui("ayu_sug_2"), t_ui("ayu_sug_3")]
+    _pregunta_sug = None
+    for _n_sug, (_c, _txt) in enumerate(zip(_cols_ayuda, _sugeridas_ayuda), 1):
+        if _c.button(_txt, use_container_width=True, key=f"ayu_sug_{_n_sug}"):
+            _pregunta_sug = _txt
+    _pregunta_ayuda = st.chat_input(t_ui("ayu_ia_input"),
+                                    key="ayuda_chat_input") or _pregunta_sug
+    if _pregunta_ayuda:
+        st.session_state.ayuda_chat.append({"role": "user", "content": _pregunta_ayuda})
+        with st.chat_message("user"):
+            st.markdown(_pregunta_ayuda)
+        with st.chat_message("assistant"):
+            with st.spinner("..."):
+                _r_ayuda = asistente.responder_programa(
+                    _pregunta_ayuda, historial=st.session_state.ayuda_chat[:-1],
+                    idioma=_idioma_ayuda)
+            st.markdown(_r_ayuda["texto"])
+        st.session_state.ayuda_chat.append(
+            {"role": "assistant", "content": _r_ayuda["texto"]})
 
     st.divider()
     q = st.text_input("Buscar un termino", placeholder="ej: ROI, techo, BSR, landed...")
