@@ -328,6 +328,19 @@ def demanda(keyword: str, marketplace: str = "US", demo: bool = False):
     return demanda_nativa.estimar_demanda(keyword, marketplace=marketplace, demo=demo)
 
 
+class CompararIn(BaseModel):
+    keywords: list[str]
+    marketplace: str = "US"
+    demo: bool = False
+
+
+@router.post("/demanda/comparar")
+def demanda_comparar(c: CompararIn):
+    """Rankea varios nichos por demanda relativa (gratis). Max 8 por request."""
+    kws = [k.strip() for k in c.keywords if k.strip()][:8]
+    return demanda_nativa.comparar(kws, marketplace=c.marketplace, demo=c.demo)
+
+
 @router.get("/marketplaces")
 def marketplaces():
     return {"marketplaces": [

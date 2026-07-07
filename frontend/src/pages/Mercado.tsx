@@ -26,6 +26,9 @@ interface Demanda {
   nivel: string; n_nichos: number; requests: number; nota_honesta: string;
   mensaje?: string;
 }
+interface Comparacion {
+  ok: boolean; ranking: Demanda[]; nota_honesta: string;
+}
 
 export function Mercado() {
   const t = useT();
@@ -38,6 +41,9 @@ export function Mercado() {
   const [margen, setMargen] = useState(0);
   const [ev, setEv] = useState<{ evaluacion: Evaluacion; narrativa?: { texto: string; modo: string } } | null>(null);
   const [demanda, setDemanda] = useState<Demanda | null>(null);
+  const [comparar, setComparar] = useState("");
+  const [comparacion, setComparacion] = useState<Comparacion | null>(null);
+  const [comparando, setComparando] = useState(false);
   const [ocupado, setOcupado] = useState(false);
   const [midiendoDemanda, setMidiendoDemanda] = useState(false);
   const [evaluando, setEvaluando] = useState(false);
@@ -61,6 +67,18 @@ export function Mercado() {
       setDemanda(d);
     } catch { /* mantiene */ }
     setMidiendoDemanda(false);
+  };
+
+  const compararNichos = async () => {
+    const lista = comparar.split(",").map((s) => s.trim()).filter(Boolean).slice(0, 8);
+    if (lista.length < 2) return;
+    setComparando(true); setComparacion(null);
+    try {
+      const d = await api.post<Comparacion>("/api/demanda/comparar",
+        { keywords: lista, demo: modoDemo }, 120000);
+      setComparacion(d);
+    } catch { /* mantiene */ }
+    setComparando(false);
   };
 
   const evaluar = async () => {
@@ -116,6 +134,37 @@ export function Mercado() {
         ) : (
           <Alerta tipo="info">{demanda.mensaje || "Sin señal de demanda para ese término."}</Alerta>
         ))}
+
+        {/* Comparador de nichos: metés varios y los rankea por demanda, gratis */}
+        <div className="mt-4 pt-4 border-t border-line">
+          <h4 className="font-bold text-[13px] text-navy-deep mb-2">
+            Comparar varios nichos (gratis)
+          </h4>
+          <div className="flex gap-3 items-end flex-wrap">
+            <Campo label="Productos separados por coma"
+                   value={comparar} onChange={(e) => setComparar(e.target.value)}
+                   placeholder="yoga mat, garlic press, dog bed"
+                   className="w-96" />
+            <Boton tipo="fantasma" onClick={() => void compararNichos()} disabled={comparando}>
+              Comparar
+            </Boton>
+          </div>
+          {comparando && <Spinner texto="Midiendo demanda de cada nicho…" />}
+          {comparacion && comparacion.ok && (
+            <div className="mt-3">
+              <Tabla
+                cabeceras={["#", "Nicho", "Demanda", "Nivel", "Amplitud"]}
+                filas={comparacion.ranking.map((r, i) => [
+                  i + 1, r.keyword,
+                  r.ok ? `${r.demanda_score}/100` : "—",
+                  r.ok ? <Badge key="n" texto={r.nivel}
+                    tono={r.demanda_score >= 65 ? "verde" : r.demanda_score >= 40 ? "amarillo" : "rojo"} /> : "sin datos",
+                  r.ok ? num(r.amplitud) : "—",
+                ])}
+              />
+            </div>
+          )}
+        </div>
       </Card>
 
       {res && (res.ok ? (
