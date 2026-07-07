@@ -50,12 +50,18 @@ jobs:
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\MV_Amazon_FBA_IA.iss
         shell: pwsh
 
+      # El artifact es solo una conveniencia para descargar desde Actions; la
+      # distribucion real a clientes es el Release pc-latest (paso siguiente),
+      # que no consume la cuota de almacenamiento de artifacts. Por eso este
+      # paso no voltea el build si la cuota esta llena, y retiene poco.
       - name: Publicar EXE como artifact
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: MV-Amazon-FBA-IA-instalador-windows
           path: installer/Output/MV_Amazon_FBA_IA_Setup.exe
           if-no-files-found: error
+          retention-days: 7
 
       # Publica/actualiza el Release "pc-latest" con el instalador, para que la
       # descarga gated (api/descarga.js, tras pago verificado) lo pueda entregar.
