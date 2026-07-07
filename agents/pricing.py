@@ -71,6 +71,21 @@ def break_even(landed, fba_fee, referral_pct, acos_pct):
     return (fba_fee + landed) / denom
 
 
+def acos_bancable(margen_actual_pct, margen_minimo_pct, acos_supuesto_pct=None):
+    """
+    Cuanto ACoS (gasto en Amazon Advertising / facturacion, en %) podes bancar
+    sin que el margen caiga por debajo de `margen_minimo_pct`.
+
+    `margen_actual_pct` ya asume el ACoS que el pricing tiene cargado
+    (config.ACOS_PCT por defecto): cada punto extra de ACoS le resta
+    exactamente un punto al margen (ambos son % del precio de venta), asi
+    que el maximo bancable es simplemente ese ACoS de base mas el colchon
+    entre el margen actual y el minimo aceptable. Nunca negativo.
+    """
+    acos_supuesto_pct = config.ACOS_PCT if acos_supuesto_pct is None else acos_supuesto_pct
+    return max(0.0, round(acos_supuesto_pct + (margen_actual_pct - margen_minimo_pct), 1))
+
+
 def evaluar(prod: dict, fba_fee: float = None, precio_competencia: float = None,
             margen_obj: float = None) -> dict:
     fba_fee = config.FBA_FEE_DEFAULT if fba_fee is None else fba_fee
