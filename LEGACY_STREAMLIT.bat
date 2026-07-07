@@ -34,10 +34,10 @@ set PYTHONUTF8=1
 
 echo  [1/4] Python: !PYTHON!
 echo  [2/4] Verificando dependencias (instala solo la primera vez, puede tardar)...
-"!PYTHON!" -c "import fastapi,uvicorn,pandas,multipart" >nul 2>&1
+"!PYTHON!" -c "import streamlit,pandas,fastapi,uvicorn" >nul 2>&1
 if errorlevel 1 "!PYTHON!" -m pip install --user -r requirements.txt
 
-"!PYTHON!" -c "import fastapi,uvicorn,pandas" >nul 2>&1
+"!PYTHON!" -c "import streamlit,pandas" >nul 2>&1
 if errorlevel 1 (
     echo.
     echo  [ERROR] No se pudieron instalar las dependencias.
@@ -48,18 +48,37 @@ if errorlevel 1 (
     exit /b 1
 )
 
+rem En Python muy nuevo (3.13/3.14), altair viejo revienta los graficos; si
+rem importar altair falla, lo actualizamos (typing_extensions + altair 5.5+).
+"!PYTHON!" -c "import altair" >nul 2>&1
+if errorlevel 1 "!PYTHON!" -m pip install --user -U typing_extensions "altair>=5.5.0" >nul 2>&1
+
 echo  [3/4] Preparando base de datos...
 "!PYTHON!" core\db.py >nul 2>&1
 
+set "OCUPADO="
+for /f "tokens=*" %%a in ('netstat -ano ^| findstr ":8000" ^| findstr LISTENING') do set "OCUPADO=1"
+if defined OCUPADO (
+    echo  [4/4] API ya corriendo en el puerto 8000 - no se levanta de nuevo.
+) else (
+    "!PYTHON!" -c "import fastapi,uvicorn" >nul 2>&1
+    if errorlevel 1 (
+        echo  [4/4] API omitida: faltan fastapi/uvicorn ^(reintenta con internet^).
+    ) else (
+        echo  [4/4] Levantando API en http://localhost:8000 ^(ventana minimizada^)...
+        start "FBA - API" /min "!PYTHON!" -m uvicorn app:app --host 0.0.0.0 --port 8000
+    )
+)
+
 echo.
 echo  ============================================================
-echo    Panel + API : http://localhost:8000
-echo    ^(el mismo servidor sirve el panel web y la API para n8n^)
+echo    Panel : http://localhost:8501
+echo    API   : http://localhost:8000  ^(para n8n / automatizacion^)
 echo    DEJA ESTA VENTANA ABIERTA mientras uses el sistema.
+echo    Si el navegador no abre solo, copia el link del panel a mano.
 echo  ============================================================
 echo.
-start "" "http://localhost:8000/"
-"!PYTHON!" -m uvicorn app:app --host 0.0.0.0 --port 8000
+"!PYTHON!" -m streamlit run dashboard_app.py
 echo.
 echo  (el panel se cerro)
 pause

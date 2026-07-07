@@ -41,7 +41,7 @@ from data import mercado
 from data import motor_propio
 
 db.init()
-app = FastAPI(title="MV FBA IA — API", version="1.1")
+app = FastAPI(title="MV FBA IA — API", version="2.0")
 
 # CORS abierto: la API corre en localhost y la consumen n8n y la app movil
 # (mobile/), que sirve desde otro origen (otro puerto o el navegador del
@@ -244,3 +244,19 @@ def portfolio_alta(p: ProductoIn):
 @app.get("/portfolio/producto/{pid}")
 def portfolio_analisis(pid: int):
     return productos.analisis(pid)
+
+
+# ---------- Rutas /api/* del panel SaaS (frontend React) ---------- #
+# Los endpoints de arriba quedan CONGELADOS como contrato para n8n/mobile;
+# todo lo nuevo del SPA vive bajo /api (ver api_rutas.py).
+import api_rutas  # noqa: E402
+
+app.include_router(api_rutas.router)
+
+# Si el frontend compilado existe (frontend/dist, generado por `npm run build`
+# o incluido por el instalador de Windows), se sirve como el panel web en la
+# raiz. Montado AL FINAL para que nunca tape /api ni los endpoints legacy.
+_FRONT_DIST = os.path.join(_AQUI, "frontend", "dist")
+if os.path.isdir(_FRONT_DIST):
+    from fastapi.staticfiles import StaticFiles
+    app.mount("/", StaticFiles(directory=_FRONT_DIST, html=True), name="spa")

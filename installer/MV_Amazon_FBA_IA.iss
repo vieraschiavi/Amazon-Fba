@@ -63,6 +63,9 @@ Source: "..\core\*"; DestDir: "{app}\core"; Excludes: "*.pyc"; Flags: recursesub
 Source: "..\data\*"; DestDir: "{app}\data"; Excludes: "*.pyc,*.csv"; Flags: recursesubdirs ignoreversion
 Source: "..\n8n\*"; DestDir: "{app}\n8n"; Flags: recursesubdirs ignoreversion
 Source: "..\.streamlit\*"; DestDir: "{app}\.streamlit"; Flags: recursesubdirs ignoreversion
+; Panel web SaaS compilado (React -> frontend/dist, generado por `npm run build`
+; en CI ANTES de compilar este instalador). Solo dist: ni node_modules ni src.
+Source: "..\frontend\dist\*"; DestDir: "{app}\frontend\dist"; Flags: recursesubdirs ignoreversion
 Source: "assets\icon.ico"; DestDir: "{app}\assets"; Flags: ignoreversion
 Source: "Iniciar_Silencioso.vbs"; DestDir: "{app}"; Flags: ignoreversion
 Source: "App_Escritorio.vbs"; DestDir: "{app}"; Flags: ignoreversion
