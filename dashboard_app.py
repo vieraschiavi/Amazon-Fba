@@ -22,9 +22,11 @@ import config
 import styles as ui
 from core import db
 from core import licencia
+from core.i18n import t as t_ui, IDIOMAS as IDIOMAS_APP, NOMBRES_IDIOMA as NOMBRES_IDIOMA_APP
 from agents.market_intel import market_intel
 from agents.listing import generar as generar_listing
 from agents.pricing import evaluar as evaluar_precio
+from agents.pricing import acos_bancable
 from agents.capital_planner import proyeccion_realista
 from agents import analytics
 from agents import productos
@@ -38,11 +40,13 @@ from agents import creativos
 from data import keepa
 from data import mercado
 from data import motor_propio
+from agents import recomendador
 
 db.init()
 
-st.set_page_config(page_title="MV FBA IA", page_icon="📊", layout="wide",
-                   initial_sidebar_state="expanded")
+st.set_page_config(page_title="MV FBA IA",
+                   page_icon=os.path.join(_AQUI, "mobile", "icons", "icon-512.png"),
+                   layout="wide", initial_sidebar_state="expanded")
 st.markdown(ui.CSS, unsafe_allow_html=True)
 
 # ==================== DEMO / REGISTRO — 3 dias completos, multi-idioma ==================== #
@@ -65,7 +69,7 @@ _TXT_DEMO = {
         "clave": "Clave de licencia", "activar": "Activar licencia",
         "clave_invalida": "Esa clave no es válida para este email.",
         "clave_ok": "Licencia activada. ¡Gracias por tu compra!",
-        "contactar": "✉️ Escribinos para comprar tu licencia",
+        "contactar": "Escribinos para comprar tu licencia",
         "badge_licencia": "Licencia activa",
         "badge_demo": "Demo: {n} día(s) restante(s)",
     },
@@ -81,7 +85,7 @@ _TXT_DEMO = {
         "clave": "License key", "activar": "Activate license",
         "clave_invalida": "That key is not valid for this email.",
         "clave_ok": "License activated. Thanks for your purchase!",
-        "contactar": "✉️ Contact us to buy your license",
+        "contactar": "Contact us to buy your license",
         "badge_licencia": "Active license",
         "badge_demo": "Demo: {n} day(s) left",
     },
@@ -97,7 +101,7 @@ _TXT_DEMO = {
         "clave": "Chave de licença", "activar": "Ativar licença",
         "clave_invalida": "Essa chave não é válida para este email.",
         "clave_ok": "Licença ativada. Obrigado pela compra!",
-        "contactar": "✉️ Fale conosco para comprar sua licença",
+        "contactar": "Fale conosco para comprar sua licença",
         "badge_licencia": "Licença ativa",
         "badge_demo": "Demo: {n} dia(s) restante(s)",
     },
@@ -110,7 +114,7 @@ _estado_demo = licencia.estado()
 
 if not _estado_demo["vigente"]:
     _sel_idioma_lbl = st.selectbox(
-        "🌐", _IDIOMAS_DEMO,
+        "Idioma / Language", _IDIOMAS_DEMO,
         index=list(_COD_IDIOMA_DEMO.values()).index(st.session_state["demo_idioma"]),
         key="demo_idioma_sel", label_visibility="collapsed")
     st.session_state["demo_idioma"] = _COD_IDIOMA_DEMO[_sel_idioma_lbl]
@@ -188,6 +192,15 @@ def _bar_chart(data, **kw):
 
 # --- Sidebar ---
 with st.sidebar:
+    # Selector de idioma de TODO el programa (un click cambia pestañas,
+    # encabezados y botones principales — ver core/i18n.py). Arranca con el
+    # idioma elegido en la pantalla de demo/registro si ya se eligio uno.
+    st.session_state.setdefault("idioma", st.session_state.get("demo_idioma", "es"))
+    _idioma_sel_app = st.selectbox(
+        t_ui("idioma_label"), [NOMBRES_IDIOMA_APP[c] for c in IDIOMAS_APP],
+        index=IDIOMAS_APP.index(st.session_state["idioma"]),
+        key="idioma_app_sel", label_visibility="collapsed")
+    st.session_state["idioma"] = {v: k for k, v in NOMBRES_IDIOMA_APP.items()}[_idioma_sel_app]
     st.markdown(
         f"<div style='display:flex;align-items:center;gap:10px'>{ui.logo(30, on_dark=False)}"
         f"<div style='font-weight:800;color:{ui.NAVY};font-size:17px;line-height:1.1'>"
@@ -229,9 +242,13 @@ st.markdown(ui.header(
            ("Email", bool(config.SMTP_USER and config.SMTP_PASS))]),
     unsafe_allow_html=True)
 
-tabs = st.tabs(["  Investigacion  ", "  Mercado  ", "  Pricing  ", "  Portafolio  ",
-                "  Publicar  ", "  Caja  ", "  Ventas  ", "  Inversores  ", "  Plan  ",
-                "  Alertas  ", "  Config  ", "  Asistente IA  ", "  Ayuda  "])
+tabs = st.tabs([f"  {t_ui('tab_investigacion')}  ", f"  {t_ui('tab_recomendador')}  ",
+                f"  {t_ui('tab_mercado')}  ", f"  {t_ui('tab_pricing')}  ",
+                f"  {t_ui('tab_portafolio')}  ", f"  {t_ui('tab_publicar')}  ",
+                f"  {t_ui('tab_caja')}  ", f"  {t_ui('tab_ventas')}  ",
+                f"  {t_ui('tab_inversores')}  ", f"  {t_ui('tab_plan')}  ",
+                f"  {t_ui('tab_alertas')}  ", f"  {t_ui('tab_config')}  ",
+                f"  {t_ui('tab_asistente')}  ", f"  {t_ui('tab_ayuda')}  "])
 
 # ==================== PRODUCTO ACTIVO (compartido entre pestañas) ==================== #
 # Elegís un producto del portafolio UNA vez y sus datos (costo, flete, precio, neto,
@@ -248,22 +265,22 @@ for _p in _cartera:
 # Demo full-experience: cargar 1 producto de ejemplo con un clic para recorrer
 # TODO el sistema (Pricing, Caja, Ventas, Asistente) con numeros reales.
 from core import demo_seed  # noqa: E402
-st.sidebar.markdown("### 🎁 Probar con un ejemplo")
+st.sidebar.markdown(f"### {t_ui('sb_demo_titulo')}")
 if demo_seed.hay_ejemplo():
-    if st.sidebar.button("Quitar producto de ejemplo", use_container_width=True):
+    if st.sidebar.button(t_ui("sb_demo_quitar"), use_container_width=True):
         demo_seed.quitar_ejemplo()
         st.rerun()
     st.sidebar.caption("Ejemplo cargado: elegilo abajo en «Producto activo» y "
                        "recorré las pestañas.")
 else:
-    if st.sidebar.button("Cargar producto de ejemplo", type="primary",
+    if st.sidebar.button(t_ui("sb_demo_cargar"), type="primary",
                          use_container_width=True):
         demo_seed.cargar_ejemplo()
         st.rerun()
     st.sidebar.caption("1 producto listo (costo, precio, margen, ROI y ventas) para "
                        "ver el sistema completo funcionando.")
 
-st.sidebar.markdown("### 🎯 Producto activo")
+st.sidebar.markdown(f"### {t_ui('sb_activo_titulo')}")
 _sel_activo = st.sidebar.selectbox(
     "Sus datos se replican en Pricing, Caja y Ventas",
     list(_opc_activo.keys()), key="sb_prod_activo")
@@ -285,8 +302,7 @@ def A(campo, defecto):
 
 # ============================ 1) INVESTIGACION ============================ #
 with tabs[0]:
-    st.markdown(ui.seccion("Investigacion de nicho",
-                           "Motor propio gratis o CSV de Cerebro -> score -> listing"),
+    st.markdown(ui.seccion(t_ui("inv_titulo"), t_ui("inv_sub")),
                 unsafe_allow_html=True)
     fuente_kw = st.radio("Fuente de keywords",
                          ["Motor propio (gratis, autocompletado Amazon)",
@@ -313,7 +329,7 @@ with tabs[0]:
                                       "del marketplace antes de buscar.")
     c1, c2 = st.columns([3, 1])
     keyword = c1.text_input("Nicho / keyword principal", value="bamboo kitchen utensils")
-    correr = c2.button("Investigar", type="primary", use_container_width=True)
+    correr = c2.button(t_ui("inv_btn"), type="primary", use_container_width=True)
     csv_path = None
     if not usa_motor:
         up = st.file_uploader("Subi un export CSV de Helium 10 Cerebro", type=["csv"])
@@ -405,11 +421,74 @@ with tabs[0]:
     elif not usa_motor:
         st.caption("Escribi un nicho y toca Investigar (o subi un CSV de Cerebro).")
 
-# ============================ 2) MERCADO ============================ #
+# ============================ 2) RECOMENDADOR ============================ #
 with tabs[1]:
-    st.markdown(ui.seccion("Explorador de mercado",
-                           "Productos estrella por rango de precios, competidores, "
-                           "reseñas, proveedores y probabilidad de exito"),
+    st.markdown(ui.seccion(t_ui("rec_titulo"), t_ui("rec_sub")),
+        unsafe_allow_html=True)
+    st.caption("A diferencia de Investigacion/Mercado (vos traes la keyword), esta "
+               "pestaña recorre categorias FBA probadas con el motor propio y te "
+               "trae una lista rankeada para arrancar. Después profundizá el "
+               "candidato elegido en Investigacion o Mercado.")
+    r1, r2, r3, r4 = st.columns([1, 1, 1, 1])
+    rc_min = r1.number_input("Precio min (USD)", value=15.0, min_value=1.0,
+                             step=1.0, key="rc_min")
+    rc_max = r2.number_input("Precio max (USD)", value=45.0, min_value=1.0,
+                             step=1.0, key="rc_max")
+    _rc_mkts = motor_propio.MARKETPLACES
+    _rc_mk_labels = {f"{cod} — {d['nombre']}": cod for cod, d in _rc_mkts.items()}
+    rc_mk_sel = r3.selectbox("Marketplace", list(_rc_mk_labels.keys()),
+                             index=list(_rc_mk_labels.values()).index(
+                                 st.session_state.get("rc_mkt", "US")),
+                             key="rc_mkt_label")
+    rc_mkt_cod = _rc_mk_labels[rc_mk_sel]
+    st.session_state["rc_mkt"] = rc_mkt_cod
+    rc_go = r4.button(t_ui("rec_btn"), type="primary",
+                      use_container_width=True, key="rc_go")
+    if rc_go:
+        with st.spinner("Escaneando categorias con el motor propio "
+                        "(puede tardar 1-2 minutos)..."):
+            st.session_state["rc_res"] = recomendador.escanear_oportunidades(
+                precio_min=rc_min, precio_max=rc_max, marketplace=rc_mkt_cod,
+                demo=demo)
+    res_rc = st.session_state.get("rc_res")
+    if res_rc:
+        if not res_rc["ok"]:
+            st.info(res_rc["mensaje"])
+        else:
+            top_op = res_rc["oportunidades"]
+            _cols_html([
+                ui.kpi("Oportunidades", ui.fmt_int(len(top_op)),
+                       f"de {res_rc['n_candidatos_evaluados']} candidatos evaluados",
+                       hero=True),
+                ui.kpi("Mejor potencial", f"{top_op[0]['potencial']}/100"
+                       if top_op else "0", top_op[0]["nicho"][:28] if top_op else "—"),
+                ui.kpi("Rango de precio", f"USD {res_rc['precio_min']:.0f}-{res_rc['precio_max']:.0f}",
+                       res_rc["marketplace"]),
+                ui.kpi("Costo", "$0", "sin APIs pagas" if "Keepa" not in res_rc["fuente"]
+                       else "+ Keepa conectado", tone="good"),
+            ])
+            st.caption(f"Fuente: {res_rc['fuente']} · categorias escaneadas: "
+                       + ", ".join(res_rc["seeds_usadas"]))
+            st.warning(res_rc["nota_honesta"])
+            dfr = pd.DataFrame([{
+                "Nicho": o["nicho"], "Potencial": o["potencial"],
+                "Veredicto": o["veredicto"], "Interes (proxy)": o["interes_proxy"],
+                "Competidores": o["n_competidores"] if o["n_competidores"] is not None else "s/d",
+                "Ventas/mes (est.)": o["ventas_estim_total"] if o["ventas_estim_total"] is not None else "s/d",
+                "Precio mediana": o["precio_mediana"] if o["precio_mediana"] is not None else "s/d",
+                "Comentario": o["comentario"],
+            } for o in top_op])
+            st.dataframe(dfr, use_container_width=True, hide_index=True)
+            st.caption("Copiá el nicho que te interese y pegalo en **Investigacion** "
+                       "(para keywords/listing) o **Mercado** (para competidores y "
+                       "probabilidad de exito) y seguí el flujo normal.")
+    else:
+        st.caption("Elegí un rango de precio y tocá Buscar oportunidades — no hace "
+                   "falta escribir ninguna keyword.")
+
+# ============================ 3) MERCADO ============================ #
+with tabs[2]:
+    st.markdown(ui.seccion(t_ui("mk_titulo"), t_ui("mk_sub")),
                 unsafe_allow_html=True)
     m1, m2, m3, m4 = st.columns([3, 1, 1, 1])
     mk_kw = m1.text_input("Producto / keyword", value="bamboo kitchen utensils",
@@ -418,7 +497,7 @@ with tabs[1]:
                              step=1.0, key="mk_min")
     mk_max = m3.number_input("Precio max (USD)", value=50.0, min_value=1.0,
                              step=1.0, key="mk_max")
-    mk_go = m4.button("Explorar", type="primary", use_container_width=True,
+    mk_go = m4.button(t_ui("mk_btn"), type="primary", use_container_width=True,
                       key="mk_go")
     if mk_go:
         with st.spinner("Buscando productos estrella..."):
@@ -489,7 +568,7 @@ with tabs[1]:
                                     min_value=0.0, step=0.5, key="ex_precio")
         ex_margen = e2.number_input("Margen calculado % (0 = sin pricing)", value=0.0,
                                     min_value=0.0, step=0.5, key="ex_margen")
-        ex_go = e3.button("Evaluar exito", type="primary", use_container_width=True,
+        ex_go = e3.button(t_ui("mk_ex_btn"), type="primary", use_container_width=True,
                           key="ex_go")
         if ex_go:
             ev = exito.evaluar(st.session_state.get("mk_kw_hecho", mk_kw),
@@ -555,7 +634,7 @@ with tabs[1]:
                                     min_value=0.0, step=0.50, key="ga_precio")
         ga_techo = g10.number_input("Techo demanda (u/mes)", value=290, min_value=1,
                                     step=10, key="ga_techo")
-        if st.button("Calcular ganancia potencial", type="primary", key="ga_btn"):
+        if st.button(t_ui("mk_ga_btn"), type="primary", key="ga_btn"):
             sim = ganancias.simular(
                 inversion=(ga_inv if modo_g.startswith("Inversion") else None),
                 unidades=(int(ga_uni) if not modo_g.startswith("Inversion") else None),
@@ -622,9 +701,9 @@ with tabs[1]:
                    "proveedores verificados con link directo, probabilidad de exito "
                    "y cuanto podrias ganar con tu inversion.")
 
-# ============================ 3) PRICING ============================ #
-with tabs[2]:
-    st.markdown(ui.seccion("Pricing", "Costo desembarcado -> precio -> margen -> ROI"),
+# ============================ 4) PRICING ============================ #
+with tabs[3]:
+    st.markdown(ui.seccion(t_ui("pr_titulo"), t_ui("pr_sub")),
                 unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
     costo = c1.number_input("Costo unitario (USD)", value=float(A("costo", 2.10)), min_value=0.0, step=0.10)
@@ -656,7 +735,7 @@ with tabs[2]:
         g_asin = g2.text_input("ASIN (si ya existe)", key="pr_g_asin")
         g_techo = g3.number_input("Techo de demanda (u/mes)", value=290, min_value=0,
                                   step=10, key="pr_g_techo")
-        if st.button("Guardar en portafolio", type="primary", key="pr_g_btn"):
+        if st.button(t_ui("pr_btn"), type="primary", key="pr_g_btn"):
             r = productos.guardar(g_nombre, asin=g_asin, costo=costo, flete=flete,
                                   arancel_pct=arancel, prep=prep, fba_fee=fba,
                                   precio_competencia=(comp if comp > 0 else None),
@@ -666,10 +745,9 @@ with tabs[2]:
             else:
                 st.error(r["mensaje"])
 
-# ============================ 4) PORTAFOLIO ============================ #
-with tabs[3]:
-    st.markdown(ui.seccion("Portafolio de productos",
-                           "El negocio producto a producto: proyectado vs real"),
+# ============================ 5) PORTAFOLIO ============================ #
+with tabs[4]:
+    st.markdown(ui.seccion(t_ui("pf_titulo"), t_ui("pf_sub")),
                 unsafe_allow_html=True)
 
     with st.expander("Agregar producto al portafolio"):
@@ -693,7 +771,7 @@ with tabs[3]:
                                     min_value=0.0, step=0.10, key="pf_a_fba")
             n_comp = a9.number_input("Precio competencia (USD, 0=sin)", value=0.0,
                                      min_value=0.0, step=0.50, key="pf_a_comp")
-            alta_ok = st.form_submit_button("Agregar al portafolio", type="primary")
+            alta_ok = st.form_submit_button(t_ui("pf_btn"), type="primary")
         if alta_ok:
             r_alta = productos.guardar(n_nombre, asin=n_asin, costo=n_costo,
                                        flete=n_flete, arancel_pct=n_aran, prep=n_prep,
@@ -774,15 +852,13 @@ with tabs[3]:
             else:
                 st.caption("Sin ventas registradas para este ASIN todavia "
                            "(registralas en Ventas o via API /webhook/sale).")
-            if st.button("Quitar del portafolio (baja logica)", key="pf_del"):
+            if st.button(t_ui("pf_del_btn"), key="pf_del"):
                 productos.desactivar(opciones[sel])
                 st.rerun()
 
-# ============================ 5) PUBLICAR ============================ #
-with tabs[4]:
-    st.markdown(ui.seccion("Publicar en Amazon — paquete completo",
-                           "Listing + fotos + precio + cantidades + proveedor + "
-                           "checklist Seller Central, en un solo documento"),
+# ============================ 6) PUBLICAR ============================ #
+with tabs[5]:
+    st.markdown(ui.seccion(t_ui("pub_titulo"), t_ui("pub_sub")),
                 unsafe_allow_html=True)
     prods_pub = productos.listar(solo_activos=True)
     opciones_pub = {"(cargar a mano)": None}
@@ -813,7 +889,7 @@ with tabs[4]:
     fuente_pub = st.radio("Keywords para el listing",
                           ["Motor propio (gratis)", "CSV Cerebro / DEMO"],
                           horizontal=True, key="pub_fuente")
-    if st.button("Armar paquete de publicacion", type="primary", key="pub_btn"):
+    if st.button(t_ui("pub_btn"), type="primary", key="pub_btn"):
         kws_pub = None
         if fuente_pub.startswith("Motor propio") and p_nombre.strip():
             with st.spinner("Investigando keywords con el motor propio..."):
@@ -897,10 +973,9 @@ with tabs[4]:
                    "'Armar paquete': sale todo listo para publicar, con fotos, "
                    "precio, cantidades y proveedor.")
 
-# ============================ 6) CAJA ============================ #
-with tabs[5]:
-    st.markdown(ui.seccion("Proyeccion realista de caja",
-                           "Con lead time, DD+7, devoluciones y techo de demanda"),
+# ============================ 7) CAJA ============================ #
+with tabs[6]:
+    st.markdown(ui.seccion(t_ui("cj_titulo"), t_ui("cj_sub")),
                 unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
     budget = c1.number_input("Capital (USD)", value=8000, min_value=0, step=500)
@@ -933,9 +1008,9 @@ with tabs[5]:
     st.dataframe(df[["mes", "vendidas", "cobrado", "sueldo", "caja", "capital_atado"]],
                  use_container_width=True, hide_index=True)
 
-# ============================ 7) VENTAS ============================ #
-with tabs[6]:
-    st.markdown(ui.seccion("Ventas y KPIs", "Registra una venta y segui el mix"),
+# ============================ 8) VENTAS ============================ #
+with tabs[7]:
+    st.markdown(ui.seccion(t_ui("vt_titulo"), t_ui("vt_sub")),
                 unsafe_allow_html=True)
     if ACTIVO:
         st.caption(f"Producto activo: **{ACTIVO.get('nombre')}** — precio y neto/unidad "
@@ -949,7 +1024,7 @@ with tabs[6]:
         netou = c4.number_input("Neto/unidad (USD)", value=float(A("neto", 6.9)), min_value=0.0, step=0.1)
         pais = c5.text_input("Pais", value="US")
         seg = c6.text_input("Segmento", value="hogar")
-        ok = st.form_submit_button("Registrar venta", type="primary")
+        ok = st.form_submit_button(t_ui("vt_btn"), type="primary")
     if ok:
         rv = analytics.registrar_venta(asin, int(unid), pventa, netou, pais=pais,
                                        segmento=seg, product_id=ACTIVO.get("id"),
@@ -978,11 +1053,10 @@ with tabs[6]:
     else:
         st.caption("Aun no hay ventas registradas.")
 
-# ============================ 8) INVERSORES ============================ #
-with tabs[7]:
+# ============================ 9) INVERSORES ============================ #
+with tabs[8]:
     from agents.capital_planner import escenario_inversor
-    st.markdown(ui.seccion("Escenario con inversor",
-                "Comision = % variable de facturacion sobre la parte que financia su capital"),
+    st.markdown(ui.seccion(t_ui("iv_titulo"), t_ui("iv_sub")),
                 unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
     cap_propio = c1.number_input("Capital propio (USD)", value=10000, min_value=0, step=500, key="iv_cap")
@@ -1074,12 +1148,11 @@ with tabs[7]:
                                                      productos_financia=float(prods_fin)),
                        file_name="pitch_inversor_fba.html", mime="text/html")
 
-# ============================ 9) PLAN ============================ #
-with tabs[8]:
+# ============================ 10) PLAN ============================ #
+with tabs[9]:
     from agents.portafolio import interes_compuesto, recomendar_portafolio
 
-    st.markdown(ui.seccion("Recomendacion de portafolio",
-                "Cuantos productos, con que capital y en que mes llegas a tu objetivo"),
+    st.markdown(ui.seccion(t_ui("pl_titulo"), t_ui("pl_sub")),
                 unsafe_allow_html=True)
     p1, p2, p3 = st.columns(3)
     objetivo = p1.number_input("Objetivo de ingreso (USD/mes)", value=2500, min_value=0, step=100, key="pf_obj")
@@ -1179,9 +1252,9 @@ with tabs[8]:
                "para ver tu curva real; la exponencial pura solo aplica a instrumentos "
                "financieros sin tope de colocacion.")
 
-# ============================ 10) ALERTAS ============================ #
-with tabs[9]:
-    st.markdown(ui.seccion("Alertas", "Sin SMTP, quedan en dry-run (registradas, no enviadas)"),
+# ============================ 11) ALERTAS ============================ #
+with tabs[10]:
+    st.markdown(ui.seccion(t_ui("al_titulo"), t_ui("al_sub")),
                 unsafe_allow_html=True)
     outbox = db.rows("SELECT fecha,asunto,para,enviado FROM alerts_outbox ORDER BY id DESC LIMIT 50")
     if outbox:
@@ -1192,14 +1265,13 @@ with tabs[9]:
     else:
         st.caption("Sin alertas todavia.")
 
-# ============================ 11) CONFIG ============================ #
-with tabs[10]:
-    st.markdown(ui.seccion("Configuracion y conexiones",
-                           "Estado actual y verificacion en vivo"), unsafe_allow_html=True)
+# ============================ 12) CONFIG ============================ #
+with tabs[11]:
+    st.markdown(ui.seccion(t_ui("cfg_titulo"), t_ui("cfg_sub")), unsafe_allow_html=True)
     st.json(config.estado_config())
-    st.markdown(ui.seccion("Probar conexiones"), unsafe_allow_html=True)
+    st.markdown(ui.seccion(t_ui("cfg_test_btn")), unsafe_allow_html=True)
     asin_test = st.text_input("ASIN para probar Keepa (opcional, gasta 1 token)", value="")
-    if st.button("Probar conexiones", type="primary"):
+    if st.button(t_ui("cfg_test_btn"), type="primary"):
         import test_conexiones as tc
         for f in tc.verificar_todo(asin_test.strip() or None):
             if f["estado"] == tc.OK:
@@ -1222,7 +1294,7 @@ with tabs[10]:
                 "sobre tus números; **no** busca productos (eso es Keepa). Recomendado: "
                 "**Claude** (mejor razonamiento). Pegás solo la clave del que elijas.")
     _provs = ["claude", "openai", "gemini"]
-    _prov_label = {"claude": "Claude / Anthropic — recomendada ★",
+    _prov_label = {"claude": "Claude / Anthropic — recomendada",
                    "openai": "OpenAI (ChatGPT)", "gemini": "Google Gemini"}
     with st.form("form_claves"):
         in_prov = st.selectbox("Proveedor de IA", _provs,
@@ -1247,7 +1319,7 @@ with tabs[10]:
                               key="cf_smtp_pass")
         in_to = k5.text_input("ALERT_TO (destino de alertas)", value=config.ALERT_TO,
                               key="cf_alert_to")
-        guardar_claves = st.form_submit_button("Guardar", type="primary")
+        guardar_claves = st.form_submit_button(t_ui("cfg_save_btn"), type="primary")
     if guardar_claves:
         r_env = config.guardar_env(KEEPA_API_KEY=in_keepa, ANTHROPIC_API_KEY=in_anth,
                                    OPENAI_API_KEY=in_openai, GEMINI_API_KEY=in_gemini,
@@ -1266,10 +1338,9 @@ with tabs[10]:
     st.caption("Helium 10 no tiene API en Platinum: keywords por CSV de Cerebro. "
                "Keepa es la fuente programatica de precio + BSR.")
 
-# ============================ 12) ASISTENTE IA ============================ #
-with tabs[11]:
-    st.markdown(ui.seccion("Asistente IA",
-                           "Pregunta sobre tus metricas, tu portafolio o la estrategia FBA"),
+# ============================ 13) ASISTENTE IA ============================ #
+with tabs[12]:
+    st.markdown(ui.seccion(t_ui("ia_titulo"), t_ui("ia_sub")),
                 unsafe_allow_html=True)
     est = asistente.estado()
     _nom_prov = {"claude": "Claude", "openai": "OpenAI", "gemini": "Gemini"}
@@ -1308,17 +1379,16 @@ with tabs[11]:
         st.session_state.chat_hist.append({"role": "assistant", "content": r["texto"]})
 
     if st.session_state.chat_hist:
-        if st.button("Limpiar conversacion", key="chat_clear"):
+        if st.button(t_ui("ia_clear_btn"), key="chat_clear"):
             st.session_state.chat_hist = []
             st.rerun()
     st.caption("El asistente usa tus datos reales (ventas, portafolio) como contexto y "
                "respeta los principios honestos del sistema. No es consejo financiero "
                "garantizado: el retorno FBA es variable.")
 
-# ============================ 13) AYUDA ============================ #
-with tabs[12]:
-    st.markdown(ui.seccion("Ayuda y glosario",
-                           "Los conceptos de FBA y finanzas que usa el sistema, en criollo"),
+# ============================ 14) AYUDA ============================ #
+with tabs[13]:
+    st.markdown(ui.seccion(t_ui("ayu_titulo"), t_ui("ayu_sub")),
                 unsafe_allow_html=True)
 
     st.markdown(ui.seccion("Como empezar (3 pasos)"), unsafe_allow_html=True)
@@ -1358,6 +1428,66 @@ with tabs[12]:
         "(USD 1.000-2.000) antes de escalar.")
 
     st.divider()
+    st.markdown(ui.seccion("Publicidad en Amazon (Amazon Advertising / PPC)",
+                           "Marco general para entender el terreno — el sistema no "
+                           "gestiona campañas, te ayuda a leer los números"),
+                unsafe_allow_html=True)
+    st.markdown(
+        "Se hace desde tu Seller Central, en **Advertising -> Campaign Manager**. "
+        "Solo podés promocionar productos que ganen la Buy Box.\n\n"
+        "**Los 3 tipos principales de campaña:**\n"
+        "- **Sponsored Products** — la más importante y por donde arranca todo el "
+        "mundo. Promociona un producto puntual en resultados de búsqueda y fichas "
+        "de competidores. La que mejor convierte para empezar.\n"
+        "- **Sponsored Brands** — banners con tu logo y varios productos. Requiere "
+        "Brand Registry (marca registrada). Se deja para más adelante.\n"
+        "- **Sponsored Display** — retargeting a gente que vio tu producto u otros "
+        "similares. Secundaria al inicio.\n\n"
+        "**Cómo se estructura una campaña de Sponsored Products:**\n"
+        "- **Automática**: Amazon elige las keywords por vos según tu listing. "
+        "Ideal al principio para descubrir qué términos convierten de verdad.\n"
+        "- **Manual**: vos elegís las keywords y cuánto pagás por cada una. Se usa "
+        "después, con los datos que sacaste de la automática.\n\n"
+        "**Estrategia típica de lanzamiento:** arrancás con una automática para "
+        "juntar datos -> ves qué keywords te trajeron ventas reales -> esas las "
+        "pasás a una manual con más presupuesto, y las que no rinden las cortás o "
+        "las ponés como negativas.\n\n"
+        "**Cómo se paga:** por clic (CPC), no por venta. Definís un presupuesto "
+        "diario y una puja máxima por clic — sale de tu bolsillo antes de cobrar "
+        "la venta.\n\n"
+        "**El número que tenés que vigilar siempre: el ACoS** (gasto en ads / "
+        "facturación que generó). Es tu termómetro de si la pauta es rentable o "
+        "te está comiendo el margen.")
+    st.info("Este cockpit no configura ni corre campañas (eso se hace en Seller "
+            "Central). Lo que sí hace: calcular cuánto ACoS podés bancar sin "
+            "quedar en rojo, según el margen real de tu pricing.")
+    ac1, ac2, ac3 = st.columns(3)
+    ac_margen = ac1.number_input("Margen actual del producto (%)",
+                                 value=float(A("margen", 30.0)), min_value=0.0,
+                                 step=0.5, key="ac_margen",
+                                 help="Precargado del producto activo si hay uno elegido "
+                                      "en el sidebar; lo podés cambiar igual.")
+    ac_min = ac2.number_input("Margen minimo que querés mantener (%)",
+                              value=float(config.UMBRAL_AMARILLO), min_value=0.0,
+                              step=0.5, key="ac_min",
+                              help="Por defecto, el umbral 'amarillo' (no caer a rojo).")
+    ac_max = acos_bancable(ac_margen, ac_min)
+    ac3.markdown(ui.kpi("ACoS máximo bancable", f"{ac_max}%",
+                        f"con margen {ac_margen:.1f}% y piso {ac_min:.1f}%", hero=True),
+                unsafe_allow_html=True)
+    _precio_act, _techo_act = A("precio", None), A("techo_demanda", None)
+    if _precio_act and _techo_act:
+        gasto_mes = round(ac_max / 100.0 * _precio_act * _techo_act, 2)
+        st.caption(f"Con el precio (USD {_precio_act:.2f}) y el techo de demanda "
+                   f"({int(_techo_act)} u/mes) del producto activo, eso equivale a un "
+                   f"presupuesto de ads de hasta ~USD {gasto_mes:,.0f}/mes sin perforar "
+                   "el margen minimo elegido.")
+    st.caption("El calculo asume que el margen de arriba ya viene con el ACoS supuesto "
+              f"del sistema ({config.ACOS_PCT:.0f}%, ver Config): cada punto de ACoS de "
+              "más resta un punto de margen. Es una guía para decidir presupuesto, no "
+              "una promesa de resultado — el ACoS real depende de tu nicho y tu listing.")
+
+    st.divider()
     st.markdown(ui.seccion("Contacto y soporte",
                            "Escribinos tu consulta — se abre tu correo con todo completado"),
                 unsafe_allow_html=True)
@@ -1371,7 +1501,7 @@ with tabs[12]:
         ct_pregunta = st.text_area("Tu pregunta", height=110,
                                    placeholder="Contanos en qué te podemos ayudar...",
                                    key="ct_pregunta")
-        ct_enviar = st.form_submit_button("Enviar consulta", type="primary")
+        ct_enviar = st.form_submit_button(t_ui("ayu_contacto_btn"), type="primary")
     if ct_enviar:
         if not ct_pregunta.strip():
             st.warning("Escribí tu pregunta antes de enviar.")
