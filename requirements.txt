@@ -8,3 +8,4 @@ httpx
 anthropic     # asistente IA + redaccion de listings con Claude (modo offline si no hay clave)
 pillow        # generador de creatividades (banner + infografia), sin costo ni API
 pywebview    # app de escritorio: ventana nativa que envuelve la UI (desktop.py)
+python-multipart
