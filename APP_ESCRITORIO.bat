@@ -32,19 +32,17 @@ set PYTHONIOENCODING=utf-8
 set PYTHONUTF8=1
 
 echo  Preparando MV FBA IA (la primera vez instala dependencias)...
-"!PYTHON!" -c "import streamlit,pandas,webview" >nul 2>&1
+rem El panel nuevo corre sobre FastAPI/uvicorn dentro de una ventana nativa
+rem (webview + Edge WebView2); multipart es para subir CSV de Cerebro.
+"!PYTHON!" -c "import fastapi,uvicorn,pandas,webview,multipart" >nul 2>&1
 if errorlevel 1 "!PYTHON!" -m pip install --user -r requirements.txt
-"!PYTHON!" -c "import streamlit,pandas" >nul 2>&1
+"!PYTHON!" -c "import fastapi,uvicorn,pandas" >nul 2>&1
 if errorlevel 1 (
     echo  [ERROR] No se pudieron instalar las dependencias. Revisa tu internet y reintenta.
     "!PYTHON!" -m pip install --user -r requirements.txt
     pause
     exit /b 1
 )
-rem En Python muy nuevo (3.13/3.14), altair viejo revienta los graficos
-rem ("TypedDict ... closed"). Si importar altair falla, lo actualizamos.
-"!PYTHON!" -c "import altair" >nul 2>&1
-if errorlevel 1 "!PYTHON!" -m pip install --user -U typing_extensions "altair>=5.5.0" >nul 2>&1
 "!PYTHON!" core\db.py >nul 2>&1
 
 rem pythonw = sin ventana de consola. La app abre en su ventana nativa y este
