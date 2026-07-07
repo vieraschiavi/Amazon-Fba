@@ -185,6 +185,17 @@ def test_motor_keywords_demo():
     _igual(r.json(), directo)
 
 
+def test_demanda_nativa_demo():
+    r = cliente.get("/api/demanda", params={"keyword": "bamboo kitchen", "demo": True})
+    assert r.status_code == 200
+    d = r.json()
+    assert d["ok"] is True
+    assert 0 <= d["demanda_score"] <= 100
+    assert d["nivel"] in ("MUY ALTA", "ALTA", "MEDIA", "BAJA", "NULA")
+    from data import demanda_nativa
+    _igual(d, demanda_nativa.estimar_demanda("bamboo kitchen", demo=True))
+
+
 def test_marketplaces():
     r = cliente.get("/api/marketplaces")
     codigos = [m["codigo"] for m in r.json()["marketplaces"]]

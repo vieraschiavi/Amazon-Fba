@@ -21,6 +21,11 @@ interface Evaluacion {
   factores: Record<string, { valor: number; detalle: string }>;
   recomendaciones: string[]; caveat: string;
 }
+interface Demanda {
+  ok: boolean; keyword: string; amplitud: number; demanda_score: number;
+  nivel: string; n_nichos: number; requests: number; nota_honesta: string;
+  mensaje?: string;
+}
 
 export function Mercado() {
   const t = useT();
@@ -32,7 +37,9 @@ export function Mercado() {
   const [precioObj, setPrecioObj] = useState(24);
   const [margen, setMargen] = useState(0);
   const [ev, setEv] = useState<{ evaluacion: Evaluacion; narrativa?: { texto: string; modo: string } } | null>(null);
+  const [demanda, setDemanda] = useState<Demanda | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  const [midiendoDemanda, setMidiendoDemanda] = useState(false);
   const [evaluando, setEvaluando] = useState(false);
 
   const explorar = async () => {
@@ -44,6 +51,16 @@ export function Mercado() {
       setRes(d);
     } catch { /* mantiene */ }
     setOcupado(false);
+  };
+
+  const medirDemanda = async () => {
+    setMidiendoDemanda(true); setDemanda(null);
+    try {
+      const d = await api.get<Demanda>(
+        `/api/demanda${qs({ keyword: kw, demo: modoDemo })}`, 90000);
+      setDemanda(d);
+    } catch { /* mantiene */ }
+    setMidiendoDemanda(false);
   };
 
   const evaluar = async () => {
@@ -69,6 +86,36 @@ export function Mercado() {
           <Boton onClick={() => void explorar()} disabled={ocupado}>{t("mk_btn")}</Boton>
         </div>
         {ocupado && <Spinner texto={t("comun.cargando")} />}
+      </Card>
+
+      {/* Demanda GRATIS sin Keepa — señal relativa por autocompletado de Amazon */}
+      <Card className="mb-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h3 className="font-bold text-[14px] text-navy-deep">Demanda del nicho — gratis, sin Keepa</h3>
+            <p className="text-[12px] text-muted">Señal relativa por amplitud de autocompletado de Amazon (US$0)</p>
+          </div>
+          <Boton tipo="fantasma" onClick={() => void medirDemanda()} disabled={midiendoDemanda}>
+            Medir demanda
+          </Boton>
+        </div>
+        {midiendoDemanda && <Spinner texto="Consultando el autocompletado de Amazon (gratis)…" />}
+        {demanda && (demanda.ok ? (
+          <div className="mt-3">
+            <FilaKpis>
+              <Kpi label="Demanda relativa" valor={`${demanda.demanda_score}/100`}
+                   sub={demanda.nivel} hero
+                   tono={demanda.demanda_score >= 65 ? "good" : demanda.demanda_score >= 40 ? "warn" : "bad"} />
+              <Kpi label="Amplitud long-tail" valor={num(demanda.amplitud)}
+                   sub="variantes reales que busca la gente" />
+              <Kpi label="Nichos candidatos" valor={num(demanda.n_nichos)} sub="sub-nichos detectados" />
+              <Kpi label="Costo" valor="US$0" sub={`${demanda.requests} consultas gratis`} tono="good" />
+            </FilaKpis>
+            <p className="text-[11.5px] text-muted mt-1">{demanda.nota_honesta}</p>
+          </div>
+        ) : (
+          <Alerta tipo="info">{demanda.mensaje || "Sin señal de demanda para ese término."}</Alerta>
+        ))}
       </Card>
 
       {res && (res.ok ? (

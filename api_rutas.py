@@ -43,6 +43,7 @@ from agents import tutorial
 from agents.capital_planner import escenario_inversor, proyeccion_realista
 from agents.listing import generar as generar_listing
 from agents.market_intel import market_intel
+from data import demanda_nativa
 from data import mercado as data_mercado
 from data import motor_propio
 
@@ -319,6 +320,12 @@ def investigacion_listing(i: InvestigacionIn):
     return {"motor": res,
             "listing": generar_listing(i.keyword, i.marketplace, keywords=kws,
                                        demo=i.demo)}
+
+
+@router.get("/demanda")
+def demanda(keyword: str, marketplace: str = "US", demo: bool = False):
+    """Demanda RELATIVA gratis (autocompletado Amazon, sin Keepa)."""
+    return demanda_nativa.estimar_demanda(keyword, marketplace=marketplace, demo=demo)
 
 
 @router.get("/marketplaces")
