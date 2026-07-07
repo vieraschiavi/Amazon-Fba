@@ -169,6 +169,29 @@ TEXTOS = {
                "en": "The FBA and finance concepts the system uses, in plain words",
                "pt": "Os conceitos de FBA e finanças que o sistema usa, em bom português"},
     "ayu_contacto_btn": {"es": "Enviar consulta", "en": "Send inquiry", "pt": "Enviar consulta"},
+    "ayu_tut_titulo": {"es": "Tutorial completo", "en": "Complete tutorial",
+                       "pt": "Tutorial completo"},
+    "ayu_tut_sub": {"es": "El programa entero explicado paso a paso, pestana por pestana",
+                   "en": "The whole program explained step by step, tab by tab",
+                   "pt": "O programa inteiro explicado passo a passo, aba por aba"},
+    "ayu_ia_titulo": {"es": "Dudas del programa (IA)", "en": "Program questions (AI)",
+                     "pt": "Duvidas do programa (IA)"},
+    "ayu_ia_sub": {"es": "Preguntale al asistente como usar cualquier funcion — "
+                        "responde desde el manual oficial",
+                  "en": "Ask the assistant how to use any feature — it answers "
+                        "from the official manual",
+                  "pt": "Pergunte ao assistente como usar qualquer funcao — "
+                        "responde a partir do manual oficial"},
+    "ayu_ia_input": {"es": "Escribi tu duda sobre el programa...",
+                    "en": "Type your question about the program...",
+                    "pt": "Digite sua duvida sobre o programa..."},
+    "ayu_sug_1": {"es": "Como arranco de cero?", "en": "How do I start from zero?",
+                 "pt": "Como comeco do zero?"},
+    "ayu_sug_2": {"es": "Como uso el Recomendador?", "en": "How do I use the Recommender?",
+                 "pt": "Como uso o Recomendador?"},
+    "ayu_sug_3": {"es": "Que necesito conectar en Config?", "en": "What do I connect in Settings?",
+                 "pt": "O que preciso conectar em Config?"},
+    "ayu_tip_label": {"es": "Tip", "en": "Tip", "pt": "Dica"},
 
     # ---------- sidebar (compartido en todas las pestañas) ---------- #
     "sb_demo_titulo": {"es": "Probar con un ejemplo", "en": "Try an example",

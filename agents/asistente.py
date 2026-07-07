@@ -236,15 +236,35 @@ _SYSTEM_PROGRAMA = (
 )
 
 
-def _responder_programa_offline(pregunta):
+_OFFLINE_PROGRAMA_TXT = {
+    "es": {"pre": "Modo offline (sin clave de IA). Del manual, ",
+           "post": "Para respuestas conversacionales, conecta una clave de IA en Config.",
+           "nada": "Modo offline (sin clave de IA). No encontre esa duda en el manual: "
+                   "revisa el tutorial de arriba seccion por seccion, o escribinos desde "
+                   "la seccion Contacto de esta misma pestana."},
+    "en": {"pre": "Offline mode (no AI key). From the manual, ",
+           "post": "For conversational answers, connect an AI key in Settings.",
+           "nada": "Offline mode (no AI key). I couldn't find that in the manual: "
+                   "check the tutorial above section by section, or write to us from "
+                   "the Contact section on this same tab."},
+    "pt": {"pre": "Modo offline (sem chave de IA). Do manual, ",
+           "post": "Para respostas conversacionais, conecte uma chave de IA em Config.",
+           "nada": "Modo offline (sem chave de IA). Nao encontrei essa duvida no manual: "
+                   "confira o tutorial acima secao por secao, ou escreva para nos pela "
+                   "secao Contato desta mesma aba."},
+}
+
+
+def _responder_programa_offline(pregunta, idioma="es"):
     """Fallback sin clave: busca la seccion del tutorial que mejor matchee."""
     from agents import tutorial
-    hits = tutorial.buscar(pregunta)
+    txt = _OFFLINE_PROGRAMA_TXT.get(idioma, _OFFLINE_PROGRAMA_TXT["es"])
+    hits = tutorial.buscar(pregunta, idioma)
     if not hits:
         vistos, out = set(), []
         for w in "".join(c if c.isalnum() else " " for c in pregunta.lower()).split():
             if len(w) > 3 and w not in _STOP:
-                for s in tutorial.buscar(w):
+                for s in tutorial.buscar(w, idioma):
                     if s["clave"] not in vistos:
                         vistos.add(s["clave"])
                         out.append(s)
@@ -252,20 +272,20 @@ def _responder_programa_offline(pregunta):
     if hits:
         s = hits[0]
         pasos = "\n".join(f"{i}. {p}" for i, p in enumerate(s["pasos"], 1))
-        return (f"Modo offline (sin clave de IA). Del manual, **{s['titulo']}**:\n\n"
-                f"_{s['para_que']}_\n\n{pasos}\n\n"
-                "Para respuestas conversacionales, conecta una clave de IA en Config.")
-    return ("Modo offline (sin clave de IA). No encontre esa duda en el manual: "
-            "revisa el tutorial de arriba seccion por seccion, o escribinos desde "
-            "la seccion Contacto de esta misma pestana.")
+        return (f"{txt['pre']}**{s['titulo']}**:\n\n"
+                f"_{s['para_que']}_\n\n{pasos}\n\n{txt['post']}")
+    return txt["nada"]
 
 
-def responder_programa(pregunta, historial=None, max_tokens=1000):
+_IDIOMA_NOMBRE = {"es": "espanol", "en": "ingles (English)", "pt": "portugues (Portuguese)"}
+
+
+def responder_programa(pregunta, historial=None, max_tokens=1000, idioma="es"):
     """
     Responde dudas sobre COMO USAR el programa (pestana Ayuda), con el manual
-    completo (agents/tutorial.py) como unico contexto. Mismo patron honesto que
-    responder(): con clave usa el proveedor elegido; sin clave/error cae al
-    tutorial offline. Nunca lanza.
+    completo (agents/tutorial.py) como unico contexto, en el `idioma` activo
+    del panel. Mismo patron honesto que responder(): con clave usa el
+    proveedor elegido; sin clave/error cae al tutorial offline. Nunca lanza.
     """
     from agents import tutorial
     pregunta = (pregunta or "").strip()
@@ -274,16 +294,18 @@ def responder_programa(pregunta, historial=None, max_tokens=1000):
 
     prov, clave, modelo = config.ia_provider_activo()
     if not prov:
-        return {"texto": _responder_programa_offline(pregunta), "modo": "offline"}
+        return {"texto": _responder_programa_offline(pregunta, idioma), "modo": "offline"}
     if prov == "claude":
         try:
             import anthropic  # noqa: F401
         except ImportError:
-            return {"texto": _responder_programa_offline(pregunta), "modo": "offline"}
+            return {"texto": _responder_programa_offline(pregunta, idioma), "modo": "offline"}
 
     system = (_SYSTEM_PROGRAMA
-              + "\n\n=== MANUAL COMPLETO DEL PROGRAMA ===\n"
-              + tutorial.contexto_para_ia())
+              + f"\n\nIDIOMA DEL PANEL: el usuario tiene el programa en "
+                f"{_IDIOMA_NOMBRE.get(idioma, 'espanol')} — responde en ese idioma "
+                "salvo que pregunte en otro.\n\n=== MANUAL COMPLETO DEL PROGRAMA ===\n"
+              + tutorial.contexto_para_ia(idioma))
     mensajes = []
     for m in (historial or [])[-8:]:
         rol = m.get("role")
@@ -293,13 +315,13 @@ def responder_programa(pregunta, historial=None, max_tokens=1000):
 
     try:
         texto = _DISPATCH[prov](system, mensajes, clave, modelo, max_tokens)
-        return {"texto": (texto or "").strip() or _responder_programa_offline(pregunta),
+        return {"texto": (texto or "").strip() or _responder_programa_offline(pregunta, idioma),
                 "modo": "online", "proveedor": prov}
     except Exception as e:
         nom = _NOMBRE_PROV.get(prov, prov)
         return {"texto": f"No pude consultar a {nom} ({type(e).__name__}). "
                          "Respondo desde el manual:\n\n"
-                         + _responder_programa_offline(pregunta),
+                         + _responder_programa_offline(pregunta, idioma),
                 "modo": "offline", "proveedor": prov}
 
 
