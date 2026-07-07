@@ -257,13 +257,23 @@ código:
    con el dominio final (no se agregaron todavía para no hardcodear una URL
    que iba a cambiar).
 
-## El panel (13 pestañas)
+## El panel (14 pestañas, en español/inglés/portugués)
+
+El **selector de idioma** arriba del sidebar cambia con un click las pestañas,
+encabezados, botones y el tutorial completo a **español, inglés o portugués**
+(`core/i18n.py`).
 
 1. **Investigación** — dos fuentes: el **motor propio embebido** (gratis, sin APIs
    pagas: descubre keywords y nichos reales vía el autocompletado público de Amazon,
    la misma señal que explotan Helium 10/Jungle Scout) o CSV de Cerebro (suma
    volúmenes de búsqueda). Score de nicho → veredicto → listing.
-2. **Mercado** — **productos estrella por rango de precios** (Keepa Product Finder:
+2. **Recomendador** — el modo **proactivo**: sin escribir ninguna keyword, escanea
+   categorías FBA probadas con el motor propio, filtra por tu rango de precio y
+   devuelve una **lista rankeada de oportunidades** (demanda, competencia, precio)
+   usando la misma fórmula auditable del asesor de éxito. Con Keepa conectada se
+   afina con ventas estimadas reales; sin clave funciona igual, gratis
+   (`agents/recomendador.py`).
+3. **Mercado** — **productos estrella por rango de precios** (Keepa Product Finder:
    precio, BSR, ventas estimadas, rating y reseñas de cada competidor; sin clave,
    links directos a Amazon filtrados por precio), señales de competencia (barrera
    de reseñas, hueco de calidad), **proveedores mejor rankeados con link directo**
@@ -275,35 +285,41 @@ código:
    arancel, prep, comisión Amazon, FBA fee, publicidad) hasta la **ganancia neta
    para vos**, con ROI, tiempo de venta al techo y el escenario sostenido a 12
    meses reciclando capital.
-3. **Pricing** — costos → precio sugerido, margen, ROI, semáforo. Botón
+4. **Pricing** — costos → precio sugerido, margen, ROI, semáforo. Botón
    **Guardar en portafolio** para pasar del cálculo a la gestión.
-4. **Portafolio** — el corazón de la gestión: todos tus productos persistidos con
+5. **Portafolio** — el corazón de la gestión: todos tus productos persistidos con
    **análisis financiero de cada uno** (unit economics, capital en pipeline, sueldo
    en meseta proyectado, proyección de caja a 12 meses y **ventas reales** cruzadas
    por ASIN). Consolidado del negocio + export CSV.
-5. **Publicar** — el paquete completo para salir a vender: listing (título, bullets,
+6. **Publicar** — el paquete completo para salir a vender: listing (título, bullets,
    descripción, backend keywords), **brief de las 7 fotos** que Amazon espera,
    **banner hero + infografía de beneficios generados como imagen PNG real**
    (Pillow, sin costo ni API — paleta de marca, descargables), precio y unit
    economics, **cantidades** (orden de prueba y primera compra al techo),
    **checklist de proveedor serio + RFQ en inglés** listo para Alibaba, y el paso
    a paso de Seller Central. Descargable como HTML imprimible.
-6. **Caja** — proyección realista con lead time, DD+7, devoluciones y techo de demanda.
-7. **Ventas** — registro de ventas y KPIs (facturación, neto, margen, mix).
-8. **Inversores** — escenarios con capital externo y pitch HTML descargable.
-9. **Plan** — cuántos productos necesitás para tu objetivo de ingreso, **cuántas horas por
-   semana necesitás REALMENTE** (desglosado por tarea, distinguiendo lo que el bot y las
-   alertas ya automatizan) + reinversión compuesta.
-10. **Alertas** — outbox de emails (dry-run sin SMTP).
-11. **Config** — estado de conexiones, prueba en vivo y **guardado seguro de claves**.
-12. **Asistente IA (multi-proveedor, BYOK)** — chat que responde sobre tus métricas, tu
+7. **Caja** — proyección realista con lead time, DD+7, devoluciones y techo de demanda.
+8. **Ventas** — registro de ventas y KPIs (facturación, neto, margen, mix).
+9. **Inversores** — escenarios con capital externo y pitch HTML descargable.
+10. **Plan** — cuántos productos necesitás para tu objetivo de ingreso, **cuántas horas por
+    semana necesitás REALMENTE** (desglosado por tarea, distinguiendo lo que el bot y las
+    alertas ya automatizan) + reinversión compuesta.
+11. **Alertas** — outbox de emails (dry-run sin SMTP).
+12. **Config** — estado de conexiones, prueba en vivo y **guardado seguro de claves**.
+13. **Asistente IA (multi-proveedor, BYOK)** — chat que responde sobre tus métricas, tu
     portafolio y la estrategia FBA, usando tus **datos reales** como contexto. Elegís el
     proveedor en Config: **Claude (recomendada)**, OpenAI (ChatGPT) o Gemini — pegás la
     clave del que elijas. Sin clave, modo offline desde el glosario (nunca rompe). El
     asistente da **consejo**: no busca productos (los datos de mercado son de Keepa, no de
     un LLM — un modelo de lenguaje los inventaría).
-13. **Ayuda** — guía de inicio en 3 pasos + **glosario** buscable de FBA y finanzas
-    (ROI, BSR, landed cost, techo de demanda, ACoS…).
+14. **Ayuda** — **tutorial completo** del programa paso a paso (13 secciones, en el
+    idioma elegido — `agents/tutorial.py`), **chat "Dudas del programa (IA)"** que
+    responde cómo usar cualquier función desde el manual oficial (online con tu clave
+    de IA, offline devuelve la sección del tutorial que corresponde), **glosario**
+    buscable de FBA y finanzas (ROI, BSR, landed cost, techo de demanda, ACoS…),
+    **guía de Amazon Advertising (PPC)** — Sponsored Products/Brands/Display,
+    automática vs. manual, CPC — con calculadora de **ACoS máximo bancable**
+    conectada al margen real de tu pricing, y el formulario de contacto/soporte.
 
 ## Motor propio vs herramientas pagas (honesto)
 
