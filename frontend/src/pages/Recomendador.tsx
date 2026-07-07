@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/cliente";
 import type { Oportunidad } from "../api/tipos";
+import { ComparadorNichos } from "../components/ComparadorNichos";
 import { Alerta, Badge, Boton, CampoNumero, Card, FilaKpis, Kpi, Seccion, Selector, Spinner, Tabla, usd, num } from "../components/ui";
 import { useT } from "../i18n";
 import { useApp } from "../stores/app";
@@ -89,6 +90,21 @@ export function Recomendador() {
       ) : (
         <Alerta tipo="info">{res.mensaje}</Alerta>
       ))}
+
+      {/* Comparador cara a cara: precargado con los mejores nichos del escaneo */}
+      <Card className="mt-4">
+        <h3 className="font-bold text-[14px] text-navy-deep">Comparar nichos cara a cara (gratis)</h3>
+        <p className="text-[12px] text-muted mb-3">
+          Medí la demanda relativa de varios candidatos lado a lado — los del escaneo
+          vienen precargados, o escribí los tuyos.
+        </p>
+        <ComparadorNichos
+          key={res?.ok ? res.oportunidades.map((o) => o.nicho).join("|") : "vacio"}
+          inicial={res?.ok
+            ? res.oportunidades.slice(0, 4).map((o) => o.nicho).join(", ")
+            : ""}
+        />
+      </Card>
     </>
   );
 }
