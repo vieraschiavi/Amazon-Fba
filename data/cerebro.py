@@ -84,23 +84,38 @@ MARKETPLACE = _env("CEREBRO_MARKETPLACE", "US")
 
 
 # --------------------------------------------------------------------------- #
-# 1) ESQUEMA DE COLUMNAS — alias reales del export Cerebro (ingles / espaniol)
+# 1) ESQUEMA DE COLUMNAS — alias reales de export (ingles / espaniol).
+# Soporta el CSV de Helium 10 Cerebro Y el de Jungle Scout Keyword Scout: sus
+# columnas se llaman distinto (JS usa "Estimated Exact Search Volume",
+# "Competitor Products", etc.) pero mapean a los mismos campos. Asi el usuario
+# sube el export de CUALQUIERA de las dos herramientas y funciona igual.
 # --------------------------------------------------------------------------- #
 COLUMN_ALIASES = {
-    "keyword": ["keyword phrase", "keyword", "frase clave", "palabra clave"],
-    "search_volume": ["search volume", "volumen de busqueda", "volumen de búsqueda"],
+    "keyword": ["keyword phrase", "keyword", "frase clave", "palabra clave",
+                "search terms", "keywords"],
+    "search_volume": ["search volume", "volumen de busqueda", "volumen de búsqueda",
+                      # Jungle Scout Keyword Scout:
+                      "estimated exact search volume", "exact search volume",
+                      "30 day search volume", "search volume (exact)",
+                      "volumen de búsqueda exacto", "volumen de busqueda exacto",
+                      "broad search volume"],
     "trend_pct": ["search volume trend", "tendencia del volumen",
-                  "tendencia del volumen de búsquedas", "search volume trend (%)"],
+                  "tendencia del volumen de búsquedas", "search volume trend (%)",
+                  "trend", "search volume trend 90 days"],
     "cerebro_iq": ["cerebro iq score", "puntuacion cerebro iq",
                    "puntuación cerebro iq", "cerebro iq"],
-    "competing": ["competing products", "productos de la competencia"],
-    "cpr": ["cpr"],
+    "competing": ["competing products", "productos de la competencia",
+                  # Jungle Scout:
+                  "competitor products", "competitor count", "competing products count"],
+    "cpr": ["cpr", "recommended giveaway", "giveaways to page 1"],
     "title_density": ["title density", "densidad de titulos", "densidad de títulos"],
     "sponsored_asins": ["sponsored asins", "asin patrocinados"],
-    "organic_rank": ["organic rank", "posicion organica", "posición orgánica"],
+    "organic_rank": ["organic rank", "posicion organica", "posición orgánica",
+                     "organic rank (relative)"],
     "sponsored_rank": ["sponsored rank", "posicion patrocinada", "posición patrocinada"],
     "keyword_sales": ["keyword sales", "ventas por palabras clave",
-                      "ventas por palabra clave"],
+                      "ventas por palabra clave", "recommended promotions",
+                      "estimated sales"],
     "match_type": ["match type", "tipo de coincidencia"],
     "word_count": ["word count", "recuento de palabras"],
 }
@@ -185,8 +200,9 @@ def parse_cerebro_csv(path: str) -> list:
         m = _resolver_columnas(reader.fieldnames)
         if "keyword" not in m or "search_volume" not in m:
             raise ValueError(
-                "El CSV no parece export de Cerebro: faltan 'Keyword Phrase' "
-                "y/o 'Search Volume'. Columnas vistas: "
+                "El CSV no parece un export de keywords de Helium 10 Cerebro ni de "
+                "Jungle Scout: faltan la columna de keyword y/o la de volumen de "
+                "busqueda. Columnas vistas: "
                 + ", ".join(h for h in reader.fieldnames if h)
             )
         por_kw = {}

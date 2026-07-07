@@ -81,6 +81,40 @@ export function Config() {
         )}
       </Card>
 
+      <Card className="mb-5">
+        <h3 className="font-bold text-[14px] mb-1 text-navy-deep">Fuentes de datos de mercado</h3>
+        <p className="text-[12px] text-muted mb-3">
+          El sistema funciona 100% gratis con el motor propio. Estas fuentes premium
+          son OPCIONALES — si ya pagás alguna, la app la usa para potenciar los datos.
+        </p>
+        <div className="flex flex-col gap-2.5">
+          <div className="flex items-start gap-3 border border-line rounded-xl p-3">
+            <Badge texto="GRATIS" tono="verde" />
+            <div className="text-[13px]">
+              <b>Motor propio + demanda nativa</b> — keywords y demanda relativa por el
+              autocompletado de Amazon. Incluido, sin límite, US$0. Ya activo.
+            </div>
+          </div>
+          <div className="flex items-start gap-3 border border-line rounded-xl p-3">
+            <Badge texto="API" tono="navy" />
+            <div className="text-[13px]">
+              <b>Keepa (~19 €/mes)</b> — ventas estimadas reales (BSR→ventas) y precio
+              histórico, automático. Pegá tu <b>KEEPA_API_KEY</b> abajo y se conecta solo.
+              El plan API (~19 €) es más barato que el plan Data (~49 US$).
+            </div>
+          </div>
+          <div className="flex items-start gap-3 border border-line rounded-xl p-3">
+            <Badge texto="CSV" tono="amarillo" />
+            <div className="text-[13px]">
+              <b>Helium 10 (Cerebro) o Jungle Scout (Keyword Scout)</b> — volúmenes de
+              búsqueda reales. No exponen API para tu plan, así que el camino es
+              exportar el CSV (botón «Export Data» / «Export») y subirlo en la pestaña
+              <b> Investigación</b>. La app acepta el formato de ambas herramientas.
+            </div>
+          </div>
+        </div>
+      </Card>
+
       <Card>
         <h3 className="font-bold text-[14px] mb-3 text-navy-deep">API keys</h3>
         <div className="grid md:grid-cols-2 gap-3">

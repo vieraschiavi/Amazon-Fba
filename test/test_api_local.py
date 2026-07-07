@@ -185,6 +185,42 @@ def test_motor_keywords_demo():
     _igual(r.json(), directo)
 
 
+def test_demanda_nativa_demo():
+    r = cliente.get("/api/demanda", params={"keyword": "bamboo kitchen", "demo": True})
+    assert r.status_code == 200
+    d = r.json()
+    assert d["ok"] is True
+    assert 0 <= d["demanda_score"] <= 100
+    assert d["nivel"] in ("MUY ALTA", "ALTA", "MEDIA", "BAJA", "NULA")
+    from data import demanda_nativa
+    _igual(d, demanda_nativa.estimar_demanda("bamboo kitchen", demo=True))
+
+
+def test_demanda_comparar_demo():
+    r = cliente.post("/api/demanda/comparar",
+                     json={"keywords": ["bamboo kitchen", "yoga mat", "dog bed"],
+                           "demo": True})
+    assert r.status_code == 200
+    d = r.json()
+    assert d["ok"] is True and len(d["ranking"]) == 3
+    # viene ordenado desc por score
+    scores = [x["demanda_score"] for x in d["ranking"]]
+    assert scores == sorted(scores, reverse=True)
+
+
+def test_cerebro_acepta_jungle_scout_csv(tmp_path=None):
+    # el parser de CSV debe aceptar columnas de Jungle Scout, no solo Helium 10
+    from data.cerebro import parse_cerebro_csv
+    import tempfile
+    d = tempfile.mkdtemp()
+    js = os.path.join(d, "js.csv")
+    with open(js, "w", encoding="utf-8") as f:
+        f.write("Keyword,Estimated Exact Search Volume,Competitor Products\n"
+                "yoga mat,45000,1200\n")
+    kws = parse_cerebro_csv(js)
+    assert len(kws) == 1 and kws[0].search_volume == 45000.0
+
+
 def test_marketplaces():
     r = cliente.get("/api/marketplaces")
     codigos = [m["codigo"] for m in r.json()["marketplaces"]]
