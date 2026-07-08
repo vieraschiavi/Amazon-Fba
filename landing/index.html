@@ -478,10 +478,9 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
       <div class="klabel" data-t="pay.label">Medios de pago</div>
       <p style="color:var(--slate);font-size:14.5px;margin:0" data-t="pay.sub">Elegí como pagar. La descarga con tu licencia se habilita apenas se confirma el pago.</p>
       <div class="pay-row">
-        <div class="pay-chip"><span class="sw" style="background:#00b1ea"></span>MercadoPago</div>
-        <div class="pay-chip"><span class="sw" style="background:#635bff"></span><span data-t="pay.card">Tarjeta de crédito/débito</span></div>
-        <div class="pay-chip"><span class="sw" style="background:#152a63"></span><span data-t="pay.wire">Transferencia bancaria</span></div>
+        <div class="pay-chip"><span class="sw" style="background:#00b1ea"></span><b data-t="pay.mp">Procesado por MercadoPago</b></div>
       </div>
+      <p style="color:var(--slate);font-size:13px;margin:8px 0 0" data-t="pay.mpsub">Un solo checkout: elegís tarjeta de crédito/débito o transferencia bancaria adentro de MercadoPago.</p>
       <div class="flow">
         <div class="st"><div class="k" data-t="pay.step1k">Paso 1</div><b data-t="pay.step1b">Elegís tu plan</b><span data-t="pay.step1s">Y el medio de pago</span></div>
         <div class="ar">→</div>
@@ -655,6 +654,7 @@ const I18N = {
     "pricing.ia.name":"Pro IA · todo incluido","pricing.ia.alt":"IA embebida con créditos",
     "pricing.ia.f1":"Todo lo del plan Pro","pricing.ia.f2":"Asistente IA incluido (con tope justo)","pricing.ia.f3":"Sin configurar ninguna clave","pricing.ia.f4":"Soporte prioritario",
     "pay.label":"Medios de pago","pay.sub":"Elegí como pagar. La descarga con tu licencia se habilita apenas se confirma el pago. Precios en USD de referencia; MercadoPago cobra en pesos uruguayos (UYU) al tipo de cambio del día.",
+    "pay.mp":"Procesado por MercadoPago","pay.mpsub":"Un solo checkout: elegís tarjeta de crédito/débito o transferencia bancaria adentro de MercadoPago.",
     "pay.step1k":"Paso 1","pay.step1b":"Elegís tu plan","pay.step1s":"Y el medio de pago",
     "pay.step2k":"Paso 2","pay.step2b":"Pagás seguro","pay.step2s":"MercadoPago, tarjeta o transferencia",
     "pay.step3k":"Paso 3","pay.step3b":"Recibís la licencia","pay.step3s":"Por email, al instante",
@@ -720,6 +720,7 @@ const I18N = {
     "pricing.ia.name":"Pro AI · all-inclusive","pricing.ia.alt":"Embedded AI with credits",
     "pricing.ia.f1":"Everything in Pro","pricing.ia.f2":"AI assistant included (fair monthly cap)","pricing.ia.f3":"No keys to configure","pricing.ia.f4":"Priority support",
     "pay.label":"Payment methods","pay.sub":"Choose how to pay. Your download and license unlock as soon as payment is confirmed. Prices in USD are a reference; MercadoPago charges in Uruguayan pesos (UYU) at the day's exchange rate.",
+    "pay.mp":"Processed by MercadoPago","pay.mpsub":"One checkout: pick credit/debit card or bank transfer inside MercadoPago.",
     "pay.step1k":"Step 1","pay.step1b":"Pick your plan","pay.step1s":"And payment method",
     "pay.step2k":"Step 2","pay.step2b":"Pay securely","pay.step2s":"MercadoPago, card or transfer",
     "pay.step3k":"Step 3","pay.step3b":"Get your license","pay.step3s":"By email, instantly",
@@ -785,6 +786,7 @@ const I18N = {
     "pricing.ia.name":"Pro IA · tudo incluído","pricing.ia.alt":"IA embutida com créditos",
     "pricing.ia.f1":"Tudo do plano Pro","pricing.ia.f2":"Assistente de IA incluído (com limite justo)","pricing.ia.f3":"Sem configurar nenhuma chave","pricing.ia.f4":"Suporte prioritário",
     "pay.label":"Formas de pagamento","pay.sub":"Escolha como pagar. O download com sua licença libera assim que o pagamento é confirmado. Preços em USD são referência; o MercadoPago cobra em pesos uruguaios (UYU) na cotação do dia.",
+    "pay.mp":"Processado pelo MercadoPago","pay.mpsub":"Um único checkout: escolha cartão de crédito/débito ou transferência bancária dentro do MercadoPago.",
     "pay.step1k":"Passo 1","pay.step1b":"Escolha seu plano","pay.step1s":"E a forma de pagamento",
     "pay.step2k":"Passo 2","pay.step2b":"Pague com segurança","pay.step2s":"MercadoPago, cartão ou transferência",
     "pay.step3k":"Passo 3","pay.step3b":"Receba a licença","pay.step3s":"Por email, na hora",
