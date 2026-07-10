@@ -22,11 +22,18 @@ import crypto from "crypto";
 import { aplicarCors, clienteValido } from "./_seguridad.js";
 import { crearOrden, paypalConfigurado } from "./_paypal.js";
 import { guardarUtm } from "./_atribucion.js";
+import { PACKS_RECARGA } from "./_creditosia.js";
 
+// Los packs de recarga de creditos (ver api/_creditosia.js) se suman a los
+// planes de licencia como un "plan" mas — checkout.js no necesita saber que
+// son creditos, solo el titulo y el precio; api/licencia.js es quien decide
+// que hacer con cada uno al confirmar el pago.
 const PLANES = {
   starter: { titulo: "MV FBA IA — Starter (Celular)", precio: 29 },
   pro:     { titulo: "MV FBA IA — Pro (PC + Android)", precio: 129 },
-  ia:      { titulo: "MV FBA IA — Pro IA (todo incluido)", precio: 34 },
+  ...Object.fromEntries(
+    Object.entries(PACKS_RECARGA).map(([id, p]) => [id, { titulo: p.titulo, precio: p.precio }])
+  ),
 };
 
 export default async function handler(req, res) {

@@ -7,10 +7,15 @@ Responde preguntas del negocio, las metricas y la estrategia FBA. Se apoya en lo
 datos REALES del sistema (KPIs de ventas, portafolio, config) como contexto, y en
 el glosario para el modo offline. No inventa numeros: el contexto se arma de la DB.
 
-Dos caminos (mismo patron honesto que agents/listing.py):
-  - Con ANTHROPIC_API_KEY + SDK anthropic -> responde Claude (modelo config.MODEL_OPUS).
-  - Sin clave / sin SDK / si falla -> modo OFFLINE: responde desde el glosario y
-    guia al usuario a conectar la clave en la pestana Config. Nunca rompe el panel.
+Tres caminos, en orden (mismo patron honesto que agents/listing.py):
+  - Con ANTHROPIC_API_KEY (u otra clave propia) + SDK -> responde con esa clave
+    (BYOK, gratis para el negocio, ilimitado para el usuario).
+  - Sin clave propia pero con una licencia activa: cae al asistente COMPARTIDO
+    (la clave de Claude vive en el servidor) usando el saldo de creditos de la
+    cuenta (ver core.licencia.preguntar_ia_compartida / api/_creditosia.js).
+  - Sin clave propia, sin licencia, o sin creditos -> modo OFFLINE: responde
+    desde el glosario y guia al usuario a conectar una clave o recargar
+    creditos. Nunca rompe el panel.
 """
 import os
 import sys
@@ -85,21 +90,36 @@ _NOMBRE_PROV = {"claude": "Claude", "openai": "OpenAI (ChatGPT)", "gemini": "Gem
 
 
 def estado():
-    """Estado del asistente para el panel: online (proveedor elegido) u offline."""
+    """Estado del asistente para el panel: online (clave propia o creditos
+    compartidos) u offline."""
     prov, clave, modelo = config.ia_provider_activo()
-    if not prov:
-        return {"ok": False, "modo": "offline", "proveedor": None,
-                "mensaje": "Sin clave de IA: respondo desde el glosario. Elegí un "
-                           "proveedor (Claude recomendado) y pegá tu clave en Config."}
-    if prov == "claude":
-        try:
-            import anthropic  # noqa: F401
-        except ImportError:
-            return {"ok": False, "modo": "offline", "proveedor": "claude",
-                    "mensaje": "Falta el paquete 'anthropic' (pip install anthropic). "
-                               "Mientras tanto respondo desde el glosario."}
-    return {"ok": True, "modo": "online", "proveedor": prov,
-            "mensaje": f"Asistente {_NOMBRE_PROV.get(prov, prov)} conectado ({modelo})."}
+    if prov:
+        if prov == "claude":
+            try:
+                import anthropic  # noqa: F401
+            except ImportError:
+                return {"ok": False, "modo": "offline", "proveedor": "claude",
+                        "mensaje": "Falta el paquete 'anthropic' (pip install anthropic). "
+                                   "Mientras tanto respondo desde el glosario."}
+        return {"ok": True, "modo": "online", "proveedor": prov,
+                "mensaje": f"Asistente {_NOMBRE_PROV.get(prov, prov)} conectado ({modelo})."}
+
+    # Sin clave propia: si hay una licencia activa, el asistente compartido
+    # cubre con el saldo de creditos de la cuenta.
+    from core import licencia as licencia_mod
+    saldo = licencia_mod.consultar_creditos()
+    if saldo and saldo.get("activo"):
+        return {"ok": True, "modo": "online", "proveedor": "creditos",
+                "mensaje": f"Asistente compartido conectado — "
+                           f"{int(saldo.get('saldo', 0))} créditos disponibles."}
+    if saldo and saldo.get("motivo") == "saldo_agotado":
+        return {"ok": False, "modo": "sin_creditos", "proveedor": "creditos",
+                "mensaje": "Se acabaron tus créditos de IA compartida. Recargá desde "
+                           "la app, o pegá tu propia clave en Config para seguir sin límite."}
+    return {"ok": False, "modo": "offline", "proveedor": None,
+            "mensaje": "Sin clave de IA: respondo desde el glosario. Elegí un "
+                       "proveedor (Claude recomendado) y pegá tu clave en Config, "
+                       "o activá tu licencia para usar el asistente compartido."}
 
 
 _STOP = {"que", "es", "el", "la", "los", "las", "un", "una", "de", "del", "mi", "mis",
@@ -129,6 +149,23 @@ def _responder_offline(pregunta):
             "glosario. Conecta tu ANTHROPIC_API_KEY en la pestana Config y te "
             "respondo con el analisis de tu negocio; mientras tanto, mira la "
             "pestana Ayuda para los conceptos base.")
+
+
+def _responder_sin_byok(pregunta, historial=None):
+    """Sin clave propia (BYOK): intenta el asistente COMPARTIDO usando el
+    saldo de creditos de la licencia activa antes de caer al glosario
+    offline (ver core.licencia.preguntar_ia_compartida)."""
+    from core import licencia as licencia_mod
+    try:
+        r = licencia_mod.preguntar_ia_compartida(pregunta, _contexto_negocio(), historial)
+    except Exception:
+        r = None
+    if r and r.get("sin_creditos"):
+        return {"texto": r["mensaje"] + "\n\n" + _responder_offline(pregunta),
+                "modo": "sin_creditos"}
+    if r and (r.get("texto") or "").strip():
+        return {"texto": r["texto"].strip(), "modo": "online", "proveedor": "creditos"}
+    return {"texto": _responder_offline(pregunta), "modo": "offline"}
 
 
 def _http_json(url, payload, headers, timeout=45):
@@ -190,12 +227,12 @@ def responder(pregunta, historial=None, max_tokens=1400):
 
     prov, clave, modelo = config.ia_provider_activo()
     if not prov:
-        return {"texto": _responder_offline(pregunta), "modo": "offline"}
+        return _responder_sin_byok(pregunta, historial)
     if prov == "claude":
         try:
             import anthropic  # noqa: F401
         except ImportError:
-            return {"texto": _responder_offline(pregunta), "modo": "offline"}
+            return _responder_sin_byok(pregunta, historial)
 
     system = (_SYSTEM
               + "\n\n=== DATOS DEL NEGOCIO (reales, del sistema) ===\n"

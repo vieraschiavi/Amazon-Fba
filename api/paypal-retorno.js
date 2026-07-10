@@ -8,7 +8,7 @@
 // Idempotente: si el comprador recarga esta pagina, capturarOrden() detecta
 // "ya capturada" en vez de fallar.
 import { capturarOrden, obtenerOrden, leerOrden, paypalConfigurado } from "./_paypal.js";
-import { renovarPlanIASiNuevo } from "./_cuotaia.js";
+import { otorgarBonoBienvenidaSiNuevo, acreditarRecargaSiNueva, esPackRecarga } from "./_creditosia.js";
 import { registrarVenta } from "./_atribucion.js";
 import { limpiarRevocacion } from "./_revocacion.js";
 
@@ -32,13 +32,16 @@ export default async function handler(req, res) {
       res.setHeader("Location", "/#precios");
       return res.status(302).end();
     }
-    // Plan "Pro IA": el mismo pago aprobado extiende 30 dias de cuota,
-    // igual que en el flujo de MercadoPago (api/licencia.js). Idempotente
-    // por ordenId: si el comprador recarga esta pagina de retorno, no
-    // regala dias de mas (capturarOrden ya detecta "ya capturada", y esto
-    // ademas evita renovar dos veces la cuota si igual se llega aca).
-    if (plan === "ia" && email) {
-      try { await renovarPlanIASiNuevo(email, ordenId); } catch (e) { /* almacen no configurado aun: no bloquea */ }
+    // Mismo criterio que en el flujo de MercadoPago (api/licencia.js): un
+    // pago aprobado mintea/confirma la cuenta -> bono de bienvenida si es
+    // nueva, y si el plan es un pack de creditos, se acredita. Idempotente
+    // por ordenId (capturarOrden ya detecta "ya capturada", y esto ademas
+    // evita acreditar dos veces si igual se llega aca).
+    if (email) {
+      try { await otorgarBonoBienvenidaSiNuevo(email); } catch (e) { /* almacen no configurado aun: no bloquea */ }
+    }
+    if (esPackRecarga(plan) && email) {
+      try { await acreditarRecargaSiNueva(email, ordenId, plan); } catch (e) { /* almacen no configurado aun: no bloquea */ }
     }
     // Atribucion de venta (api/_atribucion.js): idempotente por ordenId, asi
     // que recargar esta pagina no la cuenta dos veces.

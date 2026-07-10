@@ -124,6 +124,69 @@ def validar_clave(email, clave):
         raise RuntimeError("sin_conexion") from e
 
 
+def _api_base():
+    return _API_VALIDAR.rsplit("/api/", 1)[0]
+
+
+def consultar_creditos():
+    """Saldo de creditos de IA compartida de la licencia activa (ver
+    api/_creditosia.js), o None si no hay licencia, no hay internet, o el
+    almacen del servidor no esta configurado. Nunca lanza -- el llamador
+    (agents/asistente.py) trata None como 'no se pudo determinar'."""
+    reg = obtener()
+    if not reg or not reg.get("clave_licencia") or not reg.get("email"):
+        return None
+    import json
+    import urllib.request
+    import urllib.parse
+    q = urllib.parse.urlencode({"email": reg["email"], "clave": reg["clave_licencia"]})
+    try:
+        with urllib.request.urlopen(_api_base() + "/api/creditos?" + q, timeout=8) as r:
+            return json.loads(r.read().decode("utf-8"))
+    except Exception:
+        return None
+
+
+def preguntar_ia_compartida(pregunta, contexto, historial=None, idioma="es"):
+    """Asistente de IA compartido (la clave de Claude vive en el servidor):
+    fallback para quien no configuro su propia clave (BYOK) en Config, usando
+    el saldo de creditos de la licencia activa (ver api/_creditosia.js) en
+    vez de la clave propia. Devuelve:
+      - None si no hay licencia activa, no hay internet, o el servidor no
+        pudo responder (el llamador cae al modo offline en ese caso);
+      - {"sin_creditos": True, "mensaje": ...} si el saldo esta en 0;
+      - {"texto": ...} con la respuesta si salio bien.
+    Nunca lanza."""
+    reg = obtener()
+    if not reg or not reg.get("clave_licencia") or not reg.get("email"):
+        return None
+    import json
+    import urllib.request
+    import urllib.error
+    payload = {
+        "pregunta": pregunta, "contexto": contexto, "idioma": idioma,
+        "email": reg["email"], "clave": reg["clave_licencia"], "dispositivo": "desktop",
+    }
+    req = urllib.request.Request(
+        _api_base() + "/api/ia", data=json.dumps(payload).encode("utf-8"),
+        method="POST", headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=45) as r:
+            data = json.loads(r.read().decode("utf-8"))
+        return {"texto": data.get("texto", "")}
+    except urllib.error.HTTPError as e:
+        try:
+            data = json.loads(e.read().decode("utf-8"))
+        except Exception:
+            data = {}
+        if e.code == 429:
+            return {"sin_creditos": True,
+                    "mensaje": data.get("mensaje", "Se acabaron tus créditos de IA compartida.")}
+        return None
+    except Exception:
+        return None
+
+
 def activar_licencia(email, clave):
     try:
         ok = validar_clave(email, clave)
