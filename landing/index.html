@@ -220,6 +220,7 @@ section{padding:76px 0}
 .price-card .pamt small{font-size:14px;font-weight:600;color:var(--muted)}
 .fx-ref{font-size:11.5px;color:var(--muted);margin:-4px 0 4px;min-height:14px}
 .price-card ul{margin:4px 0 0;padding:0;list-style:none;font-size:13.8px;color:var(--slate);display:flex;flex-direction:column;gap:8px;flex:1}
+.packs-creditos{display:flex;flex-direction:column;gap:8px}
 .price-card li{display:flex;gap:9px;align-items:flex-start}
 .price-card li::before{content:"";flex:none;width:16px;height:16px;margin-top:2.5px;border-radius:5px;background:var(--green);opacity:.24}
 .price-card li.off{color:var(--muted)}
@@ -459,17 +460,20 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
         <div class="garantia" data-t="pricing.garantia">✔ 7 días de garantía o te devolvemos el pago</div>
       </div>
       <div class="card price-card">
-        <div class="pname" data-t="pricing.ia.name">Pro IA · todo incluido</div>
-        <div class="pamt tabular">US$34<small data-t="pricing.mo"> /mes</small></div>
-        <div class="fx-ref" data-fx-usd="34"></div>
-        <div class="klabel" style="margin:-6px 0 0;font-size:12px" data-t="pricing.ia.alt">IA embebida con créditos</div>
+        <div class="pname" data-t="pricing.creditos.name">Créditos de IA compartida</div>
+        <div class="pamt tabular">US$9<small data-t="pricing.desde"> desde</small></div>
+        <div class="fx-ref" data-fx-usd="9"></div>
+        <div class="klabel" style="margin:-6px 0 0;font-size:12px" data-t="pricing.creditos.alt">Recargá cuando quieras — no vencen</div>
         <ul>
-          <li data-t="pricing.ia.f1">Todo lo del plan Pro</li>
-          <li data-t="pricing.ia.f2">Asistente IA incluido (con tope justo)</li>
-          <li data-t="pricing.ia.f3">Sin configurar ninguna clave</li>
-          <li data-t="pricing.ia.f4">Soporte prioritario</li>
+          <li data-t="pricing.creditos.f1">Sin configurar ninguna clave</li>
+          <li data-t="pricing.creditos.f2">Bono de bienvenida gratis al activar tu licencia</li>
+          <li data-t="pricing.creditos.f3">Alternativa: usá tu propia clave (BYOK) y no gastás créditos</li>
         </ul>
-        <button class="btn btn-ghost comprar" data-plan="ia" data-t="pricing.buy">Comprar</button>
+        <div class="packs-creditos">
+          <button class="btn btn-ghost btn-sm comprar" data-plan="creditos_9" data-t="pricing.creditos.pack9">US$9 — pack chico</button>
+          <button class="btn btn-ghost btn-sm comprar" data-plan="creditos_19" data-t="pricing.creditos.pack19">US$19 — pack medio</button>
+          <button class="btn btn-ghost btn-sm comprar" data-plan="creditos_34" data-t="pricing.creditos.pack34">US$34 — pack grande</button>
+        </div>
         <div class="garantia" data-t="pricing.garantia">✔ 7 días de garantía o te devolvemos el pago</div>
       </div>
     </div>
@@ -645,14 +649,15 @@ const I18N = {
     "pricing.monedaAviso":"Precio de referencia en USD — MercadoPago procesa el cobro en pesos uruguayos (UYU) al tipo de cambio del día del pago.",
     "pricing.demoBanner":"Descargá la demo completa de escritorio (Windows) — 3 días gratis, todas las funciones",
     "pricing.demoBannerWeb":"o probá la vista rápida en el navegador",
-    "pricing.once":" pago único","pricing.mo":" /mes","pricing.buy":"Comprar","pricing.popular":"MÁS VENDIDO",
+    "pricing.once":" pago único","pricing.mo":" /mes","pricing.desde":" desde","pricing.buy":"Comprar","pricing.popular":"MÁS VENDIDO",
     "pricing.garantia":"✔ 7 días de garantía o te devolvemos el pago",
     "pricing.starter.name":"Starter · Celular","pricing.starter.alt":"o US$4,99/mes",
     "pricing.starter.f1":"App Android (APK)","pricing.starter.f2":"Pricing, portafolio, ganancias, mercado","pricing.starter.f3":"Motor de keywords gratis","pricing.starter.f4":"Sin módulos avanzados de PC",
     "pricing.pro.name":"Pro · PC (BYOK)","pricing.pro.alt":"o US$14,99/mes",
     "pricing.pro.f1":"App de escritorio completa + APK","pricing.pro.f2":"Todos los módulos desbloqueados","pricing.pro.f3":"Multi-idioma / 10 marketplaces","pricing.pro.f4":"IA con tu propia clave",
-    "pricing.ia.name":"Pro IA · todo incluido","pricing.ia.alt":"IA embebida con créditos",
-    "pricing.ia.f1":"Todo lo del plan Pro","pricing.ia.f2":"Asistente IA incluido (con tope justo)","pricing.ia.f3":"Sin configurar ninguna clave","pricing.ia.f4":"Soporte prioritario",
+    "pricing.creditos.name":"Créditos de IA compartida","pricing.creditos.alt":"Recargá cuando quieras — no vencen",
+    "pricing.creditos.f1":"Sin configurar ninguna clave","pricing.creditos.f2":"Bono de bienvenida gratis al activar tu licencia","pricing.creditos.f3":"Alternativa: usá tu propia clave (BYOK) y no gastás créditos",
+    "pricing.creditos.pack9":"US$9 — pack chico","pricing.creditos.pack19":"US$19 — pack medio","pricing.creditos.pack34":"US$34 — pack grande",
     "pay.label":"Medios de pago","pay.sub":"Elegí como pagar. La descarga con tu licencia se habilita apenas se confirma el pago. Precios en USD de referencia; MercadoPago cobra en pesos uruguayos (UYU) al tipo de cambio del día.",
     "pay.mp":"Procesado por MercadoPago","pay.mpsub":"Un solo checkout: elegís tarjeta de crédito/débito o transferencia bancaria adentro de MercadoPago.",
     "pay.step1k":"Paso 1","pay.step1b":"Elegís tu plan","pay.step1s":"Y el medio de pago",
@@ -711,14 +716,15 @@ const I18N = {
     "pricing.monedaAviso":"Reference price in USD — MercadoPago processes the charge in Uruguayan pesos (UYU) at the exchange rate on the day of payment.",
     "pricing.demoBanner":"Download the full desktop demo (Windows) — 3 days free, every feature unlocked",
     "pricing.demoBannerWeb":"or try the quick browser preview",
-    "pricing.once":" one-time","pricing.mo":" /mo","pricing.buy":"Buy now","pricing.popular":"MOST POPULAR",
+    "pricing.once":" one-time","pricing.mo":" /mo","pricing.desde":" from","pricing.buy":"Buy now","pricing.popular":"MOST POPULAR",
     "pricing.garantia":"✔ 7-day money-back guarantee",
     "pricing.starter.name":"Starter · Mobile","pricing.starter.alt":"or US$4.99/mo",
     "pricing.starter.f1":"Android app (APK)","pricing.starter.f2":"Pricing, portfolio, profit, market research","pricing.starter.f3":"Free keyword engine","pricing.starter.f4":"No advanced desktop modules",
     "pricing.pro.name":"Pro · Desktop (BYOK)","pricing.pro.alt":"or US$14.99/mo",
     "pricing.pro.f1":"Full desktop app + APK","pricing.pro.f2":"Every module unlocked","pricing.pro.f3":"Multi-language / 10 marketplaces","pricing.pro.f4":"AI with your own key",
-    "pricing.ia.name":"Pro AI · all-inclusive","pricing.ia.alt":"Embedded AI with credits",
-    "pricing.ia.f1":"Everything in Pro","pricing.ia.f2":"AI assistant included (fair monthly cap)","pricing.ia.f3":"No keys to configure","pricing.ia.f4":"Priority support",
+    "pricing.creditos.name":"Shared AI credits","pricing.creditos.alt":"Top up whenever — credits never expire",
+    "pricing.creditos.f1":"No keys to configure","pricing.creditos.f2":"Free welcome bonus when you activate your license","pricing.creditos.f3":"Alternative: use your own key (BYOK) and spend no credits",
+    "pricing.creditos.pack9":"US$9 — small pack","pricing.creditos.pack19":"US$19 — medium pack","pricing.creditos.pack34":"US$34 — large pack",
     "pay.label":"Payment methods","pay.sub":"Choose how to pay. Your download and license unlock as soon as payment is confirmed. Prices in USD are a reference; MercadoPago charges in Uruguayan pesos (UYU) at the day's exchange rate.",
     "pay.mp":"Processed by MercadoPago","pay.mpsub":"One checkout: pick credit/debit card or bank transfer inside MercadoPago.",
     "pay.step1k":"Step 1","pay.step1b":"Pick your plan","pay.step1s":"And payment method",
@@ -777,14 +783,15 @@ const I18N = {
     "pricing.monedaAviso":"Preço de referência em USD — o MercadoPago processa a cobrança em pesos uruguaios (UYU) na cotação do dia do pagamento.",
     "pricing.demoBanner":"Baixe a demo completa de desktop (Windows) — 3 dias grátis, todas as funções",
     "pricing.demoBannerWeb":"ou teste a prévia rápida no navegador",
-    "pricing.once":" pagamento único","pricing.mo":" /mês","pricing.buy":"Comprar","pricing.popular":"MAIS VENDIDO",
+    "pricing.once":" pagamento único","pricing.mo":" /mês","pricing.desde":" a partir de","pricing.buy":"Comprar","pricing.popular":"MAIS VENDIDO",
     "pricing.garantia":"✔ 7 dias de garantia ou devolvemos o pagamento",
     "pricing.starter.name":"Starter · Celular","pricing.starter.alt":"ou US$4,99/mês",
     "pricing.starter.f1":"App Android (APK)","pricing.starter.f2":"Preço, portfólio, lucro, mercado","pricing.starter.f3":"Motor de palavras-chave grátis","pricing.starter.f4":"Sem módulos avançados de PC",
     "pricing.pro.name":"Pro · PC (BYOK)","pricing.pro.alt":"ou US$14,99/mês",
     "pricing.pro.f1":"App de desktop completo + APK","pricing.pro.f2":"Todos os módulos desbloqueados","pricing.pro.f3":"Multi-idioma / 10 marketplaces","pricing.pro.f4":"IA com sua própria chave",
-    "pricing.ia.name":"Pro IA · tudo incluído","pricing.ia.alt":"IA embutida com créditos",
-    "pricing.ia.f1":"Tudo do plano Pro","pricing.ia.f2":"Assistente de IA incluído (com limite justo)","pricing.ia.f3":"Sem configurar nenhuma chave","pricing.ia.f4":"Suporte prioritário",
+    "pricing.creditos.name":"Créditos de IA compartilhada","pricing.creditos.alt":"Recarregue quando quiser — os créditos não vencem",
+    "pricing.creditos.f1":"Sem configurar nenhuma chave","pricing.creditos.f2":"Bônus de boas-vindas grátis ao ativar sua licença","pricing.creditos.f3":"Alternativa: use sua própria chave (BYOK) e não gaste créditos",
+    "pricing.creditos.pack9":"US$9 — pacote pequeno","pricing.creditos.pack19":"US$19 — pacote médio","pricing.creditos.pack34":"US$34 — pacote grande",
     "pay.label":"Formas de pagamento","pay.sub":"Escolha como pagar. O download com sua licença libera assim que o pagamento é confirmado. Preços em USD são referência; o MercadoPago cobra em pesos uruguaios (UYU) na cotação do dia.",
     "pay.mp":"Processado pelo MercadoPago","pay.mpsub":"Um único checkout: escolha cartão de crédito/débito ou transferência bancária dentro do MercadoPago.",
     "pay.step1k":"Passo 1","pay.step1b":"Escolha seu plano","pay.step1s":"E a forma de pagamento",

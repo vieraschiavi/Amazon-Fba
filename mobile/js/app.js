@@ -800,11 +800,11 @@ function idDispositivo() {
   }
   return id;
 }
-// Proxy de IA del DEMO web / plan Pro IA: la clave de Claude vive en el
-// servidor (Vercel), no en el cliente. En la app descargada (file://) este
-// fetch falla y se cae al local. Si hay una licencia activada, se manda
-// email+clave para que el servidor aplique la cuota del plan Pro IA en vez
-// del tope generico de demo (ver api/ia.js).
+// Proxy de IA del DEMO web / cuentas con saldo de creditos: la clave de
+// Claude vive en el servidor (Vercel), no en el cliente. En la app descargada
+// (file://) este fetch falla y se cae al local. Si hay una licencia
+// activada, se manda email+clave para que el servidor descuente del saldo de
+// creditos en vez del tope generico de demo (ver api/ia.js).
 async function responderProxy(preg) {
   const r = resumenPortafolio();
   const contexto = `${r.n} productos, sueldo meseta ${fmtMoney(r.sueldo_meseta_proyectado)}/mes, `
@@ -876,47 +876,30 @@ function pintarConfig() {
   if ($("#cfg-ia-prov")) $("#cfg-ia-prov").value = estado.claves.ia_prov || "claude";
   const r = resumenPortafolio();
   $("#cfg-datos").innerHTML = `Tenes <b>${r.n}</b> producto/s y <b>${estado.ventas.length}</b> venta/s registradas en este telefono.`;
-  pintarCuotaIA();
+  pintarSaldoIA();
 }
-// Cuota del plan Pro IA: se muestra SOLO si hay una licencia activada (no
-// tiene sentido para quien todavia esta en la demo de 3 dias sin comprar).
-async function pintarCuotaIA() {
-  const box = $("#cuota-ia-box");
+// Saldo de creditos de IA compartida (ver api/_creditosia.js): se muestra
+// SOLO si hay una licencia activada (no tiene sentido para quien todavia
+// esta en la demo de 3 dias sin comprar -- ahi corre el tope generico de
+// api/ia.js en vez del saldo por cuenta).
+async function pintarSaldoIA() {
+  const box = $("#saldo-ia-box");
   if (!box) return;
   const reg = Licencia.obtenerRegistro();
   if (!reg || !reg.email || !reg.claveLicencia) { box.classList.add("oculto"); return; }
   try {
-    const url = `/api/cuota?email=${encodeURIComponent(reg.email)}&clave=${encodeURIComponent(reg.claveLicencia)}`;
+    const url = `/api/creditos?email=${encodeURIComponent(reg.email)}&clave=${encodeURIComponent(reg.claveLicencia)}`;
     const r = await fetch(url, { headers: { "x-mv-app": "mvfba-web-1" } });
     if (!r.ok) { box.classList.add("oculto"); return; }
     const d = await r.json();
-    if (d.motivo === "sin_plan_ia" || d.motivo === "almacen_no_configurado") { box.classList.add("oculto"); return; }
+    if (d.motivo === "sin_cuenta" || d.motivo === "almacen_no_configurado") { box.classList.add("oculto"); return; }
     box.classList.remove("oculto");
-    const info = d.registro || {};
-    if ($("#cuota-ia-modo")) $("#cuota-ia-modo").value = info.cuota_modo || "topear";
     if (d.activo) {
-      const venc = info.vigente_hasta ? new Date(info.vigente_hasta).toLocaleDateString() : "";
-      $("#cuota-ia-estado").textContent = `Cuota disponible: ${fmtNum(d.disponible)} tokens · vence ${venc}`;
+      $("#saldo-ia-estado").textContent = `Créditos de IA disponibles: ${fmtNum(Math.floor(d.saldo))}`;
     } else {
-      $("#cuota-ia-estado").textContent = "Tu plan Pro IA venció. Comprálo de nuevo para reactivar la cuota.";
+      $("#saldo-ia-estado").textContent = "Se acabaron tus créditos de IA. Recargá para seguir usando el asistente compartido.";
     }
   } catch (e) { box.classList.add("oculto"); }
-}
-if ($("#cuota-ia-guardar")) {
-  $("#cuota-ia-guardar").addEventListener("click", async () => {
-    const reg = Licencia.obtenerRegistro();
-    if (!reg || !reg.email || !reg.claveLicencia) return;
-    const modo = $("#cuota-ia-modo").value;
-    try {
-      await fetch("/api/cuota", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-mv-app": "mvfba-web-1" },
-        body: JSON.stringify({ email: reg.email, clave: reg.claveLicencia, modo }),
-      });
-      mostrarToast("Preferencia guardada");
-      pintarCuotaIA();
-    } catch (e) { mostrarToast("No se pudo guardar. Reintentá."); }
-  });
 }
 $("#form-config").addEventListener("submit", (ev) => {
   ev.preventDefault();

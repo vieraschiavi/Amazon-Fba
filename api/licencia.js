@@ -8,7 +8,7 @@
 // la app para activarla.
 import { aplicarCors, clienteValido } from "./_seguridad.js";
 import { generarClave } from "./_licencia.js";
-import { renovarPlanIASiNuevo } from "./_cuotaia.js";
+import { otorgarBonoBienvenidaSiNuevo, acreditarRecargaSiNueva, esPackRecarga } from "./_creditosia.js";
 import { obtenerOrden, leerOrden, paypalConfigurado } from "./_paypal.js";
 import { limpiarRevocacion } from "./_revocacion.js";
 import { registrarVenta } from "./_atribucion.js";
@@ -26,10 +26,10 @@ export default async function handler(req, res) {
   const paymentId = q.payment_id || q.collection_id || q.paymentId;
   if (!paymentId) return res.status(400).json({ error: "sin_pago" });
 
-  // PayPal: la orden ya se capturo en api/paypal-retorno.js (y esa vez ya
-  // renovo la cuota de IA). Aca solo se relee el estado para mostrar la
-  // licencia -- NO se vuelve a renovar, para no regalar 30 dias de mas si
-  // el comprador recarga gracias.html.
+  // PayPal: la orden ya se capturo en api/paypal-retorno.js (y esa vez ya se
+  // otorgo el bono/acredito la recarga). Aca solo se relee el estado para
+  // mostrar la licencia -- NO se vuelve a acreditar, para no duplicar
+  // creditos si el comprador recarga gracias.html.
   if (String(q.proc || "") === "paypal") {
     if (!paypalConfigurado()) return res.status(503).json({ error: "pago_no_configurado" });
     try {
@@ -57,12 +57,18 @@ export default async function handler(req, res) {
     const email = (p.payer && p.payer.email) || "";
     const plan = p.external_reference || (p.metadata && p.metadata.plan) || "";
     const cid = (p.metadata && p.metadata.cid) || "";
-    // Plan "Pro IA": cada pago aprobado extiende 30 dias de acceso a IA
-    // incluida. No hay suscripcion automatica que "cancelar" -- si no vuelve
-    // a pagar, el acceso vence solo (ver api/_cuotaia.js). Idempotente por
-    // paymentId: recargar gracias.html no regala dias de mas.
-    if (plan === "ia" && email) {
-      try { await renovarPlanIASiNuevo(email, paymentId); } catch (e) { /* almacen no configurado aun: no bloquea la licencia */ }
+    // Cualquier pago aprobado mintea/confirma una cuenta con licencia: si es
+    // la primera vez que este email compra algo, se le otorga el bono de
+    // bienvenida en creditos de IA (ver api/_creditosia.js). Es idempotente
+    // por email, asi que no importa si esto corre de nuevo en un pago futuro.
+    if (email) {
+      try { await otorgarBonoBienvenidaSiNuevo(email); } catch (e) { /* almacen no configurado aun: no bloquea la licencia */ }
+    }
+    // Si el plan es un pack de recarga de creditos, se acredita ademas del
+    // bono (idempotente por paymentId: recargar gracias.html no acredita el
+    // mismo pack dos veces).
+    if (esPackRecarga(plan) && email) {
+      try { await acreditarRecargaSiNueva(email, paymentId, plan); } catch (e) { /* almacen no configurado aun: no bloquea la licencia */ }
     }
     // Un pago nuevo y aprobado es una compra legitima: si ese email tenia una
     // licencia revocada por un reembolso anterior, la levanta (api/_revocacion.js).

@@ -6,10 +6,10 @@
 // que ese pago ya se devolvio. Esto agrega un flag en el almacen (Vercel
 // KV/Upstash) que api/validar.js chequea ADEMAS del HMAC.
 //
-// Requiere el mismo almacen que ya usa la cuota de IA (api/_cuotaia.js): si
-// no esta configurado, no rompe nada -- simplemente no hay revocacion (mismo
-// comportamiento honesto de "sin almacen, sin esta funcion" del resto del
-// sistema).
+// Requiere el mismo almacen que ya usa el saldo de creditos de IA (ver
+// api/_creditosia.js): si no esta configurado, no rompe nada -- simplemente
+// no hay revocacion (mismo comportamiento honesto de "sin almacen, sin esta
+// funcion" del resto del sistema).
 import { almacenConfigurado, kvGet, kvSet } from "./_almacen.js";
 
 function clave(email) {
