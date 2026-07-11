@@ -21,9 +21,9 @@
 // Rules). Estas dos capas de acá son un complemento de código, no un
 // reemplazo de eso.
 
-const ORIGENES_OK = /^https:\/\/amazon-fba-[a-z0-9-]+\.vercel\.app$/;
-// Cuando se conecte un dominio propio (ver README, "Landing web y dominio
-// propio"), agregarlo acá, ej: /^https:\/\/(www\.)?tudominio\.com$/
+// Dominio propio (mvfbaia.com, conectado al proyecto de Vercel) + los
+// previews *.vercel.app del mismo proyecto.
+const ORIGENES_OK = /^https:\/\/((www\.)?mvfbaia\.com|amazon-fba-[a-z0-9-]+\.vercel\.app)$/;
 export const APP_HEADER = "x-mv-app";
 const APP_TOKEN = "mvfba-web-1";
 

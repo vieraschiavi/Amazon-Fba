@@ -24,7 +24,7 @@ export function Asistente() {
             />
             <p className="text-muted text-[12px] mt-1.5">{estado.mensaje}</p>
             {estado.modo === "sin_creditos" && (
-              <a href="https://amazon-fba-seven.vercel.app/#precios" target="_blank" rel="noopener"
+              <a href="https://mvfbaia.com/#precios" target="_blank" rel="noopener"
                  className="text-[12px] text-navy underline mt-1 inline-block">
                 Recargar créditos →
               </a>

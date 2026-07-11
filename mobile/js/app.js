@@ -832,7 +832,14 @@ async function responderProxy(preg) {
     return null; // 503 no configurada / 502 upstream -> fallback silencioso
   }
   const data = await resp.json();
-  return (data && data.texto) ? data.texto : null;
+  if (!data || !data.texto) return null;
+  // El servidor devuelve el saldo restante tras cada respuesta con creditos:
+  // avisar SOLO cuando queda poco, para que la recarga no lo agarre de
+  // sorpresa a mitad de una consulta importante.
+  if (typeof data.creditos_restantes === "number" && data.creditos_restantes < 50) {
+    return data.texto + `\n\n_Te quedan ~${data.creditos_restantes} créditos de IA — podés recargar desde Config._`;
+  }
+  return data.texto;
 }
 // Orquesta: 1) clave propia del proveedor elegido (Claude/OpenAI/Gemini)
 // 2) proxy del demo (IA incluida, Claude del servidor) 3) asistente local.
@@ -1001,7 +1008,7 @@ function pintarNudgeDemo() {
   const st = Licencia.estado();
   if (st.licencia || !st.registrado) { el.classList.add("oculto"); return; }
   const t = NUDGE_TXT[idiomaActual()] || NUDGE_TXT.es;
-  const url = "https://amazon-fba-seven.vercel.app/#precios";
+  const url = "https://mvfbaia.com/#precios";
   if (st.diasRestantes <= 1) {
     el.className = "demo-nudge urgente";
     el.innerHTML = `<span><b>⏳</b>${escapar(t.ultimo)}</span><a href="${url}" target="_blank" rel="noopener">${escapar(t.cta)}</a>`;

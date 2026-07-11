@@ -79,23 +79,34 @@ export async function otorgarBonoBienvenidaSiNuevo(email) {
   return registro;
 }
 
-export async function revisarSaldo(email) {
+// conLicenciaValidada: el llamador YA verifico email+clave por HMAC
+// (claveValida). En ese caso, una cuenta sin registro de creditos recibe el
+// bono de bienvenida al vuelo: cubre a los clientes que compraron ANTES de
+// que existiera este sistema (su pago nunca paso por el otorgamiento de
+// api/licencia.js) sin regalarle nada a nadie sin licencia real.
+export async function revisarSaldo(email, conLicenciaValidada = false) {
   if (!almacenConfigurado()) return { activo: false, motivo: "almacen_no_configurado" };
-  const registro = await kvGet(clave(email));
+  let registro = await kvGet(clave(email));
+  if (!registro && conLicenciaValidada) {
+    registro = await otorgarBonoBienvenidaSiNuevo(email);
+  }
   if (!registro) return { activo: false, motivo: "sin_cuenta" };
   if (!(registro.saldo > 0)) return { activo: false, motivo: "saldo_agotado", registro };
   return { activo: true, saldo: registro.saldo, registro };
 }
 
+// Devuelve el registro actualizado (con el saldo ya descontado) para que el
+// llamador pueda informar "te quedan N creditos" sin otra lectura.
 export async function descontarCreditos(email, tokens) {
-  if (!almacenConfigurado() || !(tokens > 0)) return;
+  if (!almacenConfigurado() || !(tokens > 0)) return null;
   const k = clave(email);
   const actual = await kvGet(k);
-  if (!actual) return; // sin registro de creditos: nada que descontar
+  if (!actual) return null; // sin registro de creditos: nada que descontar
   const creditos = tokens / TOKENS_POR_CREDITO;
   actual.saldo = Math.max(0, (actual.saldo || 0) - creditos);
   actual.historico_consumido = (actual.historico_consumido || 0) + creditos;
   await kvSet(k, actual);
+  return actual;
 }
 
 // Version idempotente por paymentId: si gracias.html se recarga (o el
