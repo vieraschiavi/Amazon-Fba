@@ -18,6 +18,11 @@ on:
       - ".github/workflows/android-apk.yml"
   workflow_dispatch:
 
+# Pushes seguidos: se cancela el build del commit ya superado (ahorra cuota).
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write   # para crear/actualizar el Release con el .apk
 

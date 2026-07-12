@@ -17,6 +17,11 @@ on:
       - ".github/workflows/windows-installer.yml"
   workflow_dispatch:
 
+# Pushes seguidos: se cancela el build del commit ya superado (ahorra cuota).
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write   # para publicar el Release con el instalador
 
