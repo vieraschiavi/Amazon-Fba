@@ -5,11 +5,43 @@
 // Reemplaza a api/cuota.js (que exponia la cuota mensual fija del viejo plan
 // "Pro IA"): los creditos no vencen ni tienen "modo" que elegir, asi que solo
 // hace falta consultar el saldo.
+//
+// El branch POST de aca abajo es api/demo-registro.js fusionado en este mismo
+// archivo (vercel.json tiene el rewrite /api/demo-registro -> /api/creditos,
+// asi que la URL que llaman mobile/js/licencia.js y core/licencia.py no
+// cambia). La fusion es SOLO para bajar de 13 a 12 archivos publicos en api/:
+// el plan Hobby de Vercel limita a 12 Serverless Functions por deployment, y
+// sumar api/resenas.js hizo que el deploy fallara. GET y POST no se pisan
+// (metodos distintos), asi que cada uno mantiene su propia logica de CORS
+// intacta.
 import { aplicarCors, clienteValido } from "./_seguridad.js";
 import { claveValida } from "./_licencia.js";
 import { revisarSaldo } from "./_creditosia.js";
+import { registrarDemo } from "./_demo.js";
 
 export default async function handler(req, res) {
+  const metodoPedido = String(req.headers["access-control-request-method"] || req.method || "").toUpperCase();
+
+  if (req.method === "POST" || (req.method === "OPTIONS" && metodoPedido === "POST")) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    if (req.method === "OPTIONS") return res.status(204).end();
+    if (req.method !== "POST") return res.status(405).json({ error: "method" });
+
+    let body = req.body;
+    if (typeof body === "string") { try { body = JSON.parse(body); } catch (e) { body = {}; } }
+    body = body || {};
+    const email = String(body.email || "").trim().toLowerCase();
+    const nombre = String(body.nombre || "").trim();
+    if (!email || !email.includes("@")) return res.status(200).json({ ok: false });
+
+    try {
+      await registrarDemo(nombre, email);
+    } catch (e) { /* almacen no configurado: no bloquea, no rompe la demo */ }
+    return res.status(200).json({ ok: true });
+  }
+
   aplicarCors(req, res, "GET, OPTIONS");
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "GET") return res.status(405).json({ error: "method" });
