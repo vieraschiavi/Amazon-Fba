@@ -253,6 +253,18 @@ section{padding:76px 0}
 .pill.b{color:#c0392b;background:color-mix(in srgb,#c0392b 14%,transparent)}
 .scrollx{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--card)}
 
+/* reseñas */
+.reviews-resumen{display:flex;align-items:center;gap:14px;margin:18px 0 22px}
+.reviews-resumen .num{font-size:34px;font-weight:800;letter-spacing:-.5px}
+.reviews-resumen .estrellas-fijas{color:var(--accent);font-size:20px;letter-spacing:2px}
+.reviews-resumen .total{color:var(--muted);font-size:13.5px}
+.reviews-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.review-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.review-card .estrellas-fijas{color:var(--accent);font-size:15px;letter-spacing:1px;margin-bottom:6px}
+.review-card p{font-size:13.8px;color:var(--slate);margin:0 0 10px;line-height:1.5}
+.review-card .autor{font-size:12.5px;font-weight:700;color:var(--ink)}
+.reviews-vacio{color:var(--muted);font-size:14px;background:var(--card);border:1px dashed var(--line);border-radius:14px;padding:22px;text-align:center}
+
 /* faq */
 .faq details{border-bottom:1px solid var(--line);padding:16px 0}
 .faq summary{cursor:pointer;font-weight:700;font-size:15.5px;list-style:none;display:flex;justify-content:space-between;gap:12px}
@@ -289,6 +301,7 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
       <a href="#producto" data-t="nav.product">Producto</a>
       <a href="#precios" data-t="nav.pricing">Precios</a>
       <a href="#plataformas" data-t="nav.platforms">Plataformas</a>
+      <a href="#resenas" data-t="nav.reviews">Reseñas</a>
       <a href="#faq" data-t="nav.faq">Preguntas</a>
       <a href="#contacto" data-t="nav.contact">Contacto</a>
     </div>
@@ -519,6 +532,16 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
   </div>
 </section>
 
+<section id="resenas">
+  <div class="wrap">
+    <div class="klabel" data-t="reviews.label">Reseñas</div>
+    <h2 class="h2" data-t="reviews.h2">Lo que dicen los que ya lo usan</h2>
+    <p class="sublede" data-t="reviews.sub">Reseñas reales de compradores, verificadas contra el pago — no se publica ninguna sin una compra real detrás.</p>
+    <div id="reviews-resumen" class="reviews-resumen"></div>
+    <div id="reviews-lista" class="reviews-lista"></div>
+  </div>
+</section>
+
 <section id="faq" class="section-alt">
   <div class="wrap" style="max-width:820px">
     <div class="klabel" data-t="faq.label">Preguntas frecuentes</div>
@@ -622,7 +645,11 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
 <script>
 const I18N = {
   es: {
-    "nav.product":"Producto","nav.pricing":"Precios","nav.platforms":"Plataformas","nav.faq":"Preguntas","nav.contact":"Contacto","nav.cta":"Comprar","nav.demo":"Probar demo",
+    "nav.product":"Producto","nav.pricing":"Precios","nav.platforms":"Plataformas","nav.reviews":"Reseñas","nav.faq":"Preguntas","nav.contact":"Contacto","nav.cta":"Comprar","nav.demo":"Probar demo",
+    "reviews.label":"Reseñas","reviews.h2":"Lo que dicen los que ya lo usan",
+    "reviews.sub":"Reseñas reales de compradores, verificadas contra el pago — no se publica ninguna sin una compra real detrás.",
+    "reviews.vacio":"Sé el primero en dejar tu reseña — se publica apenas confirmes tu compra.",
+    "reviews.total":"{n} reseñas",
     "nav.video":"Video","video.label":"En acción","video.h2":"Mirá el programa funcionando, de punta a punta","video.sub":"Un recorrido narrado por todo el sistema. El audio sigue el idioma que elijas arriba.","video.play":"▶ Reproducir","video.pause":"⏸ Pausar","video.replay":"↻ Ver de nuevo","video.hint":"Voz neutra/latina · sin costo de datos","video.slidePill":"3 días gratis","video.slideCierre":"Tu negocio en Amazon, bajo control","video.cap.intro":"Tenés el capital y las ganas de vender en Amazon. Lo que falta es un sistema que te diga qué vender, a qué precio, y cuánto vas a ganar. Eso es MV FBA IA.","video.cap.keywords":"Investigá nichos con nuestro motor propio: keywords reales de Amazon en diez mercados, sin suscripciones mensuales.","video.cap.pricing":"Cargá tu costo real y el sistema calcula el precio, el margen y el retorno, con un semáforo que te dice al toque si el producto conviene.","video.cap.portafolio":"Todos tus productos en un tablero: tu sueldo estable proyectado, el capital en juego y qué producto tira del resto.","video.cap.ganancias":"Poné cuánto invertís y mirá el desglose completo: unidades, ingreso, costos y ganancia real, sin sorpresas.","video.cap.mercado":"Evaluá cualquier producto: competencia, demanda y una probabilidad de éxito honesta, para no jugarte la plata a ciegas.","video.cap.asistente":"Y un asistente con inteligencia artificial que responde sobre tus números, tu portafolio y tu estrategia, cuando lo necesites.","video.cap.multiplataforma":"Todo en tu PC y en tu celular Android. Los cálculos y tus datos quedan en tu dispositivo; la búsqueda de keywords y la IA usan internet.","video.cap.cierre":"Probalo gratis tres días, con todas las funciones. Sin factura mensual. MV FBA IA: tu negocio en Amazon, bajo control.",
 
     "hero.eyebrow":"Sabé cuánto vas a ganar, antes de invertir",
@@ -689,7 +716,11 @@ const I18N = {
     "contact.noContact":"(no indicado)","contact.bodyContactLine":"Contacto de quien consulta"
   },
   en: {
-    "nav.product":"Product","nav.pricing":"Pricing","nav.platforms":"Platforms","nav.faq":"FAQ","nav.contact":"Contact","nav.cta":"Buy now","nav.demo":"Try demo",
+    "nav.product":"Product","nav.pricing":"Pricing","nav.platforms":"Platforms","nav.reviews":"Reviews","nav.faq":"FAQ","nav.contact":"Contact","nav.cta":"Buy now","nav.demo":"Try demo",
+    "reviews.label":"Reviews","reviews.h2":"What people who already use it say",
+    "reviews.sub":"Real reviews from buyers, verified against the actual payment — none are published without a real purchase behind them.",
+    "reviews.vacio":"Be the first to leave a review — it publishes as soon as your purchase is confirmed.",
+    "reviews.total":"{n} reviews",
     "nav.video":"Video","video.label":"In action","video.h2":"See the program working, end to end","video.sub":"A narrated tour of the whole system. The audio follows the language you pick above.","video.play":"▶ Play","video.pause":"⏸ Pause","video.replay":"↻ Watch again","video.hint":"Neutral/Latin voice · no data cost","video.slidePill":"3 days free","video.slideCierre":"Your Amazon business, under control","video.cap.intro":"You've got the capital and the drive to sell on Amazon. What's missing is a system that tells you what to sell, at what price, and how much you'll make. That's MV FBA IA.","video.cap.keywords":"Research niches with our own engine: real Amazon keywords across ten marketplaces, with no monthly subscriptions.","video.cap.pricing":"Enter your real cost and the system computes price, margin and return, with a traffic light that tells you instantly if the product is worth it.","video.cap.portafolio":"All your products on one board: your projected steady salary, the capital at play, and which product carries the rest.","video.cap.ganancias":"Enter how much you invest and see the full breakdown: units, revenue, costs and real profit, with no surprises.","video.cap.mercado":"Evaluate any product: competition, demand and an honest success probability, so you don't bet your money blindly.","video.cap.asistente":"And an AI assistant that answers about your numbers, your portfolio and your strategy, whenever you need it.","video.cap.multiplataforma":"Everything on your PC and your Android phone. Calculations and your data stay on your device; keyword research and AI use the internet.","video.cap.cierre":"Try it free for three days, with every feature. No monthly bill. MV FBA IA: your Amazon business, under control.",
 
     "hero.eyebrow":"Know your profit, before you invest",
@@ -756,7 +787,11 @@ const I18N = {
     "contact.noContact":"(not provided)","contact.bodyContactLine":"Contact info of the requester"
   },
   pt: {
-    "nav.product":"Produto","nav.pricing":"Preços","nav.platforms":"Plataformas","nav.faq":"Perguntas","nav.contact":"Contato","nav.cta":"Comprar","nav.demo":"Testar demo",
+    "nav.product":"Produto","nav.pricing":"Preços","nav.platforms":"Plataformas","nav.reviews":"Avaliações","nav.faq":"Perguntas","nav.contact":"Contato","nav.cta":"Comprar","nav.demo":"Testar demo",
+    "reviews.label":"Avaliações","reviews.h2":"O que dizem quem já usa",
+    "reviews.sub":"Avaliações reais de compradores, verificadas contra o pagamento — nenhuma é publicada sem uma compra real por trás.",
+    "reviews.vacio":"Seja o primeiro a deixar sua avaliação — é publicada assim que sua compra for confirmada.",
+    "reviews.total":"{n} avaliações",
     "nav.video":"Vídeo","video.label":"Em ação","video.h2":"Veja o programa funcionando, de ponta a ponta","video.sub":"Um tour narrado por todo o sistema. O áudio segue o idioma que você escolher acima.","video.play":"▶ Reproduzir","video.pause":"⏸ Pausar","video.replay":"↻ Ver de novo","video.hint":"Voz neutra/latina · sem custo de dados","video.slidePill":"3 dias grátis","video.slideCierre":"Seu negócio na Amazon, sob controle","video.cap.intro":"Você tem o capital e a vontade de vender na Amazon. Falta um sistema que diga o que vender, a que preço, e quanto você vai ganhar. Isso é o MV FBA IA.","video.cap.keywords":"Pesquise nichos com o nosso motor próprio: palavras-chave reais da Amazon em dez mercados, sem assinaturas mensais.","video.cap.pricing":"Coloque seu custo real e o sistema calcula o preço, a margem e o retorno, com um semáforo que diz na hora se o produto vale a pena.","video.cap.portafolio":"Todos os seus produtos em um painel: seu salário estável projetado, o capital em jogo e qual produto puxa o resto.","video.cap.ganancias":"Informe quanto investe e veja o detalhamento completo: unidades, receita, custos e lucro real, sem surpresas.","video.cap.mercado":"Avalie qualquer produto: concorrência, demanda e uma probabilidade de sucesso honesta, para não apostar seu dinheiro às cegas.","video.cap.asistente":"E um assistente com inteligência artificial que responde sobre seus números, seu portfólio e sua estratégia, quando você precisar.","video.cap.multiplataforma":"Tudo no seu PC e no seu celular Android. Os cálculos e seus dados ficam no seu dispositivo; a busca de palavras-chave e a IA usam internet.","video.cap.cierre":"Experimente grátis por três dias, com todas as funções. Sem fatura mensal. MV FBA IA: seu negócio na Amazon, sob controle.",
 
     "hero.eyebrow":"Saiba quanto vai ganhar, antes de investir",
@@ -834,6 +869,7 @@ function applyLang(lang){
   document.querySelectorAll("#langsel button").forEach(b=>b.classList.toggle("on", b.dataset.lang===lang));
   try{ localStorage.setItem("mvfba_lang", lang); }catch(e){}
   if (window.videoOnLang) window.videoOnLang(lang);
+  if (window.reviewsOnLang) window.reviewsOnLang();
 }
 const sel = document.getElementById("langsel");
 LANGS.forEach(([code,label])=>{
@@ -1017,6 +1053,53 @@ document.querySelectorAll(".comprar").forEach((btn) => {
       });
     })
     .catch(() => {}); // sin internet/API caida -> la linea queda vacia, nunca rota el precio en USD
+})();
+
+/* ---------- Reseñas: solo compradores reales, verificados contra el pago ---------- */
+/* (ver api/resenas.js) -- si no hay ninguna todavia, se muestra un estado vacio     */
+/* honesto en vez de inventar testimonios o un promedio falso.                      */
+(function(){
+  const resumenEl = document.getElementById("reviews-resumen");
+  const listaEl = document.getElementById("reviews-lista");
+  if (!resumenEl || !listaEl) return;
+  const t = () => I18N[document.documentElement.lang] || I18N.es;
+  function estrellas(n) {
+    const llenas = Math.round(n);
+    return "★".repeat(llenas) + "☆".repeat(5 - llenas);
+  }
+  function escaparHtml(s) {
+    const d = document.createElement("div");
+    d.textContent = String(s || "");
+    return d.innerHTML;
+  }
+  let datos = null; // cache de la ultima respuesta -> se re-renderiza al cambiar de idioma
+  function render(){
+    if (!datos) return;
+    const items = Array.isArray(datos.items) ? datos.items : [];
+    const resumen = datos.resumen || { promedio: 0, total: 0 };
+    if (!items.length) {
+      resumenEl.innerHTML = "";
+      const txt = (t()["reviews.vacio"]) || "Sé el primero en dejar tu reseña — se publica apenas confirmes tu compra.";
+      listaEl.innerHTML = `<div class="reviews-vacio">${txt}</div>`;
+      return;
+    }
+    const totalTxt = (t()["reviews.total"] || "{n} reseñas").replace("{n}", resumen.total);
+    resumenEl.innerHTML = `
+      <span class="num">${resumen.promedio.toFixed(1)}</span>
+      <span class="estrellas-fijas">${estrellas(resumen.promedio)}</span>
+      <span class="total">${totalTxt}</span>`;
+    listaEl.innerHTML = items.map(r => `
+      <div class="review-card">
+        <div class="estrellas-fijas">${estrellas(r.puntaje)}</div>
+        <p>“${escaparHtml(r.comentario)}”</p>
+        <div class="autor">${escaparHtml(r.nombre)}</div>
+      </div>`).join("");
+  }
+  window.reviewsOnLang = render; // re-renderiza los textos propios al cambiar de idioma (applyLang los llama)
+  fetch("/api/resenas?n=24", { headers: { "x-mv-app": "mvfba-web-1" } })
+    .then(r => r.ok ? r.json() : null)
+    .then(d => { if (d) { datos = d; render(); } })
+    .catch(() => {}); // sin internet/API caida -> la seccion simplemente no se llena, nunca rota la pagina
 })();
 </script>
 
