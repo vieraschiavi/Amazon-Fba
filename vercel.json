@@ -5,6 +5,9 @@
   "outputDirectory": "landing",
   "cleanUrls": true,
   "trailingSlash": false,
+  "rewrites": [
+    { "source": "/api/demo-registro", "destination": "/api/creditos" }
+  ],
   "crons": [
     { "path": "/api/cron-recordatorio-demo", "schedule": "0 15 * * *" }
   ]
