@@ -1,19 +1,30 @@
-# Compila la app iOS de MV FBA IA en un runner macOS (gratis en GitHub
-# Actions) para el Simulador de iOS en cada push que toque la app iOS o la UI
-# movil. Esto CONFIRMA que el proyecto compila sin errores, sin necesitar
+# Compila la app iOS de MV FBA IA en un runner macOS para el Simulador de
+# iOS. Esto CONFIRMA que el proyecto compila sin errores, sin necesitar
 # ninguna cuenta de Apple ni certificados (los builds de simulador no se firman).
 #
 # No genera un .ipa instalable en un iPhone real: eso requiere una cuenta Apple
 # Developer (US$99/año) y firma con tus certificados — ver ios/README.md.
+#
+# OJO con la cuota: los minutos de macOS cuentan a tarifa 10x en repos
+# privados — este es, por lejos, el workflow que mas cuota de Actions quema.
+# Por eso corre SOLO cuando cambia el proyecto nativo (ios/**): un cambio de
+# mobile/** (el JS/HTML que la app envuelve) no altera si Xcode compila o no,
+# asi que gastar 10x por cada retoque de la PWA no aporta nada. Para forzar
+# un build con la UI movil nueva: pestana Actions -> Run workflow.
 name: iOS Build (Simulador)
 
 on:
   push:
     paths:
       - "ios/**"
-      - "mobile/**"
       - ".github/workflows/ios-build.yml"
   workflow_dispatch:
+
+# Si llegan varios pushes seguidos, el build viejo se cancela solo: pagar
+# minutos 10x por compilar un commit ya superado es tirar cuota.
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
