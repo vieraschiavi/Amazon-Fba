@@ -109,9 +109,13 @@ def estado():
     from core import licencia as licencia_mod
     saldo = licencia_mod.consultar_creditos()
     if saldo and saldo.get("activo"):
-        return {"ok": True, "modo": "online", "proveedor": "creditos",
-                "mensaje": f"Asistente compartido conectado — "
-                           f"{int(saldo.get('saldo', 0))} créditos disponibles."}
+        msj = (f"Asistente compartido conectado — "
+               f"{int(saldo.get('saldo', 0))} créditos disponibles.")
+        reg = saldo.get("registro") or {}
+        if reg.get("semana_preguntas"):
+            msj += (f" Esta semana: {int(reg.get('semana_consumido', 0) + 0.999)} créditos "
+                    f"en {reg['semana_preguntas']} pregunta(s).")
+        return {"ok": True, "modo": "online", "proveedor": "creditos", "mensaje": msj}
     if saldo and saldo.get("motivo") == "saldo_agotado":
         return {"ok": False, "modo": "sin_creditos", "proveedor": "creditos",
                 "mensaje": "Se acabaron tus créditos de IA compartida. Recargá desde "

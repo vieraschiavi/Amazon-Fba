@@ -163,6 +163,17 @@ def preguntar_ia_compartida(pregunta, contexto, historial=None, idioma="es"):
     import json
     import urllib.request
     import urllib.error
+    # El proxy (api/ia.js) recibe una sola pregunta + contexto (tope 4000
+    # chars): el hilo reciente del chat va condensado dentro del contexto
+    # para que el asistente no pierda de que se venia hablando.
+    if historial:
+        turnos = [m for m in historial[-4:]
+                  if m.get("role") in ("user", "assistant") and m.get("content")]
+        if turnos:
+            hilo = "\n".join(
+                ("Usuario: " if m["role"] == "user" else "Asistente: ")
+                + m["content"][:300] for m in turnos)
+            contexto = (contexto + "\n\nCONVERSACION RECIENTE:\n" + hilo)[:3900]
     payload = {
         "pregunta": pregunta, "contexto": contexto, "idioma": idioma,
         "email": reg["email"], "clave": reg["clave_licencia"], "dispositivo": "desktop",

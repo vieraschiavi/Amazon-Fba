@@ -283,6 +283,21 @@ a { color: inherit; }
 .demo-badge.vencido { background: #fee2e2; color: #991b1b; }
 .demo-badge.oculto { display: none; }
 
+/* Chip de saldo de creditos en el chat: pulso breve cada vez que cambia */
+.chat-saldo {
+  display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 10px;
+  border-radius: 20px; background: var(--green-soft, #dcfce7); color: var(--green-ink);
+  margin-bottom: 8px;
+}
+.chat-saldo.bajo { background: #fef3c7; color: #92400e; }
+.chat-saldo.oculto { display: none; }
+.chat-saldo.pulso { animation: saldo-pulso .5s ease; }
+@keyframes saldo-pulso {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.14); }
+  100% { transform: scale(1); }
+}
+
 /* Tablet / desktop: contenedor centrado, no se estira el bottom nav */
 @media (min-width: 640px) {
   #app { max-width: 480px; margin: 0 auto; box-shadow: 0 0 40px rgba(0,0,0,.08); min-height: 100vh; }

@@ -8,7 +8,8 @@
 // la app para activarla.
 import { aplicarCors, clienteValido } from "./_seguridad.js";
 import { generarClave } from "./_licencia.js";
-import { otorgarBonoBienvenidaSiNuevo, acreditarRecargaSiNueva, esPackRecarga } from "./_creditosia.js";
+import { otorgarBonoBienvenidaSiNuevo, acreditarRecargaSiNueva, esPackRecarga, PACKS_RECARGA } from "./_creditosia.js";
+import { avisarCreditosPorEmail } from "./_email_creditos.js";
 import { obtenerOrden, leerOrden, paypalConfigurado } from "./_paypal.js";
 import { limpiarRevocacion } from "./_revocacion.js";
 import { registrarVenta } from "./_atribucion.js";
@@ -61,14 +62,27 @@ export default async function handler(req, res) {
     // la primera vez que este email compra algo, se le otorga el bono de
     // bienvenida en creditos de IA (ver api/_creditosia.js). Es idempotente
     // por email, asi que no importa si esto corre de nuevo en un pago futuro.
+    // Las funciones devuelven el registro SOLO cuando actuaron (null si ya
+    // estaba procesado): eso decide si corresponde el email post-compra, y
+    // de paso evita mandarlo de nuevo cuando gracias.html se recarga.
+    let bonoNuevo = null, recargaNueva = null;
     if (email) {
-      try { await otorgarBonoBienvenidaSiNuevo(email); } catch (e) { /* almacen no configurado aun: no bloquea la licencia */ }
+      try { bonoNuevo = await otorgarBonoBienvenidaSiNuevo(email); } catch (e) { /* almacen no configurado aun: no bloquea la licencia */ }
     }
     // Si el plan es un pack de recarga de creditos, se acredita ademas del
     // bono (idempotente por paymentId: recargar gracias.html no acredita el
     // mismo pack dos veces).
     if (esPackRecarga(plan) && email) {
-      try { await acreditarRecargaSiNueva(email, paymentId, plan); } catch (e) { /* almacen no configurado aun: no bloquea la licencia */ }
+      try { recargaNueva = await acreditarRecargaSiNueva(email, paymentId, plan); } catch (e) { /* almacen no configurado aun: no bloquea la licencia */ }
+    }
+    if (bonoNuevo || recargaNueva) {
+      try {
+        await avisarCreditosPorEmail({
+          email, bonoNuevo: Boolean(bonoNuevo),
+          pack: recargaNueva ? PACKS_RECARGA[plan] : null,
+          saldo: (recargaNueva || bonoNuevo).saldo,
+        });
+      } catch (e) { /* email caido/no configurado: no bloquea la licencia */ }
     }
     // Un pago nuevo y aprobado es una compra legitima: si ese email tenia una
     // licencia revocada por un reembolso anterior, la levanta (api/_revocacion.js).

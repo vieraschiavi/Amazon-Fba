@@ -26,8 +26,12 @@ import { revisarSaldo, descontarCreditos } from "./_creditosia.js";
 import { kvGet, kvSet, almacenConfigurado } from "./_almacen.js";
 
 const MODELO = "claude-haiku-4-5-20251001";   // económico
-const MAX_TOKENS = 500;
-const TOPE_ANONIMO = 30; // preguntas totales para quien no tiene plan Pro IA activo
+// El que paga con creditos recibe respuestas mas largas que el demo anonimo:
+// el consumo se le descuenta del saldo, asi que el largo lo "paga" el propio
+// cliente -- no hay razon para recortarle la respuesta como al demo.
+const MAX_TOKENS_DEMO = 500;
+const MAX_TOKENS_CREDITOS = 900;
+const TOPE_ANONIMO = 30; // preguntas totales para quien no tiene creditos activos
 
 async function revisarAnonimo(id) {
   // Sin almacen o sin id de dispositivo, no hay forma honesta de contar --
@@ -70,7 +74,10 @@ export default async function handler(req, res) {
 
   let modo = "demo"; // "creditos" | "demo"
   if (dijoTenerLicencia) {
-    const saldo = await revisarSaldo(email);
+    // claveValida ya paso arriba: una licencia real sin registro de creditos
+    // (cliente que compro antes de que existiera el sistema) recibe su bono
+    // de bienvenida al vuelo en vez de caer al tope de demo.
+    const saldo = await revisarSaldo(email, true);
     if (saldo.activo) {
       modo = "creditos";
     } else if (saldo.motivo === "saldo_agotado") {
@@ -97,13 +104,20 @@ export default async function handler(req, res) {
     }
   }
 
+  // El cierre del prompt distingue demo de cliente pago: al demo se le pide
+  // brevedad (el tope anonimo es cortesia), al cliente con creditos se le
+  // responde completo -- estaba quedando el texto "es una version DEMO"
+  // tambien para quien pagaba, y Claude recortaba las respuestas.
+  const cierre = modo === "creditos"
+    ? "El usuario es un cliente con licencia: respondé completo y accionable."
+    : "Es una versión DEMO: respuestas breves y útiles.";
   const system =
     "Sos el asistente de MV FBA IA, un cockpit para vender en Amazon FBA. " +
     "Respondés con un tono PROFESIONAL PERO AMABLE y cercano: claro, concreto y sin " +
     "relleno, pero cálido y respetuoso, como un asesor de confianza. En el idioma del " +
     "usuario (" + idioma + "). No prometés retornos garantizados: el resultado FBA es " +
-    "variable. Nada reemplaza una orden de prueba antes de escalar. Es una versión DEMO: " +
-    "respuestas breves y útiles.\n\nDATOS DEL NEGOCIO DEL USUARIO:\n" + contexto;
+    "variable. Nada reemplaza una orden de prueba antes de escalar. " + cierre +
+    "\n\nDATOS DEL NEGOCIO DEL USUARIO:\n" + contexto;
 
   try {
     const r = await fetch("https://api.anthropic.com/v1/messages", {
@@ -115,7 +129,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: MODELO,
-        max_tokens: MAX_TOKENS,
+        max_tokens: modo === "creditos" ? MAX_TOKENS_CREDITOS : MAX_TOKENS_DEMO,
         system,
         messages: [{ role: "user", content: pregunta }],
       }),
@@ -126,15 +140,23 @@ export default async function handler(req, res) {
     }
     const texto = (data.content || [])
       .filter((b) => b.type === "text").map((b) => b.text).join("").trim();
+    let creditosRestantes = null;
     if (modo === "creditos" && data.usage) {
       // Esperar el descuento ANTES de responder: en serverless la funcion
       // puede congelarse apenas se manda la respuesta, y un descuento "fire
       // and forget" se perderia silenciosamente -- exactamente el uso que no
       // se quiere regalar gratis.
       const tokens = (data.usage.input_tokens || 0) + (data.usage.output_tokens || 0);
-      try { await descontarCreditos(email, tokens); } catch (e) { /* almacen caido: no rompe la respuesta ya generada */ }
+      try {
+        const saldo = await descontarCreditos(email, tokens);
+        if (saldo && typeof saldo.saldo === "number") creditosRestantes = Math.floor(saldo.saldo);
+      } catch (e) { /* almacen caido: no rompe la respuesta ya generada */ }
     }
-    return res.status(200).json({ texto: texto || "" });
+    // creditos_restantes deja que el cliente muestre "te quedan N creditos"
+    // sin una segunda llamada a /api/creditos.
+    return res.status(200).json(
+      creditosRestantes == null ? { texto: texto || "" }
+                                : { texto: texto || "", creditos_restantes: creditosRestantes });
   } catch (e) {
     return res.status(502).json({ error: "fetch_fail" });
   }

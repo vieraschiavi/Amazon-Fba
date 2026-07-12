@@ -64,11 +64,16 @@ function claveIdPago(idPago) {
 // bono. Se llama tanto al mintear una licencia nueva como, por las dudas,
 // antes de acreditar una recarga (para cubrir a alguien que compra directo
 // sin haber tenido licencia previa).
+//
+// Devuelve el registro SOLO cuando el bono se otorgo AHORA; null si la
+// cuenta ya existia (misma semantica "SiNuevo/SiNueva" que
+// acreditarRecargaSiNueva). Eso es lo que deja a api/licencia.js decidir si
+// corresponde el email de bienvenida sin mandarlo de nuevo en cada pago.
 export async function otorgarBonoBienvenidaSiNuevo(email) {
   if (!almacenConfigurado() || !email) return null;
   const k = clave(email);
   const actual = await kvGet(k);
-  if (actual) return actual;
+  if (actual) return null;
   const registro = {
     saldo: BONO_BIENVENIDA,
     otorgado: new Date().toISOString(),
@@ -79,23 +84,54 @@ export async function otorgarBonoBienvenidaSiNuevo(email) {
   return registro;
 }
 
-export async function revisarSaldo(email) {
+// conLicenciaValidada: el llamador YA verifico email+clave por HMAC
+// (claveValida). En ese caso, una cuenta sin registro de creditos recibe el
+// bono de bienvenida al vuelo: cubre a los clientes que compraron ANTES de
+// que existiera este sistema (su pago nunca paso por el otorgamiento de
+// api/licencia.js) sin regalarle nada a nadie sin licencia real.
+export async function revisarSaldo(email, conLicenciaValidada = false) {
   if (!almacenConfigurado()) return { activo: false, motivo: "almacen_no_configurado" };
-  const registro = await kvGet(clave(email));
+  let registro = await kvGet(clave(email));
+  if (!registro && conLicenciaValidada) {
+    registro = await otorgarBonoBienvenidaSiNuevo(email);
+  }
   if (!registro) return { activo: false, motivo: "sin_cuenta" };
   if (!(registro.saldo > 0)) return { activo: false, motivo: "saldo_agotado", registro };
   return { activo: true, saldo: registro.saldo, registro };
 }
 
+// Clave de semana ISO-ish (lunes como inicio) para el resumen "esta semana
+// usaste X creditos en Y preguntas" -- no hace falta el numero de semana ISO
+// exacto, solo que la clave cambie una vez por semana de forma estable.
+function semanaActual() {
+  const d = new Date();
+  const lunes = new Date(d);
+  lunes.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  return lunes.toISOString().slice(0, 10); // fecha del lunes de esta semana
+}
+
+// Devuelve el registro actualizado (con el saldo ya descontado) para que el
+// llamador pueda informar "te quedan N creditos" sin otra lectura. Ademas
+// acumula el resumen semanal (creditos + preguntas) que muestran las UIs.
 export async function descontarCreditos(email, tokens) {
-  if (!almacenConfigurado() || !(tokens > 0)) return;
+  if (!almacenConfigurado() || !(tokens > 0)) return null;
   const k = clave(email);
   const actual = await kvGet(k);
-  if (!actual) return; // sin registro de creditos: nada que descontar
+  if (!actual) return null; // sin registro de creditos: nada que descontar
   const creditos = tokens / TOKENS_POR_CREDITO;
   actual.saldo = Math.max(0, (actual.saldo || 0) - creditos);
   actual.historico_consumido = (actual.historico_consumido || 0) + creditos;
+  actual.n_preguntas = (actual.n_preguntas || 0) + 1;
+  const semana = semanaActual();
+  if (actual.semana !== semana) {
+    actual.semana = semana;
+    actual.semana_consumido = 0;
+    actual.semana_preguntas = 0;
+  }
+  actual.semana_consumido = (actual.semana_consumido || 0) + creditos;
+  actual.semana_preguntas = (actual.semana_preguntas || 0) + 1;
   await kvSet(k, actual);
+  return actual;
 }
 
 // Version idempotente por paymentId: si gracias.html se recarga (o el

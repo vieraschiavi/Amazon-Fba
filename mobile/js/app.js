@@ -108,7 +108,7 @@ function irAVista(nombre) {
   $all(".nav-btn").forEach((b) => b.classList.toggle("activa", b.dataset.vista === nombre));
   if (nombre === "inicio") cargarInicio();
   if (nombre === "portafolio") cargarPortafolio();
-  if (nombre === "asistente") pintarChat();   // muestra la bienvenida al entrar
+  if (nombre === "asistente") { pintarChat(); void refrescarSaldoChat(); }   // bienvenida + saldo al entrar
   window.scrollTo(0, 0);
 }
 $all(".nav-btn").forEach((b) => b.addEventListener("click", () => irAVista(b.dataset.vista)));
@@ -832,7 +832,49 @@ async function responderProxy(preg) {
     return null; // 503 no configurada / 502 upstream -> fallback silencioso
   }
   const data = await resp.json();
-  return (data && data.texto) ? data.texto : null;
+  if (!data || !data.texto) return null;
+  // El servidor devuelve el saldo restante tras cada respuesta con creditos:
+  // el chip del chat se actualiza siempre (con su pulso), y ADEMAS se avisa
+  // en el propio mensaje SOLO cuando queda poco, para que la recarga no lo
+  // agarre de sorpresa a mitad de una consulta importante.
+  if (typeof data.creditos_restantes === "number") {
+    pintarSaldoChat(data.creditos_restantes);
+    if (data.creditos_restantes < 50) {
+      return data.texto + `\n\n_Te quedan ~${data.creditos_restantes} créditos de IA — podés recargar desde Config._`;
+    }
+  }
+  return data.texto;
+}
+// Chip de saldo del chat: numero vivo que pulsa al cambiar. Se pinta al
+// entrar a la vista (consultando /api/creditos) y tras cada respuesta del
+// proxy (con el saldo que ya viene en la respuesta, sin llamada extra).
+function pintarSaldoChat(n) {
+  const chip = $("#chat-saldo");
+  if (!chip) return;
+  const texto = `⚡ ${fmtNum(Math.floor(n))} créditos`;
+  const cambio = chip.textContent && chip.textContent !== texto;
+  chip.textContent = texto;
+  chip.classList.remove("oculto");
+  chip.classList.toggle("bajo", n < 50);
+  if (cambio) {
+    chip.classList.remove("pulso");
+    void chip.offsetWidth; // reinicia la animacion CSS
+    chip.classList.add("pulso");
+  }
+}
+async function refrescarSaldoChat() {
+  const chip = $("#chat-saldo");
+  if (!chip) return;
+  const reg = Licencia.obtenerRegistro();
+  if (!reg || !reg.email || !reg.claveLicencia) { chip.classList.add("oculto"); return; }
+  try {
+    const url = `/api/creditos?email=${encodeURIComponent(reg.email)}&clave=${encodeURIComponent(reg.claveLicencia)}`;
+    const r = await fetch(url, { headers: { "x-mv-app": "mvfba-web-1" } });
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d.activo) pintarSaldoChat(d.saldo);
+    else if (d.motivo === "saldo_agotado") pintarSaldoChat(0);
+  } catch (e) { /* sin red: el chip simplemente no se muestra */ }
 }
 // Orquesta: 1) clave propia del proveedor elegido (Claude/OpenAI/Gemini)
 // 2) proxy del demo (IA incluida, Claude del servidor) 3) asistente local.
@@ -898,6 +940,12 @@ async function pintarSaldoIA() {
       $("#saldo-ia-estado").textContent = `Créditos de IA disponibles: ${fmtNum(Math.floor(d.saldo))}`;
     } else {
       $("#saldo-ia-estado").textContent = "Se acabaron tus créditos de IA. Recargá para seguir usando el asistente compartido.";
+    }
+    // Resumen de consumo de la semana (lo acumula el servidor al descontar).
+    const reg2 = d.registro || {};
+    if (reg2.semana_preguntas > 0) {
+      $("#saldo-ia-estado").textContent +=
+        ` · Esta semana: ${fmtNum(Math.ceil(reg2.semana_consumido || 0))} créditos en ${fmtNum(reg2.semana_preguntas)} pregunta(s).`;
     }
   } catch (e) { box.classList.add("oculto"); }
 }
@@ -1001,7 +1049,7 @@ function pintarNudgeDemo() {
   const st = Licencia.estado();
   if (st.licencia || !st.registrado) { el.classList.add("oculto"); return; }
   const t = NUDGE_TXT[idiomaActual()] || NUDGE_TXT.es;
-  const url = "https://amazon-fba-seven.vercel.app/#precios";
+  const url = "https://mvfbaia.com/#precios";
   if (st.diasRestantes <= 1) {
     el.className = "demo-nudge urgente";
     el.innerHTML = `<span><b>⏳</b>${escapar(t.ultimo)}</span><a href="${url}" target="_blank" rel="noopener">${escapar(t.cta)}</a>`;

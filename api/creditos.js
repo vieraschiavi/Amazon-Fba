@@ -22,6 +22,9 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: "licencia_invalida" });
   }
 
-  const saldo = await revisarSaldo(email);
+  // claveValida ya paso: si esta licencia es anterior al sistema de creditos
+  // (sin registro), el segundo argumento hace que reciba su bono de
+  // bienvenida aca mismo -- el cliente viejo ve creditos apenas abre Config.
+  const saldo = await revisarSaldo(email, true);
   return res.status(200).json(saldo);
 }
