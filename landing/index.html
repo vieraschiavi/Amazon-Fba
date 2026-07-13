@@ -70,10 +70,7 @@ button{font:inherit}
   border-bottom:1px solid rgba(255,255,255,.08)}
 .nav .in{display:flex;align-items:center;gap:18px;padding:14px 24px;max-width:1120px;margin:0 auto}
 .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.2px;font-size:15.5px;color:#fff}
-.brand .mk{width:32px;height:32px;border-radius:9px;flex:none;
-  background:linear-gradient(150deg,#2a4f9e,#0e1a3a);display:grid;place-items:center;
-  font-weight:800;font-size:13px;color:#fff;border:1px solid rgba(160,180,220,.35)}
-.brand .mk i{color:#8bc63f;font-style:normal}
+.brand .mk{width:32px;height:32px;border-radius:9px;flex:none;object-fit:contain;display:block}
 .navlinks{display:flex;gap:22px;margin-left:8px;font-size:14px;color:#b7c2e0}
 .navlinks a{border-bottom:2px solid transparent;padding-bottom:3px;transition:border-color .15s}
 .navlinks a:hover{border-color:var(--accent-on-dark)}
@@ -295,7 +292,7 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
 
 <nav class="nav">
   <div class="in">
-    <div class="brand"><span class="mk">M<i>V</i></span> MV FBA IA</div>
+    <div class="brand"><img class="mk" src="icons/icon-192.png" alt="MV FBA IA" width="32" height="32"> MV FBA IA</div>
     <div class="navlinks">
       <a href="#video" data-t="nav.video">Video</a>
       <a href="#producto" data-t="nav.product">Producto</a>
