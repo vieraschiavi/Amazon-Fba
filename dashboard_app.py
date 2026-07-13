@@ -159,6 +159,9 @@ if not _estado_demo["vigente"]:
             f"Quiero comprar la licencia. Email de registro: {_estado_demo['email']}")
         _mailto_lic = f"mailto:{config.ALERT_TO}?subject={_asunto_lic}&body={_cuerpo_lic}"
         st.markdown(f"[{t['contactar']}]({_mailto_lic})")
+        # Si la PC no tiene un cliente de mail configurado, el link mailto: no
+        # hace nada -- se deja el email visible para copiar a mano.
+        st.caption(config.ALERT_TO)
         st.stop()
 
 

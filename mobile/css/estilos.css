@@ -266,6 +266,9 @@ a { color: inherit; }
   background: none; border: 0; color: var(--muted); font-size: 12.5px;
   margin-top: 16px; text-decoration: underline;
 }
+/* Si el dispositivo no tiene un cliente de mail configurado, el link mailto:
+   de arriba no hace nada -- se deja el email visible para copiar a mano. */
+.bienvenida-email { font-size: 12px; color: var(--muted); margin: 4px 0 0; text-align: center; }
 
 /* ---- Demo/registro (3 dias) ---- */
 .demo-idioma-sel {
