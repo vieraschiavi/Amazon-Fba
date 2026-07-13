@@ -73,8 +73,6 @@
   <div class="foot">MV FBA IA · ¿Dudas? <a class="link" href="mailto:vieraschiavi@gmail.com">vieraschiavi@gmail.com</a></div>
 </div>
 <script>
-const APK = "https://github.com/vieraschiavi/Amazon-Fba/raw/main/android/dist/MV-Amazon-FBA-IA.apk";
-const RELEASES = "https://github.com/vieraschiavi/Amazon-Fba/releases";
 // Bug pre-existente encontrado al probar el widget de reseñas: TODOS los
 // llamados pasan el selector con "#" (ej. $("#titulo")), pero esto usaba
 // getElementById (que necesita el id SIN el "#") -> devolvia null siempre y
@@ -95,7 +93,7 @@ function mostrarAprobado(d){
       ${email}
     </div>
     <div class="dl">
-      <a class="btn btn-a" href="${APK}">⬇️ Descargar app Android (APK)</a>
+      <a class="btn btn-a" href="/api/descarga?tipo=apk&payment_id=${encodeURIComponent(d._pid || "")}${d._proc ? "&proc=" + encodeURIComponent(d._proc) : ""}">⬇️ Descargar app Android (APK)</a>
       <a class="btn btn-b" href="/api/descarga?payment_id=${encodeURIComponent(d._pid || "")}${d._proc ? "&proc=" + encodeURIComponent(d._proc) : ""}">💻 Programa para PC (Windows)</a>
     </div>
     <div class="pasos">
