@@ -24,6 +24,21 @@ export default async function handler(req, res) {
   if (!clienteValido(req)) return res.status(403).json({ error: "cliente_no_reconocido" });
 
   const q = req.query || {};
+
+  // Auto-servicio para el dueño del producto: probar el programa 100% sin
+  // pasar por un pago real. Gateado por email exacto (OWNER_EMAIL en Vercel,
+  // no es un valor sensible) -- nadie mas puede pedir esto sin conocer ese
+  // email exacto configurado por el propio dueño.
+  if (String(q.dueno || "") === "1") {
+    const ownerEmail = String(process.env.OWNER_EMAIL || "").trim().toLowerCase();
+    const email = String(q.email || "").trim().toLowerCase();
+    if (!ownerEmail || !email || email !== ownerEmail) return res.status(403).json({ error: "no_autorizado" });
+    let bonoNuevo = null;
+    try { bonoNuevo = await otorgarBonoBienvenidaSiNuevo(email); } catch (e) { /* almacen no configurado: no bloquea la licencia */ }
+    try { await limpiarRevocacion(email); } catch (e) { /* almacen no configurado: no bloquea */ }
+    return res.status(200).json({ aprobado: true, plan: "pro", email, licencia: generarClave(email), bono: Boolean(bonoNuevo) });
+  }
+
   const paymentId = q.payment_id || q.collection_id || q.paymentId;
   if (!paymentId) return res.status(400).json({ error: "sin_pago" });
 
