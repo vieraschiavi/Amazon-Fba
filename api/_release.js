@@ -15,23 +15,27 @@ export function releaseConfigurado() {
   return Boolean(process.env.GITHUB_RELEASE_TOKEN);
 }
 
+// Devuelve {url, motivo} en vez de solo la URL: "motivo" nunca expone el
+// token, pero permite diagnosticar por que fallo (falta el token, el
+// release/asset no aparecio, o GitHub no devolvio el redirect esperado)
+// sin tener que mirar logs de Vercel.
 export async function resolverDescargaRelease(tag, nombreAsset) {
-  const token = process.env.GITHUB_RELEASE_TOKEN;
-  if (!token) return null;
+  const token = String(process.env.GITHUB_RELEASE_TOKEN || "").trim();
+  if (!token) return { url: null, motivo: "sin_token" };
   const headers = { authorization: `Bearer ${token}`, "user-agent": "mvfba-descargas" };
 
   const rel = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/releases/tags/${encodeURIComponent(tag)}`, {
     headers: { ...headers, accept: "application/vnd.github+json" },
   });
-  if (!rel.ok) return null;
+  if (!rel.ok) return { url: null, motivo: "release_no_encontrado", status: rel.status };
   const datos = await rel.json();
   const asset = (datos.assets || []).find((a) => a.name === nombreAsset);
-  if (!asset) return null;
+  if (!asset) return { url: null, motivo: "asset_no_encontrado" };
 
   const resp = await fetch(asset.url, {
     headers: { ...headers, accept: "application/octet-stream" },
     redirect: "manual",
   });
-  if (resp.status >= 300 && resp.status < 400) return resp.headers.get("location");
-  return null;
+  if (resp.status >= 300 && resp.status < 400) return { url: resp.headers.get("location"), motivo: "ok" };
+  return { url: null, motivo: "sin_redirect", status: resp.status };
 }

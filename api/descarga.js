@@ -19,9 +19,12 @@ const RELEASE_PC = { tag: "pc-latest", asset: "MV_Amazon_FBA_IA_Setup.exe" };
 const RELEASE_APK = { tag: "android-latest", asset: "MV-Amazon-FBA-IA.apk" };
 
 async function redirigirA(release, res) {
-  const url = await resolverDescargaRelease(release.tag, release.asset);
-  if (!url) return res.status(502).json({ error: "descarga_no_disponible" });
-  res.setHeader("Location", url);
+  const r = await resolverDescargaRelease(release.tag, release.asset);
+  // "motivo"/"status" nunca exponen el token -- son solo para diagnosticar
+  // desde afuera (sin_token / release_no_encontrado / asset_no_encontrado /
+  // sin_redirect) sin tener que mirar logs de Vercel.
+  if (!r.url) return res.status(502).json({ error: "descarga_no_disponible", motivo: r.motivo, status: r.status });
+  res.setHeader("Location", r.url);
   return res.status(302).end();
 }
 
