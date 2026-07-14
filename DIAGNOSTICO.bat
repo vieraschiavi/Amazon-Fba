@@ -6,11 +6,13 @@ title MV FBA IA - Diagnostico
 echo ============================================================
 echo  DIAGNOSTICO
 echo ============================================================
-set "PYTHON="
-if exist "C:\ProgramData\Anaconda3\python.exe" set "PYTHON=C:\ProgramData\Anaconda3\python.exe"
-if not defined PYTHON if exist "%USERPROFILE%\anaconda3\python.exe" set "PYTHON=%USERPROFILE%\anaconda3\python.exe"
-if not defined PYTHON ( py -c "import sys;print(sys.executable)" >"%TEMP%\pd.txt" 2>nul & set /p PYTHON=<"%TEMP%\pd.txt" & del "%TEMP%\pd.txt" >nul 2>&1 )
-if not defined PYTHON ( echo  [ERROR] No hay Python. Instala Anaconda. & pause & exit /b 1 )
+set "PYTHON=%~dp0runtime\python.exe"
+if not exist "!PYTHON!" (
+    echo  [ERROR] Falta el runtime de Python embebido. Reinstala MV FBA IA;
+    echo  el runtime esta incompleto o fue borrado.
+    pause
+    exit /b 1
+)
 echo  Python: !PYTHON!
 "!PYTHON!" --version
 echo.
@@ -27,5 +29,6 @@ if exist agents\pricing.py (echo   agents\pricing.py OK) else (echo   agents\pri
 if exist data\cerebro.py (echo   data\cerebro.py OK) else (echo   data\cerebro.py FALTA)
 if exist .env (echo   .env OK ^(claves configuradas^)) else (echo   .env sin crear ^(el sistema corre igual en modo offline^))
 echo.
-echo  Si streamlit dice NO INSTALADO, corre INICIAR.bat una vez con internet.
+echo  streamlit: modulo del panel legacy interno, no se usa en la app actual;
+echo  "NO INSTALADO" aqui es normal y esperado.
 pause

@@ -10,7 +10,7 @@
 ; que el panel pueda escribir su base de datos y su .env sin friccion de UAC.
 
 #define MyAppName "MV FBA IA"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.1.0"
 #define MyAppPublisher "MV FBA IA"
 #define MyAppExeDescription "Cockpit inteligente para tu negocio Amazon FBA"
 
@@ -24,9 +24,13 @@ DefaultDirName={localappdata}\Programs\MV FBA IA
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
-; (sin ArchitecturesInstallIn64BitMode: el contenido es Python/HTML, independiente
-; de arquitectura, y se instala en {localappdata} — asi el script compila igual
-; en cualquier Inno Setup 6.x)
+; Se bundlea un runtime de Python embebido x64 + wheels compiladas (pandas,
+; pillow, pywebview/pythonnet, uvicorn[standard]) — ya NO es independiente
+; de arquitectura. No hace falta ArchitecturesInstallIn64BitMode porque se
+; instala en {localappdata} (sin tocar Program Files ni el registro de
+; 64 bits), pero se exige x64compatible para evitar instalar en un Windows
+; de 32 bits donde el runtime embebido no arrancaria.
+ArchitecturesAllowed=x64compatible
 OutputBaseFilename=MV_Amazon_FBA_IA_Setup
 OutputDir=Output
 SetupIconFile=assets\icon.ico
@@ -66,6 +70,9 @@ Source: "..\.streamlit\*"; DestDir: "{app}\.streamlit"; Flags: recursesubdirs ig
 ; Panel web SaaS compilado (React -> frontend/dist, generado por `npm run build`
 ; en CI ANTES de compilar este instalador). Solo dist: ni node_modules ni src.
 Source: "..\frontend\dist\*"; DestDir: "{app}\frontend\dist"; Flags: recursesubdirs ignoreversion
+; Runtime de Python embebido (descargado + con dependencias instaladas en
+; CI, ver .github/workflows/windows-installer.yml). No se commitea al repo.
+Source: "..\runtime\*"; DestDir: "{app}\runtime"; Flags: recursesubdirs ignoreversion
 Source: "assets\icon.ico"; DestDir: "{app}\assets"; Flags: ignoreversion
 Source: "Iniciar_Silencioso.vbs"; DestDir: "{app}"; Flags: ignoreversion
 Source: "App_Escritorio.vbs"; DestDir: "{app}"; Flags: ignoreversion
@@ -85,38 +92,6 @@ Filename: "{app}\App_Escritorio.vbs"; Description: "Abrir {#MyAppName} ahora"; F
 [Code]
 var
   BorrarDatosDelUsuario: Boolean;
-function PythonEncontrado(): Boolean;
-var
-  ResultCode: Integer;
-begin
-  Result := Exec('cmd.exe', '/C where python >nul 2>nul', '', SW_HIDE,
-                ewWaitUntilTerminated, ResultCode) and (ResultCode = 0);
-  if not Result then
-    Result := Exec('cmd.exe', '/C where py >nul 2>nul', '', SW_HIDE,
-                  ewWaitUntilTerminated, ResultCode) and (ResultCode = 0);
-end;
-
-procedure CurStepChanged(CurStep: TSetupStep);
-var
-  ResultCode: Integer;
-begin
-  if CurStep = ssPostInstall then
-  begin
-    if not PythonEncontrado() then
-    begin
-      { OJO: ninguna linea de este bloque puede EMPEZAR con #13#10 — el
-        preprocesador ISPP interpreta el '#' inicial como directiva y aborta. }
-      if MsgBox('No se detecto Python en este equipo.' + #13#10 +
-                'MV FBA IA necesita Python 3.10 o superior para funcionar.' + #13#10 + #13#10 +
-                'Se recomienda instalarlo ahora (tildá "Add python.exe to PATH" ' +
-                'durante su instalacion) y despues abrir MV FBA IA normalmente.' + #13#10 + #13#10 +
-                'Queres abrir la pagina de descarga de Python?',
-                mbConfirmation, MB_YESNO) = IDYES then
-        ShellExec('open', 'https://www.python.org/downloads/', '', '', SW_SHOWNORMAL,
-                  ewNoWait, ResultCode);
-    end;
-  end;
-end;
 
 function InitializeUninstall(): Boolean;
 begin
