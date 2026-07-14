@@ -8,10 +8,9 @@ Este instalador deja todo listo con un clic:
 
 Requisitos:
   - Windows 10/11 (64 bits).
-  - Python 3.10 o superior (si no lo tenes, el instalador te ofrece el link
-    de descarga; es gratis y tarda 2 minutos).
-  - Conexion a internet la PRIMERA vez que lo abrís (instala las librerias
-    necesarias una sola vez).
+  - Nada mas: MV FBA IA trae su propio motor de Python incluido, no hace
+    falta instalar nada por separado ni tener internet para arrancarlo
+    la primera vez.
 
 Tus datos y tus claves (Keepa, Claude, email) quedan SIEMPRE en tu equipo,
 en un archivo .env local que nunca se comparte ni se sube a ningun lado.

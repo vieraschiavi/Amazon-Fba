@@ -24,6 +24,10 @@ Thumbs.db
 # Instalador de Windows compilado (se genera en CI / con Inno Setup)
 installer/Output/
 
+# Runtime de Python embebido para el instalador (se descarga/arma en CI,
+# ver .github/workflows/windows-installer.yml -- nunca se commitea)
+runtime/
+
 # Assets de la app Android que se copian en cada build desde mobile/
 android/app/src/main/assets/
 landing/app/

@@ -1,0 +1,17 @@
+# requirements-desktop.txt
+# Dependencias del bundle de escritorio (Windows, runtime embebido en el
+# instalador). Subconjunto de requirements.txt: excluye streamlit/altair
+# (solo usados por el panel legacy dashboard_app.py/core/i18n.py, no
+# accesible desde ningun acceso directo del instalador) y su pin de
+# typing_extensions (necesario solo para altair). Mantener sincronizado a
+# mano con las dependencias reales de app.py; ver
+# .github/workflows/windows-installer.yml para el paso de CI que instala
+# esto dentro de runtime/.
+fastapi
+uvicorn[standard]
+httpx
+anthropic
+pillow
+pywebview>=5.0,<6.0
+python-multipart
+pandas

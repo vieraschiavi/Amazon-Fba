@@ -11,20 +11,10 @@ echo    Panel + API + base de datos, todo con un doble clic.
 echo  ============================================================
 echo.
 
-set "PYTHON="
-if exist "C:\ProgramData\Anaconda3\python.exe" set "PYTHON=C:\ProgramData\Anaconda3\python.exe"
-if not defined PYTHON if exist "%USERPROFILE%\anaconda3\python.exe" set "PYTHON=%USERPROFILE%\anaconda3\python.exe"
-if not defined PYTHON if exist "%USERPROFILE%\miniconda3\python.exe" set "PYTHON=%USERPROFILE%\miniconda3\python.exe"
-if not defined PYTHON if exist "C:\ProgramData\miniconda3\python.exe" set "PYTHON=C:\ProgramData\miniconda3\python.exe"
-if not defined PYTHON if exist "%LOCALAPPDATA%\anaconda3\python.exe" set "PYTHON=%LOCALAPPDATA%\anaconda3\python.exe"
-if not defined PYTHON ( for %%V in (313 312 311 310) do if not defined PYTHON if exist "%LOCALAPPDATA%\Programs\Python\Python%%V\python.exe" set "PYTHON=%LOCALAPPDATA%\Programs\Python\Python%%V\python.exe" )
-if not defined PYTHON (
-    py -c "import sys;print(sys.executable)" >"%TEMP%\pyfba.txt" 2>nul
-    if not errorlevel 1 set /p PYTHON=<"%TEMP%\pyfba.txt"
-    del "%TEMP%\pyfba.txt" >nul 2>&1
-)
-if not defined PYTHON (
-    echo  [ERROR] No se encontro Python. Instala Anaconda o Python 3.10+ y volve a probar.
+set "PYTHON=%~dp0runtime\python.exe"
+if not exist "!PYTHON!" (
+    echo  [ERROR] Falta el runtime de Python embebido. Reinstala MV FBA IA;
+    echo  el runtime esta incompleto o fue borrado.
     pause
     exit /b 1
 )
@@ -32,23 +22,8 @@ if not defined PYTHON (
 set PYTHONIOENCODING=utf-8
 set PYTHONUTF8=1
 
-echo  [1/4] Python: !PYTHON!
-echo  [2/4] Verificando dependencias (instala solo la primera vez, puede tardar)...
-"!PYTHON!" -c "import fastapi,uvicorn,pandas,multipart" >nul 2>&1
-if errorlevel 1 "!PYTHON!" -m pip install --user -r requirements.txt
-
-"!PYTHON!" -c "import fastapi,uvicorn,pandas" >nul 2>&1
-if errorlevel 1 (
-    echo.
-    echo  [ERROR] No se pudieron instalar las dependencias.
-    echo  Revisa tu conexion a internet y volve a abrir este archivo.
-    echo  Detalle del error:
-    "!PYTHON!" -m pip install --user -r requirements.txt
-    pause
-    exit /b 1
-)
-
-echo  [3/4] Preparando base de datos...
+echo  [1/3] Runtime: !PYTHON!
+echo  [2/3] Preparando base de datos...
 "!PYTHON!" core\db.py >nul 2>&1
 
 echo.
