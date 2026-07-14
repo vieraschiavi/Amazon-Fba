@@ -44,6 +44,7 @@ from agents.capital_planner import escenario_inversor, proyeccion_realista
 from agents.listing import generar as generar_listing
 from agents.market_intel import market_intel
 from data import demanda_nativa
+from data import jungle_scout
 from data import mercado as data_mercado
 from data import motor_propio
 
@@ -74,6 +75,8 @@ class ConfigIn(BaseModel):
     GEMINI_API_KEY: str | None = None
     IA_PROVIDER: str | None = None
     KEEPA_API_KEY: str | None = None
+    JUNGLE_SCOUT_API_KEY: str | None = None
+    JUNGLE_SCOUT_KEY_NAME: str | None = None
     SMTP_USER: str | None = None
     SMTP_PASS: str | None = None
     ALERT_TO: str | None = None
@@ -326,6 +329,19 @@ def investigacion_listing(i: InvestigacionIn):
 def demanda(keyword: str, marketplace: str = "US", demo: bool = False):
     """Demanda RELATIVA gratis (autocompletado Amazon, sin Keepa)."""
     return demanda_nativa.estimar_demanda(keyword, marketplace=marketplace, demo=demo)
+
+
+@router.get("/jungle/keywords")
+def jungle_keywords(termino: str, max_n: int = 20):
+    """Volumen de busqueda REAL de keywords via Jungle Scout (BYOK). Sin clave
+    devuelve estado vacio explicado (no inventa datos)."""
+    return jungle_scout.keywords_por_termino(termino, max_n=max_n)
+
+
+@router.get("/jungle/ventas")
+def jungle_ventas(asin: str):
+    """Estimacion de ventas mensuales de un ASIN via Jungle Scout (BYOK)."""
+    return jungle_scout.ventas_asin(asin)
 
 
 class CompararIn(BaseModel):

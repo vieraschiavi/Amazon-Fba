@@ -1312,11 +1312,16 @@ with tabs[11]:
                                   help="platform.openai.com -> API keys")
         in_gemini = a3.text_input("GEMINI_API_KEY", type="password",
                                   help="aistudio.google.com -> Get API key")
-        st.markdown("**Búsqueda real de productos (por API).** Con Keepa, Mercado trae "
-                    "productos reales de Amazon. Ningún modelo de IA da estos datos.")
-        k1, k2 = st.columns(2)
+        st.markdown("**Búsqueda real de productos (por API).** Con Keepa o Jungle Scout, "
+                    "Mercado trae productos reales de Amazon. Jungle Scout además da "
+                    "volumen de búsqueda real de keywords. Ningún modelo de IA da estos datos.")
+        k1, k2, k2b = st.columns(3)
         in_keepa = k1.text_input("KEEPA_API_KEY", type="password",
                                  help="keepa.com -> Keepa API -> Private API access key")
+        in_js_name = k2.text_input("JUNGLE_SCOUT_KEY_NAME",
+                                   help="app Jungle Scout -> Developer -> Generate Key (nombre)")
+        in_js_key = k2b.text_input("JUNGLE_SCOUT_API_KEY", type="password",
+                                   help="app Jungle Scout -> Developer -> Generate Key (clave)")
         k3, k4, k5 = st.columns(3)
         in_su = k3.text_input("SMTP_USER (Gmail)", key="cf_smtp_user")
         in_sp = k4.text_input("SMTP_PASS (App Password)", type="password",
@@ -1327,6 +1332,8 @@ with tabs[11]:
     if guardar_claves:
         r_env = config.guardar_env(KEEPA_API_KEY=in_keepa, ANTHROPIC_API_KEY=in_anth,
                                    OPENAI_API_KEY=in_openai, GEMINI_API_KEY=in_gemini,
+                                   JUNGLE_SCOUT_API_KEY=in_js_key,
+                                   JUNGLE_SCOUT_KEY_NAME=in_js_name,
                                    IA_PROVIDER=(in_prov if in_prov != config.IA_PROVIDER else ""),
                                    SMTP_USER=in_su, SMTP_PASS=in_sp,
                                    ALERT_TO=(in_to if in_to != config.ALERT_TO else ""))
@@ -1339,8 +1346,8 @@ with tabs[11]:
             st.info(r_env["mensaje"] + " Completa al menos un campo.")
     st.caption(f"Archivo: {config.ENV_PATH} — esta en .gitignore y nunca se sube al "
                "repositorio. Tambien podes editarlo a mano (plantilla: .env.example).")
-    st.caption("Helium 10 no tiene API en Platinum: keywords por CSV de Cerebro. "
-               "Keepa es la fuente programatica de precio + BSR.")
+    st.caption("Helium 10 no tiene API: keywords por CSV de Cerebro. Keepa da precio + "
+               "BSR por API; Jungle Scout da volumen de busqueda real + ventas por API.")
 
 # ============================ 13) ASISTENTE IA ============================ #
 with tabs[12]:

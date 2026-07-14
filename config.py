@@ -76,6 +76,12 @@ def ia_provider_activo():
 # --- Datos de mercado ---
 KEEPA_API_KEY = env("KEEPA_API_KEY")
 KEEPA_DOMAIN = int(env("KEEPA_DOMAIN", "1"))           # 1 = amazon.com (US)
+# Jungle Scout API (BYOK): a diferencia de Helium 10 (solo CSV), SI tiene API.
+# Da volumen de busqueda real + ventas por ASIN. Requiere DOS valores: el
+# nombre de la clave y la clave (el auth es "Key_Name:API_Key").
+JUNGLE_SCOUT_API_KEY = env("JUNGLE_SCOUT_API_KEY")
+JUNGLE_SCOUT_KEY_NAME = env("JUNGLE_SCOUT_KEY_NAME")
+JUNGLE_SCOUT_MARKETPLACE = env("JUNGLE_SCOUT_MARKETPLACE", "us")
 CEREBRO_CSV_DIR = env("CEREBRO_CSV_DIR", os.path.join(_AQUI, "data", "cerebro_exports"))
 USAR_CEREBRO = env_b("USAR_CEREBRO", True)
 MARKETPLACE = env("CEREBRO_MARKETPLACE", "US")
@@ -116,6 +122,7 @@ def estado_config():
         "llm": f"{_nom.get(prov, prov)} ({modelo})" if prov else "offline (glosario)",
         "ia_provider": IA_PROVIDER,
         "keepa": "conectado" if KEEPA_API_KEY else "sin clave",
+        "jungle_scout": "conectado" if (JUNGLE_SCOUT_API_KEY and JUNGLE_SCOUT_KEY_NAME) else "sin clave",
         "cerebro_dir": CEREBRO_CSV_DIR,
         "email": "SMTP real" if (SMTP_USER and SMTP_PASS) else "dry-run (no envia)",
         "alert_to": ALERT_TO,
@@ -130,7 +137,8 @@ ENV_PATH = os.path.join(_AQUI, ".env")
 
 # Claves que el panel puede guardar. Nada fuera de esta lista se escribe.
 CLAVES_GUARDABLES = ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY",
-                     "IA_PROVIDER", "KEEPA_API_KEY", "SMTP_USER",
+                     "IA_PROVIDER", "KEEPA_API_KEY", "JUNGLE_SCOUT_API_KEY",
+                     "JUNGLE_SCOUT_KEY_NAME", "SMTP_USER",
                      "SMTP_PASS", "ALERT_TO", "CEREBRO_CSV_DIR")
 
 

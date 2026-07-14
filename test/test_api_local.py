@@ -295,6 +295,50 @@ def test_subida_cerebro_csv():
     assert d["ok"] is True and os.path.isfile(d["csv_path"])
 
 
+# ---------------------- jungle scout (BYOK) ---------------------- #
+def test_jungle_sin_clave_estado_vacio_honesto():
+    from data import jungle_scout, mercado
+    # estado honesto sin claves + productos_estrella cae a links libres (intacto)
+    assert jungle_scout.estado()["ok"] is False
+    r = mercado.productos_estrella("garlic press", 10, 50)
+    assert r["ok"] is False and r["fuente"] == "sin_clave"
+    assert len(r["links_amazon"]) >= 2       # los links gratis siempre estan
+    # passthrough del endpoint: sin clave devuelve el mismo estado honesto
+    api = cliente.get("/api/jungle/keywords", params={"termino": "garlic press"})
+    assert api.status_code == 200
+    _igual(api.json(), jungle_scout.keywords_por_termino("garlic press"))
+    assert api.json()["ok"] is False
+
+
+def test_jungle_mapeo_y_preferencia(monkeypatch=None):
+    """Con claves + red mockeada: buscar_productos/keywords mapean el shape
+    esperado, y productos_estrella prefiere Jungle Scout sobre Keepa."""
+    import config
+    from data import jungle_scout, mercado
+    prod_json = {"data": [{"attributes": {
+        "asin": "B0JS000001", "title": "JS garlic press pro", "price": 21.5,
+        "category_rank": 4200, "approximate_30_day_units_sold": 900,
+        "rating": 4.6, "reviews": 1800}}]}
+    kw_json = {"data": [{"attributes": {
+        "name": "garlic press", "monthly_search_volume_exact": 40500,
+        "competed_products": 3000}}]}
+    orig = (config.JUNGLE_SCOUT_API_KEY, config.JUNGLE_SCOUT_KEY_NAME, jungle_scout._post)
+    try:
+        config.JUNGLE_SCOUT_API_KEY, config.JUNGLE_SCOUT_KEY_NAME = "k", "n"
+        jungle_scout._post = lambda ruta, cuerpo, timeout=30: (
+            kw_json if "keywords" in ruta else prod_json)
+        bp = jungle_scout.buscar_productos("garlic press", 10, 50)
+        assert bp["ok"] and bp["productos"][0]["asin"] == "B0JS000001"
+        assert bp["productos"][0]["ventas_estim"] == 900
+        kw = jungle_scout.keywords_por_termino("garlic press")
+        assert kw["ok"] and kw["keywords"][0]["volumen"] == 40500
+        # productos_estrella prefiere Jungle Scout (sin Keepa configurado)
+        pe = mercado.productos_estrella("garlic press", 10, 50)
+        assert pe["ok"] and pe["fuente"] == "Jungle Scout"
+    finally:
+        config.JUNGLE_SCOUT_API_KEY, config.JUNGLE_SCOUT_KEY_NAME, jungle_scout._post = orig
+
+
 # ---------------------- productos / ventas / alertas ---------------------- #
 def test_productos_crud():
     alta = cliente.post("/portfolio/producto",
