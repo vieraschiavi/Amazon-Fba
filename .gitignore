@@ -28,6 +28,10 @@ installer/Output/
 # ver .github/workflows/windows-installer.yml -- nunca se commitea)
 runtime/
 
+# Licencia del build owner (interno): CI la escribe desde secrets al compilar
+# el instalador del dueño. Contiene una clave real -- NUNCA se commitea.
+owner_licencia.json
+
 # Assets de la app Android que se copian en cada build desde mobile/
 android/app/src/main/assets/
 landing/app/

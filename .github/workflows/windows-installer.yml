@@ -17,6 +17,11 @@ on:
       - "frontend/**"
       - ".github/workflows/windows-installer.yml"
   workflow_dispatch:
+    inputs:
+      owner:
+        description: "Build OWNER (interno, arranca pre-activado). Requiere secrets OWNER_LICENSE_EMAIL/OWNER_LICENSE_KEY. Se publica en el Release owner-latest, NUNCA en pc-latest."
+        type: boolean
+        default: false
 
 # Pushes seguidos: se cancela el build del commit ya superado (ahorra cuota).
 concurrency:
@@ -124,10 +129,37 @@ jobs:
           if (-not $ok) { throw "app.py no respondio /health con el runtime embebido" }
           Write-Host "functional-smoke-ok"
 
+      # Build OWNER (solo con workflow_dispatch + owner=true): escribe la
+      # licencia del dueño desde secrets. El .iss la incluye con
+      # skipifsourcedoesntexist, asi que el build normal la ignora. Con este
+      # archivo presente, el programa se auto-activa como Pro en el primer
+      # arranque (validando contra el servidor, no es un bypass).
+      - name: Escribir licencia owner (build interno)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.owner == 'true'
+        shell: pwsh
+        env:
+          OWNER_LICENSE_EMAIL: ${{ secrets.OWNER_LICENSE_EMAIL }}
+          OWNER_LICENSE_KEY: ${{ secrets.OWNER_LICENSE_KEY }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          if (-not $env:OWNER_LICENSE_EMAIL -or -not $env:OWNER_LICENSE_KEY) {
+            throw "Faltan los secrets OWNER_LICENSE_EMAIL / OWNER_LICENSE_KEY."
+          }
+          $obj = @{ email = $env:OWNER_LICENSE_EMAIL; clave = $env:OWNER_LICENSE_KEY }
+          $obj | ConvertTo-Json | Set-Content -Path owner_licencia.json -Encoding UTF8
+
       - name: Compilar instalador
         run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\MV_Amazon_FBA_IA.iss
         shell: pwsh
+
+      # Build owner: renombra el .exe para no confundirlo con el de clientes.
+      - name: Renombrar instalador owner
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.owner == 'true'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          Move-Item -Force installer\Output\MV_Amazon_FBA_IA_Setup.exe installer\Output\MV_Amazon_FBA_IA_Owner_Setup.exe
 
       # El artifact es solo una conveniencia para descargar desde Actions; la
       # distribucion real a clientes es el Release pc-latest (paso siguiente),
@@ -138,14 +170,15 @@ jobs:
         continue-on-error: true
         with:
           name: MV-Amazon-FBA-IA-instalador-windows
-          path: installer/Output/MV_Amazon_FBA_IA_Setup.exe
+          path: installer/Output/MV_Amazon_FBA_IA_*Setup.exe
           if-no-files-found: error
           retention-days: 7
 
-      # Publica/actualiza el Release "pc-latest" con el instalador, para que la
-      # descarga gated (api/descarga.js, tras pago verificado) lo pueda entregar.
+      # Publica/actualiza el Release "pc-latest" con el instalador de CLIENTES,
+      # para que la descarga gated (api/descarga.js, tras pago verificado) lo
+      # pueda entregar. NUNCA en un build owner (no debe pisar el de clientes).
       - name: Publicar instalador como Release
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && github.event.inputs.owner != 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: pc-latest
@@ -154,4 +187,20 @@ jobs:
             Instalador oficial de MV FBA IA para Windows.
             La descarga se habilita tras la compra (ver /gracias.html).
           files: installer/Output/MV_Amazon_FBA_IA_Setup.exe
+          make_latest: "false"
+
+      # Build owner: publica en un Release SEPARADO (owner-latest), que el dueño
+      # baja directo desde la pagina de Releases del repo privado (esta logueado
+      # como dueño, sin 404). No lo consume api/descarga.js.
+      - name: Publicar instalador owner como Release
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.owner == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: owner-latest
+          name: MV FBA IA — Instalador OWNER (interno, pre-activado)
+          body: >-
+            Build interno del dueño: arranca ya activado como Pro (trae la
+            licencia adentro, se valida contra el servidor en el primer
+            arranque). NO distribuir — es para uso propio.
+          files: installer/Output/MV_Amazon_FBA_IA_Owner_Setup.exe
           make_latest: "false"

@@ -74,6 +74,11 @@ Source: "..\frontend\dist\*"; DestDir: "{app}\frontend\dist"; Flags: recursesubd
 ; CI, ver .github/workflows/windows-installer.yml). No se commitea al repo.
 Source: "..\runtime\*"; DestDir: "{app}\runtime"; Flags: recursesubdirs ignoreversion
 Source: "assets\icon.ico"; DestDir: "{app}\assets"; Flags: ignoreversion
+; Licencia del build owner (interno): solo existe cuando CI compila el
+; instalador del dueño (workflow_dispatch con owner=true, la escribe desde
+; secrets). skipifsourcedoesntexist -> el instalador normal (clientes) se
+; compila igual sin este archivo y arranca con la pantalla de activacion.
+Source: "..\owner_licencia.json"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "Iniciar_Silencioso.vbs"; DestDir: "{app}"; Flags: ignoreversion
 Source: "App_Escritorio.vbs"; DestDir: "{app}"; Flags: ignoreversion
 

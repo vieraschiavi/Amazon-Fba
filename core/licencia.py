@@ -32,6 +32,17 @@ from core import db  # noqa: E402
 DOMINIO = "MV-Amazon-Fba"
 DIAS_DEMO = 3
 
+# Build "owner" (interno): el instalador del dueño trae un owner_licencia.json
+# con {email, clave} ya adentro, para que el programa se auto-active como Pro
+# en el primer arranque sin tener que pegar la clave a mano. NO es un bypass:
+# la clave se valida CONTRA EL SERVIDOR igual que cualquier activacion (misma
+# funcion activar_licencia) -- sin una clave real y su email, el archivo no
+# sirve. El instalador normal (el que compran los clientes) NO incluye este
+# archivo (ver el flag skipifsourcedoesntexist en el .iss), asi que para ellos
+# no existe. Necesita internet una sola vez, como toda activacion.
+RUTA_OWNER = os.path.join(_RAIZ, "owner_licencia.json")
+_owner_intentado = False
+
 
 def _ahora():
     return datetime.now(timezone.utc)
@@ -212,6 +223,32 @@ def activar_licencia(email, clave):
     return {"ok": True, "mensaje": "Licencia activada. Acceso completo sin limite de dias."}
 
 
+def intentar_activacion_owner():
+    """Build owner: auto-activa desde owner_licencia.json en el primer arranque.
+    Un solo intento por proceso (si fue offline, se reintenta al reabrir la
+    app). Devuelve True si quedo activada. Nunca lanza."""
+    global _owner_intentado
+    if _owner_intentado or tiene_licencia():
+        return False
+    _owner_intentado = True
+    if not os.path.isfile(RUTA_OWNER):
+        return False
+    try:
+        import json
+        with open(RUTA_OWNER, encoding="utf-8") as f:
+            d = json.load(f)
+        email = (d.get("email") or "").strip()
+        clave = (d.get("clave") or "").strip()
+    except Exception:
+        return False
+    if not email or not clave:
+        return False
+    try:
+        return bool(activar_licencia(email, clave).get("ok"))
+    except Exception:
+        return False
+
+
 def tiene_licencia(reg=None):
     reg = reg if reg is not None else obtener()
     return bool(reg and reg.get("clave_licencia"))
@@ -224,6 +261,10 @@ def demo_vigente(reg=None):
 
 def estado(reg=None):
     """Resumen listo para la UI."""
+    # Build owner: en el primer status check sin licencia, intenta auto-activar
+    # desde owner_licencia.json (no-op en el build normal, que no trae el archivo).
+    if reg is None and not tiene_licencia():
+        intentar_activacion_owner()
     reg = reg if reg is not None else obtener()
     restantes = dias_restantes(reg)
     return {
