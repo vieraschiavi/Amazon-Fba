@@ -76,6 +76,33 @@ def test_licencia_estado_y_registro():
     assert r2.json()["vigente"] is True     # demo de 3 dias recien arrancada
 
 
+def test_owner_autoactivacion():
+    """Build owner: con owner_licencia.json presente, estado() auto-activa via
+    el server (mockeado). Sin el archivo, es un no-op (build normal)."""
+    # sin archivo -> no-op, no toca la red
+    licencia._owner_intentado = False
+    assert licencia.intentar_activacion_owner() is False
+
+    # con archivo + validacion server OK (mockeada) -> queda activada
+    ruta_orig, validar_orig = licencia.RUTA_OWNER, licencia.validar_clave
+    tmp_owner = os.path.join(_TMP, "owner_licencia.json")
+    with open(tmp_owner, "w", encoding="utf-8") as f:
+        json.dump({"email": "owner@test.com", "clave": "MVFBA-XXXX-XXXX-XXXX-XXXX"}, f)
+    try:
+        licencia.RUTA_OWNER = tmp_owner
+        licencia.validar_clave = lambda e, c: True   # simula el OK del servidor
+        licencia._owner_intentado = False
+        assert licencia.intentar_activacion_owner() is True
+        assert licencia.tiene_licencia() is True
+        assert licencia.estado()["licencia"] is True
+    finally:
+        licencia.RUTA_OWNER, licencia.validar_clave = ruta_orig, validar_orig
+        licencia._owner_intentado = False
+        # limpia la activacion en la DB compartida para no filtrar estado
+        licencia.db.execute("UPDATE registro SET clave_licencia=NULL, fecha_activacion=NULL")
+        os.remove(tmp_owner)
+
+
 def test_prefs_roundtrip():
     r = cliente.put("/api/prefs", json={"idioma": "pt", "producto_activo_id": "7"})
     assert r.status_code == 200
