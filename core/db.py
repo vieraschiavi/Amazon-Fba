@@ -19,6 +19,7 @@ ESQUEMA = {
         flete REAL, arancel_pct REAL, prep REAL, fba_fee REAL, landed REAL,
         precio REAL, neto REAL, margen REAL, roi REAL, semaforo TEXT,
         techo_demanda INTEGER, marketplace TEXT, notas TEXT,
+        stock INTEGER, lead_time_dias INTEGER, stock_fecha TEXT,
         activo INTEGER DEFAULT 1, fecha TEXT DEFAULT (datetime('now')))""",
     "listings": """CREATE TABLE IF NOT EXISTS listings(
         id INTEGER PRIMARY KEY AUTOINCREMENT, product_id INTEGER, titulo TEXT,
@@ -61,7 +62,8 @@ def connect():
 _MIGRACIONES = {
     "products": {"asin": "TEXT", "fba_fee": "REAL", "neto": "REAL",
                  "techo_demanda": "INTEGER", "notas": "TEXT",
-                 "activo": "INTEGER DEFAULT 1"},
+                 "stock": "INTEGER", "lead_time_dias": "INTEGER",
+                 "stock_fecha": "TEXT", "activo": "INTEGER DEFAULT 1"},
     # orders viejas (creadas antes de estas columnas) rompian el registro de
     # ventas con "table orders has no column named neto_unitario".
     "orders": {"neto_unitario": "REAL", "ingreso": "REAL", "neto": "REAL",

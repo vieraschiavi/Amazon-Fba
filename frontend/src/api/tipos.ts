@@ -106,6 +106,26 @@ export interface FilaProyeccion {
   [k: string]: number;
 }
 
+// ---- Reabastecimiento / restock (pronostico de stock) ----
+export interface ItemRestock {
+  id: number; nombre: string; asin: string;
+  stock: number | null; lead_time_dias: number; velocidad_diaria: number;
+  estado: "rojo" | "amarillo" | "verde" | "sin_stock" | "sin_ventas";
+  prioridad: number; mensaje?: string;
+  dias_cobertura?: number; fecha_quiebre?: string;
+  dias_hasta_pedir?: number; fecha_pedir?: string;
+  cantidad_sugerida?: number; capital_reposicion?: number;
+}
+
+export interface PanelRestock {
+  ok: boolean; ventana_dias: number; cobertura_objetivo_dias: number; safety_dias: number;
+  resumen: {
+    n_productos: number; n_reponer: number; n_sin_stock: number;
+    n_sin_ventas: number; capital_reposicion_total: number;
+  };
+  items: ItemRestock[];
+}
+
 // ---- Jungle Scout: casos de uso avanzados (BYOK) ----
 export interface JsVolumenHistorico {
   ok: boolean; keyword: string; mensaje: string;

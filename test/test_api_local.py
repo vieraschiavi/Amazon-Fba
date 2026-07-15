@@ -509,6 +509,45 @@ def test_jungle_ventas_historicas_precio():
         config.JUNGLE_SCOUT_API_KEY, config.JUNGLE_SCOUT_KEY_NAME, jungle_scout._get = orig
 
 
+def test_inventario_restock_pronostico():
+    """Con un producto + stock + ventas reales, el panel pronostica quiebre,
+    cuando pedir y cuanto reponer. Sin stock/ventas, estado honesto."""
+    from agents import inventario, productos, analytics
+    from core import db
+    asin = "B0RESTOCK1"
+    alta = productos.guardar(nombre="Restock test", asin=asin, costo=2.0,
+                             flete=0.5, arancel_pct=5, prep=0.3, techo_demanda=100)
+    pid = alta["id"]
+    try:
+        # sin stock cargado -> honesto
+        p0 = next(i for i in inventario.panel()["items"] if i["id"] == pid)
+        assert p0["estado"] == "sin_ventas"  # todavia sin ventas
+        analytics.registrar_venta(asin, 60, 20.0, 6.0, alertar=False)
+        # con ventas pero sin stock cargado
+        p1 = next(i for i in inventario.panel()["items"] if i["id"] == pid)
+        assert p1["estado"] == "sin_stock" and p1["velocidad_diaria"] > 0
+        # cargamos stock -> pronostico real
+        r = inventario.set_stock(pid, 30, lead_time_dias=45)
+        assert r["ok"] and r["stock"] == 30
+        p2 = next(i for i in inventario.panel()["items"] if i["id"] == pid)
+        assert p2["estado"] in ("rojo", "amarillo", "verde")
+        assert p2["cantidad_sugerida"] >= 0 and "fecha_quiebre" in p2
+        assert "capital_reposicion" in p2
+        # endpoint passthrough
+        api = cliente.get("/api/inventario/panel").json()
+        assert api["ok"] and any(i["id"] == pid for i in api["items"])
+        assert set(("n_reponer", "capital_reposicion_total")) <= set(api["resumen"])
+    finally:
+        db.execute("DELETE FROM orders WHERE asin=?", (asin,))
+        db.execute("DELETE FROM products WHERE id=?", (pid,))
+
+
+def test_inventario_set_stock_validacion():
+    from agents import inventario
+    assert inventario.set_stock(999999, 10)["ok"] is False  # producto inexistente
+    assert inventario.set_stock("x", "y")["ok"] is False     # no numerico
+
+
 # ---------------------- productos / ventas / alertas ---------------------- #
 def test_productos_crud():
     alta = cliente.post("/portfolio/producto",

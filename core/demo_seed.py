@@ -48,6 +48,13 @@ def cargar_ejemplo():
                                   pais="US", segmento="Hogar", alertar=False)
     except Exception:
         pass  # las ventas son opcionales; el producto ya da la experiencia
+    try:
+        from agents import inventario
+        # stock + lead time de muestra para que el pronostico de reabastecimiento
+        # tenga algo que mostrar en la demo
+        inventario.set_stock(r["id"], 140, lead_time_dias=60)
+    except Exception:
+        pass
     return {"ok": True, "ya": False, "id": r["id"],
             "mensaje": "Producto de ejemplo cargado. Recorré Pricing, Caja, "
                        "Ventas y el Asistente para ver todo funcionando."}
