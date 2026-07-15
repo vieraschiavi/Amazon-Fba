@@ -38,6 +38,7 @@ from agents import inventario
 from agents import portafolio as agente_portafolio
 from agents import productos
 from agents import publicador
+from agents import poa as agente_poa
 from agents import pricing
 from agents import recomendador
 from agents import tutorial
@@ -221,6 +222,12 @@ class VentaIn(BaseModel):
 class StockIn(BaseModel):
     stock: int
     lead_time_dias: int | None = None
+
+
+class PoaIn(BaseModel):
+    motivo: str = ""
+    tipo: str = "otro"
+    idioma: str = "es"
 
 
 # ============================ licencia / demo ============================ #
@@ -531,6 +538,19 @@ def inventario_panel():
 def inventario_set_stock(pid: int, s: StockIn):
     """Carga/actualiza el stock actual (unidades) y el lead time (dias) de un producto."""
     return inventario.set_stock(pid, s.stock, lead_time_dias=s.lead_time_dias)
+
+
+@router.get("/poa/tipos")
+def poa_tipos():
+    """Tipos de motivo de suspension para el generador de Plan de Accion."""
+    return {"tipos": agente_poa.TIPOS}
+
+
+@router.post("/poa")
+def poa_generar(p: PoaIn):
+    """Genera un borrador de Plan de Accion (POA) para una suspension de Amazon.
+    Con clave de IA lo redacta Claude; sin clave, plantilla deterministica util."""
+    return agente_poa.generar(p.motivo, tipo=p.tipo, idioma=p.idioma)
 
 
 @router.get("/alertas")

@@ -28,6 +28,7 @@ const GRUPOS: { grupo: string; items: { ruta: string; clave: string }[] }[] = [
     { ruta: "/plan", clave: "tab_plan" },
   ]},
   { grupo: "sb.grupo.sistema", items: [
+    { ruta: "/herramientas", clave: "tab_herramientas" },
     { ruta: "/asistente", clave: "tab_asistente" },
     { ruta: "/alertas", clave: "tab_alertas" },
     { ruta: "/config", clave: "tab_config" },

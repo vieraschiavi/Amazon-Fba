@@ -548,6 +548,49 @@ def test_inventario_set_stock_validacion():
     assert inventario.set_stock("x", "y")["ok"] is False     # no numerico
 
 
+def test_poa_offline_y_endpoint():
+    """POA sin clave de IA: plantilla deterministica con las 3 secciones, en el
+    idioma pedido, con texto no vacio. Nunca lanza."""
+    import config
+    orig = config.ANTHROPIC_API_KEY
+    try:
+        config.ANTHROPIC_API_KEY = ""
+        tipos = cliente.get("/api/poa/tipos").json()["tipos"]
+        assert "autenticidad" in tipos
+        r = cliente.post("/api/poa", json={"motivo": "caja abierta",
+                                           "tipo": "condicion", "idioma": "en"}).json()
+        assert r["ok"] and r["modo"] == "offline" and len(r["secciones"]) == 3
+        assert all(s["titulo"] and s["puntos"] for s in r["secciones"])
+        assert r["texto"] and r["nota"]
+    finally:
+        config.ANTHROPIC_API_KEY = orig
+
+
+def test_poa_online_mockeado():
+    """Con clave + anthropic mockeado, el POA usa el JSON que devuelve Claude."""
+    import config, sys, types
+    class _Bloque:
+        def __init__(self, t): self.type = "text"; self.text = t
+    class _Resp:
+        content = [_Bloque('{"secciones":[{"titulo":"A","puntos":["x"]},'
+                           '{"titulo":"B","puntos":["y"]},{"titulo":"C","puntos":["z"]}]}')]
+    class _Msgs:
+        def create(self, **k): return _Resp()
+    class _Anthropic:
+        def __init__(self, api_key): self.messages = _Msgs()
+    fake = types.ModuleType("anthropic"); fake.Anthropic = _Anthropic
+    from agents import poa
+    orig_key, orig_mod = config.ANTHROPIC_API_KEY, sys.modules.get("anthropic")
+    try:
+        config.ANTHROPIC_API_KEY = "sk-fake"; sys.modules["anthropic"] = fake
+        r = poa.generar("motivo", "autenticidad", "es")
+        assert r["modo"] == "online" and [s["titulo"] for s in r["secciones"]] == ["A", "B", "C"]
+    finally:
+        config.ANTHROPIC_API_KEY = orig_key
+        if orig_mod is not None: sys.modules["anthropic"] = orig_mod
+        else: sys.modules.pop("anthropic", None)
+
+
 # ---------------------- productos / ventas / alertas ---------------------- #
 def test_productos_crud():
     alta = cliente.post("/portfolio/producto",

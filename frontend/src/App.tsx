@@ -19,6 +19,7 @@ import { Investigacion } from "./pages/Investigacion";
 import { Recomendador } from "./pages/Recomendador";
 import { Mercado } from "./pages/Mercado";
 import { JungleScout } from "./pages/JungleScout";
+import { Herramientas } from "./pages/Herramientas";
 import { Publicar } from "./pages/Publicar";
 
 export default function App() {
@@ -49,6 +50,7 @@ export default function App() {
         <Route path="/caja" element={<Caja />} />
         <Route path="/inversores" element={<Inversores />} />
         <Route path="/plan" element={<Plan />} />
+        <Route path="/herramientas" element={<Herramientas />} />
         <Route path="/asistente" element={<Asistente />} />
         <Route path="/alertas" element={<Alertas />} />
         <Route path="/config" element={<Config />} />
