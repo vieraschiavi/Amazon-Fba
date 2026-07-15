@@ -448,6 +448,67 @@ def test_jungle_mapeo_y_preferencia(monkeypatch=None):
         config.JUNGLE_SCOUT_API_KEY, config.JUNGLE_SCOUT_KEY_NAME, jungle_scout._post = orig
 
 
+def test_jungle_endpoints_avanzados_sin_clave():
+    """Los 4 endpoints nuevos (keywords-asin, ventas-historicas,
+    volumen-historico, sov) devuelven estado vacio honesto sin claves y no
+    inventan datos."""
+    from data import jungle_scout
+    assert jungle_scout.keywords_por_asin("B0X")["ok"] is False
+    assert jungle_scout.ventas_historicas_asin("B0X")["ok"] is False
+    assert jungle_scout.volumen_historico("garlic press")["ok"] is False
+    assert jungle_scout.share_of_voice("garlic press")["ok"] is False
+    for ruta, params in [
+        ("/api/jungle/keywords-asin", {"asin": "B0X"}),
+        ("/api/jungle/ventas-historicas", {"asin": "B0X"}),
+        ("/api/jungle/volumen-historico", {"keyword": "garlic press"}),
+        ("/api/jungle/sov", {"keyword": "garlic press"}),
+    ]:
+        r = cliente.get(ruta, params=params)
+        assert r.status_code == 200 and r.json()["ok"] is False
+
+
+def test_jungle_volumen_historico_estacionalidad():
+    """Con red mockeada, volumen_historico arma la serie y deriva el mejor mes."""
+    import config
+    from data import jungle_scout
+    js_json = {"data": [
+        {"attributes": {"estimate_start_date": "2025-11-03", "estimated_exact_search_volume": 9000}},
+        {"attributes": {"estimate_start_date": "2025-11-10", "estimated_exact_search_volume": 8000}},
+        {"attributes": {"estimate_start_date": "2025-06-02", "estimated_exact_search_volume": 1000}},
+    ]}
+    orig = (config.JUNGLE_SCOUT_API_KEY, config.JUNGLE_SCOUT_KEY_NAME, jungle_scout._post)
+    try:
+        config.JUNGLE_SCOUT_API_KEY, config.JUNGLE_SCOUT_KEY_NAME = "k", "n"
+        jungle_scout._post = lambda ruta, cuerpo, timeout=30: js_json
+        r = jungle_scout.volumen_historico("garlic press")
+        assert r["ok"] and len(r["serie"]) == 3
+        assert r["estacionalidad"]["mejor_mes"] == "noviembre"
+        assert r["estacionalidad"]["volumen_total"] == 18000
+    finally:
+        config.JUNGLE_SCOUT_API_KEY, config.JUNGLE_SCOUT_KEY_NAME, jungle_scout._post = orig
+
+
+def test_jungle_ventas_historicas_precio():
+    """Con red mockeada, ventas_historicas_asin mapea unidades + precio diarios."""
+    import config
+    from data import jungle_scout
+    js_json = {"data": [
+        {"attributes": {"date": "2026-07-01", "estimated_units_sold": 30, "estimated_price": 19.99}},
+        {"attributes": {"date": "2026-07-02", "estimated_units_sold": 25, "estimated_price": 21.99}},
+    ]}
+    orig = (config.JUNGLE_SCOUT_API_KEY, config.JUNGLE_SCOUT_KEY_NAME, jungle_scout._get)
+    try:
+        config.JUNGLE_SCOUT_API_KEY, config.JUNGLE_SCOUT_KEY_NAME = "k", "n"
+        jungle_scout._get = lambda ruta, params=None, timeout=25: js_json
+        r = jungle_scout.ventas_historicas_asin("B0X", dias=30)
+        assert r["ok"] and r["resumen"]["unidades_total"] == 55
+        assert r["resumen"]["precio_min"] == 19.99 and r["resumen"]["precio_max"] == 21.99
+        # el wrapper de compat reusa el mismo camino
+        assert jungle_scout.ventas_asin("B0X")["ventas_estim"] == 55
+    finally:
+        config.JUNGLE_SCOUT_API_KEY, config.JUNGLE_SCOUT_KEY_NAME, jungle_scout._get = orig
+
+
 # ---------------------- productos / ventas / alertas ---------------------- #
 def test_productos_crud():
     alta = cliente.post("/portfolio/producto",

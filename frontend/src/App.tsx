@@ -17,6 +17,7 @@ import { Plan } from "./pages/Plan";
 import { Investigacion } from "./pages/Investigacion";
 import { Recomendador } from "./pages/Recomendador";
 import { Mercado } from "./pages/Mercado";
+import { JungleScout } from "./pages/JungleScout";
 import { Publicar } from "./pages/Publicar";
 
 export default function App() {
@@ -38,6 +39,7 @@ export default function App() {
         <Route path="/recomendador" element={<Recomendador />} />
         <Route path="/investigacion" element={<Investigacion />} />
         <Route path="/mercado" element={<Mercado />} />
+        <Route path="/jungle-scout" element={<JungleScout />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/portafolio" element={<Portafolio />} />
         <Route path="/publicar" element={<Publicar />} />
