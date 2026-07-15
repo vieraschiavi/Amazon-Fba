@@ -381,7 +381,7 @@ def exito_get(keyword: str, precio: float | None = None,
     if demo:
         r = data_mercado.productos_estrella(keyword, 10, 50, demo=True)
         comp = data_mercado.resumen_competencia(r["productos"])
-    elif config.KEEPA_API_KEY:
+    elif config.KEEPA_API_KEY or (config.JUNGLE_SCOUT_API_KEY and config.JUNGLE_SCOUT_KEY_NAME):
         r = data_mercado.productos_estrella(keyword, 10, 50)
         if r["ok"]:
             comp = data_mercado.resumen_competencia(r["productos"])

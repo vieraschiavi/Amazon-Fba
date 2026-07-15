@@ -11,6 +11,7 @@ interface Resultado {
   seeds_usadas: string[]; n_candidatos_evaluados: number;
   precio_min: number; precio_max: number; marketplace: string;
   mensaje: string; nota_honesta: string;
+  narrativa_ia?: { texto: string; modo: string };
 }
 interface Mkt { codigo: string; nombre: string }
 
@@ -69,6 +70,14 @@ export function Recomendador() {
                  sub={res.fuente.includes("Keepa") ? "+ Keepa conectado" : "sin APIs pagas"} tono="good" />
           </FilaKpis>
           <Alerta tipo="warn">{res.nota_honesta}</Alerta>
+          {res.narrativa_ia && (
+            <Card>
+              <h3 className="font-bold text-[14px] text-navy-deep mb-2">Recomendación de Claude</h3>
+              <Alerta tipo="info">
+                <span className="whitespace-pre-wrap">{res.narrativa_ia.texto}</span>
+              </Alerta>
+            </Card>
+          )}
           <Card>
             <Tabla
               cabeceras={["Nicho", "Potencial", "Veredicto", "Interés", "Competidores", "Ventas/mes", "Precio med."]}
