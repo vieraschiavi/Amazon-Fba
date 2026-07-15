@@ -223,11 +223,14 @@ with st.sidebar:
                      help="Datos [DEMO] ilustrativos. Apagar para usar CSV real de Cerebro.")
     cfg = config.estado_config()
     st.markdown(ui.seccion("Conexiones"), unsafe_allow_html=True)
+    _jungle_ok = bool(config.JUNGLE_SCOUT_API_KEY and config.JUNGLE_SCOUT_KEY_NAME)
     st.markdown(
         ui.badge("Claude" if config.ANTHROPIC_API_KEY else "Listing offline",
                  "verde" if config.ANTHROPIC_API_KEY else "navy") +
         " " + ui.badge("Keepa" if config.KEEPA_API_KEY else "Keepa sin clave",
-                       "verde" if config.KEEPA_API_KEY else "amarillo"),
+                       "verde" if config.KEEPA_API_KEY else "amarillo") +
+        " " + ui.badge("Jungle Scout" if _jungle_ok else "Jungle Scout sin clave",
+                       "verde" if _jungle_ok else "amarillo"),
         unsafe_allow_html=True)
     st.markdown(
         ui.badge("Email real" if (config.SMTP_USER and config.SMTP_PASS) else "Email dry-run",
@@ -242,6 +245,7 @@ st.markdown(ui.header(
     subtitulo="Investigacion, pricing, portafolio y caja para Amazon FBA — mercado US",
     chips=[("DEMO" if demo else "Produccion", not demo),
            ("Keepa", bool(config.KEEPA_API_KEY)),
+           ("Jungle Scout", bool(config.JUNGLE_SCOUT_API_KEY and config.JUNGLE_SCOUT_KEY_NAME)),
            ("Claude", bool(config.ANTHROPIC_API_KEY)),
            ("Email", bool(config.SMTP_USER and config.SMTP_PASS))]),
     unsafe_allow_html=True)
