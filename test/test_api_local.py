@@ -29,6 +29,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 import app as modapp  # noqa: E402
 from agents import exito, glosario, pricing, tutorial  # noqa: E402
+from agents import recomendador  # noqa: E402
 from agents import portafolio as agente_portafolio  # noqa: E402
 from agents.capital_planner import escenario_inversor, proyeccion_realista  # noqa: E402
 from agents import ganancias  # noqa: E402
@@ -256,22 +257,130 @@ def test_marketplaces():
 
 
 def test_recomendador_demo():
-    r = cliente.post("/api/recomendador/escanear",
-                     json={"demo": True, "precio_min": 15, "precio_max": 45,
-                           "top_n": 5})
-    assert r.status_code == 200
-    d = r.json()
-    assert d["ok"] is True and len(d["oportunidades"]) <= 5
+    import config
+    orig = config.ANTHROPIC_API_KEY
+    try:
+        config.ANTHROPIC_API_KEY = ""  # offline: rapido y deterministico
+        r = cliente.post("/api/recomendador/escanear",
+                         json={"demo": True, "precio_min": 15, "precio_max": 45,
+                               "top_n": 5})
+        assert r.status_code == 200
+        d = r.json()
+        assert d["ok"] is True and len(d["oportunidades"]) <= 5
+        # narrativa_ia siempre viaja (passthrough, mismo criterio que /api/exito)
+        assert "narrativa_ia" in d and d["narrativa_ia"]["texto"]
+    finally:
+        config.ANTHROPIC_API_KEY = orig
+
+
+def test_recomendador_narrativa_top_offline():
+    """Sin ANTHROPIC_API_KEY, narrativa_top devuelve un resumen deterministico
+    del top 1 -- nunca vacio, nunca lanza."""
+    import config
+    orig = config.ANTHROPIC_API_KEY
+    try:
+        config.ANTHROPIC_API_KEY = ""
+        oport = [{"nicho": "test niche", "potencial": 70, "veredicto": "VERDE",
+                  "comentario": "candidato fuerte"}]
+        n = recomendador.narrativa_top(oport, "US", 15, 40)
+        assert n["modo"] == "offline" and "test niche" in n["texto"]
+    finally:
+        config.ANTHROPIC_API_KEY = orig
+
+
+def test_recomendador_narrativa_top_online_mockeado():
+    """Con ANTHROPIC_API_KEY seteada, narrativa_top llama al cliente de
+    anthropic (mockeado aca, sin red real) y devuelve modo online con el
+    texto que "respondio" Claude, tal cual."""
+    import config
+    import types
+
+    class _Bloque:
+        def __init__(self, texto):
+            self.type = "text"
+            self.text = texto
+
+    class _Respuesta:
+        def __init__(self, texto):
+            self.content = [_Bloque(texto)]
+
+    class _Mensajes:
+        def create(self, **kwargs):
+            return _Respuesta("el nicho ganador es test niche porque si")
+
+    class _Anthropic:
+        def __init__(self, api_key):
+            self.messages = _Mensajes()
+
+    fake_anthropic = types.ModuleType("anthropic")
+    fake_anthropic.Anthropic = _Anthropic
+
+    orig_key = config.ANTHROPIC_API_KEY
+    orig_mod = sys.modules.get("anthropic")
+    try:
+        config.ANTHROPIC_API_KEY = "sk-test-fake"
+        sys.modules["anthropic"] = fake_anthropic
+        oport = [{"nicho": "test niche", "potencial": 70, "veredicto": "VERDE",
+                  "comentario": "candidato fuerte"}]
+        n = recomendador.narrativa_top(oport, "US", 15, 40)
+        assert n["modo"] == "online"
+        assert n["texto"] == "el nicho ganador es test niche porque si"
+    finally:
+        config.ANTHROPIC_API_KEY = orig_key
+        if orig_mod is not None:
+            sys.modules["anthropic"] = orig_mod
+        else:
+            sys.modules.pop("anthropic", None)
+
+
+def test_recomendador_detecta_jungle_scout_sin_keepa():
+    """Bugfix: con Jungle Scout conectado (sin Keepa), la Pasada 2 real se
+    activa igual -- antes solo miraba KEEPA_API_KEY y estos usuarios se
+    quedaban con el proxy gratis aunque data/mercado.py ya sepa usar JS."""
+    import config
+    from data import mercado, motor_propio as mp
+    orig_js_key, orig_js_name, orig_keepa, orig_anthropic = (
+        config.JUNGLE_SCOUT_API_KEY, config.JUNGLE_SCOUT_KEY_NAME, config.KEEPA_API_KEY,
+        config.ANTHROPIC_API_KEY)
+    orig_prod_estrella, orig_sugerencias = mercado.productos_estrella, mp.sugerencias
+    try:
+        config.JUNGLE_SCOUT_API_KEY, config.JUNGLE_SCOUT_KEY_NAME = "k", "n"
+        config.KEEPA_API_KEY = ""
+        config.ANTHROPIC_API_KEY = ""  # offline: no hace falta pegarle a Anthropic para este test
+        mp.sugerencias = lambda prefix, timeout=10, marketplace="US": [f"{prefix} pro"]
+        canned = {"ok": True, "fuente": "Jungle Scout", "productos": [
+            {"asin": "B0X", "titulo": "t", "precio": 22.0, "bsr": 3000,
+             "ventas_estim": 900, "rating": 4.5, "resenas": 500,
+             "link": "", "link_resenas": ""}]}
+        mercado.productos_estrella = lambda *a, **k: canned
+        r = recomendador.escanear_oportunidades(
+            precio_min=15, precio_max=40, marketplace="US",
+            seeds=["kitchen utensils"], max_seeds=1, shortlist=1, top_n=1, demo=False)
+        assert r["ok"] is True
+        assert r["oportunidades"][0]["n_competidores"] == 1
+        assert r["oportunidades"][0]["fuente_precio"] == "Jungle Scout"
+        assert "datos reales" in r["fuente"]
+    finally:
+        (config.JUNGLE_SCOUT_API_KEY, config.JUNGLE_SCOUT_KEY_NAME,
+         config.KEEPA_API_KEY, config.ANTHROPIC_API_KEY) = (
+            orig_js_key, orig_js_name, orig_keepa, orig_anthropic)
+        mercado.productos_estrella, mp.sugerencias = orig_prod_estrella, orig_sugerencias
 
 
 def test_exito_demo_con_narrativa():
-    r = cliente.get("/api/exito", params={"keyword": "bamboo", "demo": True,
-                                          "precio": 24.0,
-                                          "con_narrativa": True})
-    d = r.json()
-    assert d["evaluacion"]["ok"] is True
-    assert "narrativa" in d and d["narrativa"]["texto"]
-    assert d["pesos"] == json.loads(json.dumps(exito.PESOS))
+    import config
+    orig = config.ANTHROPIC_API_KEY
+    try:
+        config.ANTHROPIC_API_KEY = ""  # offline: rapido y deterministico
+        r = cliente.get("/api/exito", params={"keyword": "bamboo", "demo": True,
+                                              "precio": 24.0,
+                                              "con_narrativa": True})
+        d = r.json()
+        assert d["evaluacion"]["ok"] is True
+        assert "narrativa" in d and d["narrativa"]["texto"]
+        assert d["pesos"] == json.loads(json.dumps(exito.PESOS))
+    finally:
+        config.ANTHROPIC_API_KEY = orig
 
 
 def test_investigacion_demo():
@@ -293,6 +402,50 @@ def test_subida_cerebro_csv():
                                      "text/csv")})
     d = r.json()
     assert d["ok"] is True and os.path.isfile(d["csv_path"])
+
+
+# ---------------------- jungle scout (BYOK) ---------------------- #
+def test_jungle_sin_clave_estado_vacio_honesto():
+    from data import jungle_scout, mercado
+    # estado honesto sin claves + productos_estrella cae a links libres (intacto)
+    assert jungle_scout.estado()["ok"] is False
+    r = mercado.productos_estrella("garlic press", 10, 50)
+    assert r["ok"] is False and r["fuente"] == "sin_clave"
+    assert len(r["links_amazon"]) >= 2       # los links gratis siempre estan
+    # passthrough del endpoint: sin clave devuelve el mismo estado honesto
+    api = cliente.get("/api/jungle/keywords", params={"termino": "garlic press"})
+    assert api.status_code == 200
+    _igual(api.json(), jungle_scout.keywords_por_termino("garlic press"))
+    assert api.json()["ok"] is False
+
+
+def test_jungle_mapeo_y_preferencia(monkeypatch=None):
+    """Con claves + red mockeada: buscar_productos/keywords mapean el shape
+    esperado, y productos_estrella prefiere Jungle Scout sobre Keepa."""
+    import config
+    from data import jungle_scout, mercado
+    prod_json = {"data": [{"attributes": {
+        "asin": "B0JS000001", "title": "JS garlic press pro", "price": 21.5,
+        "category_rank": 4200, "approximate_30_day_units_sold": 900,
+        "rating": 4.6, "reviews": 1800}}]}
+    kw_json = {"data": [{"attributes": {
+        "name": "garlic press", "monthly_search_volume_exact": 40500,
+        "competed_products": 3000}}]}
+    orig = (config.JUNGLE_SCOUT_API_KEY, config.JUNGLE_SCOUT_KEY_NAME, jungle_scout._post)
+    try:
+        config.JUNGLE_SCOUT_API_KEY, config.JUNGLE_SCOUT_KEY_NAME = "k", "n"
+        jungle_scout._post = lambda ruta, cuerpo, timeout=30: (
+            kw_json if "keywords" in ruta else prod_json)
+        bp = jungle_scout.buscar_productos("garlic press", 10, 50)
+        assert bp["ok"] and bp["productos"][0]["asin"] == "B0JS000001"
+        assert bp["productos"][0]["ventas_estim"] == 900
+        kw = jungle_scout.keywords_por_termino("garlic press")
+        assert kw["ok"] and kw["keywords"][0]["volumen"] == 40500
+        # productos_estrella prefiere Jungle Scout (sin Keepa configurado)
+        pe = mercado.productos_estrella("garlic press", 10, 50)
+        assert pe["ok"] and pe["fuente"] == "Jungle Scout"
+    finally:
+        config.JUNGLE_SCOUT_API_KEY, config.JUNGLE_SCOUT_KEY_NAME, jungle_scout._post = orig
 
 
 # ---------------------- productos / ventas / alertas ---------------------- #

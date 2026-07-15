@@ -72,6 +72,7 @@ Amazon-Fba/
 ├── data/
 │   ├── cerebro.py        Keywords desde CSV de Helium 10 Cerebro + scoring
 │   ├── keepa.py          Precio + BSR vía Keepa API (sin clave → estado vacío)
+│   ├── jungle_scout.py   Keywords (volumen real) + productos + ventas vía Jungle Scout API (BYOK)
 │   └── cerebro_exports/  Dejá acá tus CSV de Cerebro
 ├── n8n/                  3 workflows: research diario, mensajes, alertas de venta
 ├── installer/            Instalador Windows (Inno Setup) — ver COMO_COMPILAR.md
@@ -326,9 +327,9 @@ encabezados, botones y el tutorial completo a **español, inglés o portugués**
 | Necesidad | Motor propio (gratis) | Herramienta paga |
 |---|---|---|
 | Descubrir keywords y nichos reales | ✅ Autocompletado público de Amazon | Helium 10 Magnet/Cerebro |
-| Volumen de búsqueda numérico | ❌ (solo proxy de interés) | Helium 10 / Jungle Scout, o **Keepa** (~19 EUR/mes, BSR→ventas) |
+| Volumen de búsqueda numérico | Con `JUNGLE_SCOUT_API_KEY` (volumen real) o proxy de interés gratis | Helium 10 / Jungle Scout |
 | Precio y BSR de un ASIN | Con `KEEPA_API_KEY` | Keepa |
-| Productos estrella por rango de precio (ventas, rating, reseñas) | Con `KEEPA_API_KEY` (Product Finder) o links filtrados gratis | Helium 10 Black Box / JS Product DB |
+| Productos estrella por rango de precio (ventas, rating, reseñas) | Con **Jungle Scout API** o `KEEPA_API_KEY` (Product Finder), o links filtrados gratis | Helium 10 Black Box / JS Product DB |
 | Proveedores mejor rankeados | ✅ Links filtrados (Trade Assurance + Verified) + RFQ | — |
 | Probabilidad de éxito del producto | ✅ Fórmula auditable + Claude | Jungle Scout Opportunity Score |
 | Copy del listing | ✅ (offline o Claude) | — |

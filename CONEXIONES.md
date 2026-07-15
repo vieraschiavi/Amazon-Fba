@@ -23,7 +23,23 @@ Cada conexión suma capacidad; ninguna es obligatoria salvo que quieras ese dato
    producto real; eso gasta 1 token). Con el plan basico tenes 1 token/min, y los tokens
    expiran a los 60 min, asi que el sistema consulta por evento, no en bucle.
 
-## 2) Anthropic (Claude redacta el listing) — opcional
+## 2) Jungle Scout (API real: keywords + productos + ventas) — opcional
+A diferencia de Helium 10, Jungle Scout **si expone API** (BYOK). Da lo que ni el motor
+propio ni Keepa dan: **volumen de busqueda real de keywords**, busqueda de productos y
+ventas por ASIN.
+1. Necesitas un plan que incluya acceso a la API (Growth Accelerator / Brand Owner, o el
+   add-on de API). No lo puedo contratar por vos.
+2. En la app de Jungle Scout: menu de tu cuenta → **Developer** → **Generate API Key**.
+   Te da DOS datos: el **nombre de la clave** y la **clave** (el auth es `Key_Name:API_Key`).
+3. Pegalos en `.env`:
+   `JUNGLE_SCOUT_KEY_NAME=nombre_de_tu_clave`
+   `JUNGLE_SCOUT_API_KEY=la_clave`
+   (US ya queda en `JUNGLE_SCOUT_MARKETPLACE=us`).
+4. Verifica: `CONECTAR.bat` (valida el auth con una consulta minima). Con Jungle Scout
+   conectado, la pestaña **Mercado** trae productos reales por su API (tiene prioridad sobre
+   Keepa) y aparecen los volumenes de busqueda reales.
+
+## 3) Anthropic (Claude redacta el listing) — opcional
 1. console.anthropic.com → API Keys → Create Key. Copia la clave `sk-ant-...`.
 2. `.env`:  `ANTHROPIC_API_KEY=sk-ant-...`
 3. Sin esta clave, el listing se genera offline (plantillas con tus keywords); no es error.

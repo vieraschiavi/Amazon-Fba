@@ -23,8 +23,9 @@ import urllib.request
 _AQUI = os.path.dirname(os.path.abspath(__file__))
 if _AQUI not in sys.path:
     sys.path.insert(0, _AQUI)
-import config              # noqa: E402
-from data import keepa     # noqa: E402
+import config                          # noqa: E402
+from data import keepa                 # noqa: E402
+from data import jungle_scout          # noqa: E402
 
 OK, FALLA, AVISO = "ok", "falla", "aviso"
 _SIMBOLO = {OK: "[ OK ]", FALLA: "[FALLA]", AVISO: "[AVISO]"}
@@ -51,6 +52,17 @@ def check_keepa(asin=None):
             filas.append({"estado": AVISO, "nombre": "Keepa producto",
                           "detalle": pr.get("mensaje", "sin datos")})
     return filas
+
+
+def check_jungle_scout():
+    if not (config.JUNGLE_SCOUT_API_KEY and config.JUNGLE_SCOUT_KEY_NAME):
+        return [{"estado": FALLA, "nombre": "Jungle Scout",
+                 "detalle": "falta JUNGLE_SCOUT_KEY_NAME + JUNGLE_SCOUT_API_KEY "
+                            "(app Jungle Scout -> Developer -> Generate Key)"}]
+    v = jungle_scout.validar()
+    if not v["ok"]:
+        return [{"estado": FALLA, "nombre": "Jungle Scout", "detalle": v["mensaje"]}]
+    return [{"estado": OK, "nombre": "Jungle Scout", "detalle": v["mensaje"]}]
 
 
 def check_anthropic():
@@ -108,6 +120,7 @@ def check_cerebro():
 def verificar_todo(asin=None):
     filas = []
     filas += check_keepa(asin)
+    filas += check_jungle_scout()
     filas += check_anthropic()
     filas += check_smtp()
     filas += check_cerebro()

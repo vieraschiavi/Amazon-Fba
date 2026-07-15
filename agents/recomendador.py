@@ -11,25 +11,30 @@ una lista rankeada de "oportunidades" — nichos con buen precio, demanda y
 poca competencia — usando SOLO datos propios:
 
   1) Motor propio (data/motor_propio.py): autocompletado real de Amazon,
-     gratis, sin Helium 10 ni Jungle Scout. Da el ranking de popularidad real
-     (no el volumen numerico), igual que en Investigacion.
-  2) Si hay KEEPA_API_KEY conectada (opcional, no obligatoria): cruza cada
-     candidato con productos_estrella (data/mercado.py) para afinar con
-     precio real, ventas estimadas (BSR) y competencia — pero el escaneo
-     funciona igual de bien sin esa clave, solo que con menos precision.
+     gratis, sin Helium 10. Da el ranking de popularidad real (no el volumen
+     numerico), igual que en Investigacion.
+  2) Si hay Jungle Scout o Keepa conectados (opcional, no obligatorio, ver
+     data/mercado.py que decide cual usar): cruza cada candidato con
+     productos_estrella para afinar con precio real, ventas estimadas y
+     competencia — pero el escaneo funciona igual de bien sin ninguna clave,
+     solo que con menos precision.
   3) Rankea con la MISMA formula de agents/exito.py (probabilidad de exito),
      no una formula nueva: demanda + baja competencia + hueco de calidad +
      precio sweet-spot + margen.
+  4) Con ANTHROPIC_API_KEY conectada, Claude sintetiza cual es el nicho mas
+     rentable del top rankeado (narrativa_top) — sin clave, un resumen
+     deterministico del top 1 (nunca deja el campo vacio).
 
 Dos pasadas para no hacer 200+ requests por click:
   Pasada 1 (amplia, rapida): 1 request de autocompletado por seed -> hasta
   10 sugerencias rankeadas por Amazon mismo. Barato: ~len(seeds) requests.
   Pasada 2 (angosta, precisa): de esas, solo el shortlist (12 por defecto)
-  se evalua con agents/exito.py (+ Keepa si esta conectado).
+  se evalua con agents/exito.py (+ Jungle Scout/Keepa si esta conectado).
 
 HONESTIDAD: "potencial" ordena candidatos con datos parciales, no promete
 ganancias. Ninguna oportunidad reemplaza pedir muestra y validar con una
 orden de prueba chica antes de escalar (mismo caveat que agents/exito.py).
+La narrativa de Claude tampoco es una garantia: hereda el mismo caveat.
 
 Standalone:
     python agents/recomendador.py --min 15 --max 40 --demo
@@ -122,8 +127,9 @@ def _pasada_amplia(seeds, marketplace, demo):
     return candidatos, hechos
 
 
-def _pasada_angosta(shortlist, precio_min, precio_max, demo, usar_keepa_real):
-    """Shortlist -> evaluacion real (agents/exito.py) + Keepa opcional."""
+def _pasada_angosta(shortlist, precio_min, precio_max, demo, usar_datos_reales):
+    """Shortlist -> evaluacion real (agents/exito.py) + Jungle Scout/Keepa opcional
+    (data/mercado.py decide sola cual de las dos usar, si hay mas de una clave)."""
     precio_obj = (precio_min + precio_max) / 2.0
     oportunidades = []
     for c in shortlist:
@@ -133,12 +139,12 @@ def _pasada_angosta(shortlist, precio_min, precio_max, demo, usar_keepa_real):
             if prods:
                 comp = mercado.resumen_competencia(prods)
                 fuente_precio = "DEMO"
-        elif usar_keepa_real:
+        elif usar_datos_reales:
             try:
                 r = mercado.productos_estrella(c["keyword"], precio_min, precio_max, max_n=8)
                 if r.get("ok"):
                     comp = mercado.resumen_competencia(r["productos"])
-                    fuente_precio = "Keepa Product Finder"
+                    fuente_precio = r.get("fuente") or "datos reales"
             except Exception:
                 comp = None
 
@@ -188,15 +194,20 @@ def escanear_oportunidades(precio_min=10.0, precio_max=50.0, marketplace="US",
                 "nota_honesta": _NOTA}
 
     candidatos.sort(key=lambda c: c["interes_proxy"], reverse=True)
-    usar_keepa_real = bool(usar_keepa and config.KEEPA_API_KEY and not demo)
+    # usar_keepa: nombre historico del parametro publico (no se renombra para
+    # no romper la firma), pero ahora gatea CUALQUIER fuente real conectada
+    # (Jungle Scout o Keepa) -- data/mercado.py decide sola cual usar.
+    usar_datos_reales = bool(usar_keepa and not demo and (
+        config.KEEPA_API_KEY or (config.JUNGLE_SCOUT_API_KEY and config.JUNGLE_SCOUT_KEY_NAME)))
     oportunidades = _pasada_angosta(candidatos[:max(1, shortlist)], precio_min,
-                                    precio_max, demo, usar_keepa_real)
+                                    precio_max, demo, usar_datos_reales)
     oportunidades.sort(key=lambda o: o["potencial"], reverse=True)
     top = oportunidades[:max(1, top_n)]
 
     fuente = ("DEMO" if demo else
-             "motor propio + Keepa Product Finder" if usar_keepa_real else
-             "motor propio (autocompletado Amazon, gratis, sin Helium 10 ni Jungle Scout)")
+             "motor propio + datos reales (Jungle Scout/Keepa)" if usar_datos_reales else
+             "motor propio (autocompletado Amazon, gratis, sin Helium 10)")
+    narrativa_ia = narrativa_top(top, marketplace, precio_min, precio_max) if top else None
     return {
         "ok": True, "fuente": fuente, "marketplace": marketplace,
         "precio_min": precio_min, "precio_max": precio_max,
@@ -205,7 +216,45 @@ def escanear_oportunidades(precio_min=10.0, precio_max=50.0, marketplace="US",
         "oportunidades": top,
         "mensaje": f"{len(top)} oportunidades rankeadas de {len(oportunidades)} candidatos evaluados.",
         "nota_honesta": _NOTA,
+        "narrativa_ia": narrativa_ia,
     }
+
+
+def narrativa_top(oportunidades, marketplace, precio_min, precio_max):
+    """Con ANTHROPIC_API_KEY, Claude elige el nicho mas rentable del top
+    rankeado y explica por que (mismo molde que agents/exito.py::narrativa).
+    Sin clave (o si Claude falla), resumen deterministico del top 1 -- nunca
+    lanza, nunca deja el campo vacio."""
+    top1 = oportunidades[0]
+    base = (f"Mejor candidato segun el ranking: '{top1['nicho']}' "
+            f"({top1['potencial']}/100, {top1['veredicto']}). {top1['comentario']}")
+    if not config.ANTHROPIC_API_KEY:
+        return {"texto": base, "modo": "offline"}
+    try:
+        import anthropic
+        client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+        resp = client.messages.create(
+            model=config.MODEL_OPUS, max_tokens=900,
+            system=("Sos el asesor de MV FBA IA. Te paso una lista de nichos ya "
+                    "rankeados (con potencial 0-100, veredicto, competidores, "
+                    "ventas estimadas y precio mediana cuando hay datos reales de "
+                    "Jungle Scout/Keepa, o solo un proxy de interes si no). Elegi "
+                    "CUAL es el nicho mas rentable para entrar y explica por que "
+                    "en 3-5 parrafos cortos, en espanol rioplatense, tono "
+                    "profesional pero calido y cercano. Nombra 1-2 runner-ups si "
+                    "hay candidatos cerca en potencial pero con algun matiz "
+                    "distinto (mas defendido, precio mas ajustado, etc). Aclara "
+                    "siempre que es una estimacion para ordenar candidatos, NO una "
+                    "garantia, y que la orden de prueba (USD 1.000-2.000) sigue "
+                    "siendo obligatoria antes de escalar."),
+            messages=[{"role": "user", "content":
+                       f"Rango de precio: USD {precio_min:.0f}-{precio_max:.0f} | "
+                       f"Marketplace: {marketplace}\n\nNichos rankeados:\n" +
+                       json.dumps(oportunidades, ensure_ascii=False)}])
+        texto = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
+        return {"texto": texto.strip() or base, "modo": "online"}
+    except Exception:
+        return {"texto": base, "modo": "offline"}
 
 
 def _texto(r):
@@ -225,6 +274,10 @@ def _texto(r):
         out.append(detalle)
         out.append(f"     {o['comentario']}")
     out.append("-" * 66)
+    if r.get("narrativa_ia"):
+        out.append(f"RECOMENDACION DE IA ({r['narrativa_ia']['modo']}):")
+        out.append(r["narrativa_ia"]["texto"])
+        out.append("-" * 66)
     out.append("NOTA: " + r["nota_honesta"])
     out.append("=" * 66)
     return "\n".join(out)
@@ -232,7 +285,7 @@ def _texto(r):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(
-        description="Recomendador proactivo de nichos FBA (sin Helium 10 ni Jungle Scout).")
+        description="Recomendador proactivo de nichos FBA (con Jungle Scout/Keepa opcional).")
     ap.add_argument("--min", type=float, default=15.0, dest="precio_min")
     ap.add_argument("--max", type=float, default=45.0, dest="precio_max")
     ap.add_argument("--marketplace", default="US")

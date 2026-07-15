@@ -104,12 +104,21 @@ export function Config() {
             </div>
           </div>
           <div className="flex items-start gap-3 border border-line rounded-xl p-3">
+            <Badge texto="API" tono="navy" />
+            <div className="text-[13px]">
+              <b>Jungle Scout (API, BYOK)</b> — a diferencia de Helium 10, SÍ tiene API:
+              volumen de búsqueda REAL de keywords, búsqueda de productos y ventas por
+              ASIN, automático. Generá la clave en la app Jungle Scout (<b>Developer →
+              Generate Key</b>) y pegá abajo el <b>nombre</b> y la <b>clave</b>.
+            </div>
+          </div>
+          <div className="flex items-start gap-3 border border-line rounded-xl p-3">
             <Badge texto="CSV" tono="amarillo" />
             <div className="text-[13px]">
-              <b>Helium 10 (Cerebro) o Jungle Scout (Keyword Scout)</b> — volúmenes de
-              búsqueda reales. No exponen API para tu plan, así que el camino es
-              exportar el CSV (botón «Export Data» / «Export») y subirlo en la pestaña
-              <b> Investigación</b>. La app acepta el formato de ambas herramientas.
+              <b>Helium 10 (Cerebro)</b> — volúmenes de búsqueda reales. Helium 10 no
+              expone API para tu plan, así que el camino es exportar el CSV (botón
+              «Export Data») y subirlo en la pestaña <b>Investigación</b>. La app también
+              acepta el CSV de Jungle Scout (Keyword Scout) si preferís no usar su API.
             </div>
           </div>
         </div>
@@ -128,6 +137,8 @@ export function Config() {
           {campoClave("OPENAI_API_KEY", "Clave OpenAI")}
           {campoClave("GEMINI_API_KEY", "Clave Gemini")}
           {campoClave("KEEPA_API_KEY", "Clave Keepa")}
+          {campoClave("JUNGLE_SCOUT_KEY_NAME", "Jungle Scout — nombre de clave")}
+          {campoClave("JUNGLE_SCOUT_API_KEY", "Jungle Scout — clave API")}
           {campoClave("SMTP_USER", "SMTP usuario")}
           {campoClave("SMTP_PASS", "SMTP contraseña")}
           {campoClave("ALERT_TO", "Email para alertas")}

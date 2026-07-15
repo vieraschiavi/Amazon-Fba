@@ -36,6 +36,7 @@ if _RAIZ not in sys.path:
 
 import config                                   # noqa: E402
 from data.keepa import _estim_ventas           # noqa: E402
+from data import jungle_scout                   # noqa: E402
 
 _QUERY_URL = "https://api.keepa.com/query"
 _PRODUCT_URL = "https://api.keepa.com/product"
@@ -190,13 +191,29 @@ def productos_estrella(keyword, precio_min=10.0, precio_max=50.0, max_n=10,
         return {"ok": False, "fuente": "sin_datos", "productos": [],
                 "links_amazon": la, "costo_tokens": 0,
                 "mensaje": "Escribi una keyword de al menos 3 letras."}
+    # Jungle Scout primero si esta conectado (da ventas + rating + reseñas
+    # directos, sin la curva BSR gruesa). Si no, se cae a Keepa; si tampoco,
+    # a los links libres de abajo. Los links_amazon ya van en toda respuesta.
+    if config.JUNGLE_SCOUT_API_KEY and config.JUNGLE_SCOUT_KEY_NAME:
+        r = jungle_scout.buscar_productos(keyword, precio_min, precio_max, max_n)
+        if r.get("ok"):
+            return {"ok": True, "fuente": "Jungle Scout",
+                    "productos": r["productos"][:max_n], "links_amazon": la,
+                    "costo_tokens": 0, "mensaje": r["mensaje"]}
+        # JS conectado pero sin resultados/erro y ADEMAS hay Keepa -> intenta Keepa;
+        # si no hay Keepa, devuelve el estado honesto de JS con los links libres.
+        if not config.KEEPA_API_KEY:
+            return {"ok": False, "fuente": r.get("fuente", "Jungle Scout"),
+                    "productos": [], "links_amazon": la, "costo_tokens": 0,
+                    "mensaje": r["mensaje"]}
     if not config.KEEPA_API_KEY:
         return {"ok": False, "fuente": "sin_clave", "productos": [],
                 "links_amazon": la, "costo_tokens": 0,
-                "mensaje": ("Sin KEEPA_API_KEY no hay datos programaticos de "
-                            "productos (el sistema no scrapea Amazon). Usa los "
-                            "links filtrados por precio para mirar a mano, o "
-                            "conecta Keepa (~19 EUR/mes) en Config.")}
+                "mensaje": ("Sin Keepa ni Jungle Scout no hay datos "
+                            "programaticos de productos (el sistema no scrapea "
+                            "Amazon). Usa los links filtrados por precio para "
+                            "mirar a mano, o conecta Keepa (~19 EUR/mes) o "
+                            "Jungle Scout (API) en Config.")}
     try:
         asins = _keepa_query(keyword, precio_min, precio_max, max_n)
         if not asins:
