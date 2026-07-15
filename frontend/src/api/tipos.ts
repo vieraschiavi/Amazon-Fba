@@ -105,3 +105,33 @@ export interface FilaProyeccion {
   sueldo: number; caja: number; capital_atado: number;
   [k: string]: number;
 }
+
+// ---- Jungle Scout: casos de uso avanzados (BYOK) ----
+export interface JsVolumenHistorico {
+  ok: boolean; keyword: string; mensaje: string;
+  serie: { fecha: string; volumen: number }[];
+  estacionalidad?: {
+    mejor_mes: string; mejor_mes_num: number; volumen_mejor_mes: number;
+    volumen_total: number; volumen_prom_semana: number;
+  } | null;
+}
+
+export interface JsShareOfVoice {
+  ok: boolean; keyword: string; mensaje: string;
+  marcas: { marca: string; sov_pct: number | null }[];
+  ppc_bid?: number | null; volumen_30d?: number;
+}
+
+export interface JsVentasHistoricas {
+  ok: boolean; asin: string; mensaje: string; dias?: number;
+  serie: { fecha: string; unidades: number; precio: number | null }[];
+  resumen?: {
+    unidades_total: number; unidades_prom_dia: number;
+    precio_prom: number | null; precio_min: number | null; precio_max: number | null;
+  };
+}
+
+export interface JsKeywordsAsin {
+  ok: boolean; asin: string; mensaje: string;
+  keywords: { keyword: string; volumen: number; tendencia: number | null; competidores: number }[];
+}

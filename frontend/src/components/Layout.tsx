@@ -13,6 +13,7 @@ const GRUPOS: { grupo: string; items: { ruta: string; clave: string }[] }[] = [
     { ruta: "/recomendador", clave: "tab_recomendador" },
     { ruta: "/investigacion", clave: "tab_investigacion" },
     { ruta: "/mercado", clave: "tab_mercado" },
+    { ruta: "/jungle-scout", clave: "tab_jungle" },
   ]},
   { grupo: "sb.grupo.operar", items: [
     { ruta: "/pricing", clave: "tab_pricing" },

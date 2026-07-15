@@ -344,6 +344,30 @@ def jungle_ventas(asin: str):
     return jungle_scout.ventas_asin(asin)
 
 
+@router.get("/jungle/keywords-asin")
+def jungle_keywords_asin(asin: str, max_n: int = 20):
+    """Keywords por las que indexa un ASIN (Keywords by ASIN) via Jungle Scout."""
+    return jungle_scout.keywords_por_asin(asin, max_n=max_n)
+
+
+@router.get("/jungle/ventas-historicas")
+def jungle_ventas_historicas(asin: str, dias: int = 30):
+    """Ventas y precio diarios de un ASIN (Sales Estimates con rango) via Jungle Scout."""
+    return jungle_scout.ventas_historicas_asin(asin, dias=dias)
+
+
+@router.get("/jungle/volumen-historico")
+def jungle_volumen_historico(keyword: str, meses: int = 12):
+    """Volumen de busqueda semanal historico + estacionalidad (mejor mes) via Jungle Scout."""
+    return jungle_scout.volumen_historico(keyword, meses=meses)
+
+
+@router.get("/jungle/sov")
+def jungle_sov(keyword: str):
+    """Share of Voice de una keyword (marcas que dominan la pagina) via Jungle Scout."""
+    return jungle_scout.share_of_voice(keyword)
+
+
 class CompararIn(BaseModel):
     keywords: list[str]
     marketplace: str = "US"

@@ -72,7 +72,7 @@ Amazon-Fba/
 ├── data/
 │   ├── cerebro.py        Keywords desde CSV de Helium 10 Cerebro + scoring
 │   ├── keepa.py          Precio + BSR vía Keepa API (sin clave → estado vacío)
-│   ├── jungle_scout.py   Keywords (volumen real) + productos + ventas vía Jungle Scout API (BYOK)
+│   ├── jungle_scout.py   Jungle Scout API (BYOK): productos + keywords (por término y por ASIN) + volumen histórico/estacionalidad + ventas y precio diarios por ASIN + share of voice
 │   └── cerebro_exports/  Dejá acá tus CSV de Cerebro
 ├── n8n/                  3 workflows: research diario, mensajes, alertas de venta
 ├── installer/            Instalador Windows (Inno Setup) — ver COMO_COMPILAR.md
