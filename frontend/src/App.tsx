@@ -12,6 +12,7 @@ import { Pricing } from "./pages/Pricing";
 import { Portafolio } from "./pages/Portafolio";
 import { Caja } from "./pages/Caja";
 import { Ventas } from "./pages/Ventas";
+import { Inventario } from "./pages/Inventario";
 import { Inversores } from "./pages/Inversores";
 import { Plan } from "./pages/Plan";
 import { Investigacion } from "./pages/Investigacion";
@@ -44,6 +45,7 @@ export default function App() {
         <Route path="/portafolio" element={<Portafolio />} />
         <Route path="/publicar" element={<Publicar />} />
         <Route path="/ventas" element={<Ventas />} />
+        <Route path="/inventario" element={<Inventario />} />
         <Route path="/caja" element={<Caja />} />
         <Route path="/inversores" element={<Inversores />} />
         <Route path="/plan" element={<Plan />} />

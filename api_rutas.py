@@ -34,6 +34,7 @@ from agents import asistente
 from agents import creativos
 from agents import exito
 from agents import glosario
+from agents import inventario
 from agents import portafolio as agente_portafolio
 from agents import productos
 from agents import publicador
@@ -215,6 +216,11 @@ class VentaIn(BaseModel):
     pais: str = "US"
     segmento: str = "general"
     product_id: int | None = None
+
+
+class StockIn(BaseModel):
+    stock: int
+    lead_time_dias: int | None = None
 
 
 # ============================ licencia / demo ============================ #
@@ -512,6 +518,19 @@ def ventas_registrar(v: VentaIn):
                                      v.neto_unitario, pais=v.pais,
                                      segmento=v.segmento,
                                      product_id=v.product_id)
+
+
+@router.get("/inventario/panel")
+def inventario_panel():
+    """Pronostico de reabastecimiento del portafolio (restock estilo Sellerboard):
+    cuando quiebra el stock, cuando pedir y cuanto reponer, con velocidad real."""
+    return inventario.panel()
+
+
+@router.post("/inventario/stock/{pid}")
+def inventario_set_stock(pid: int, s: StockIn):
+    """Carga/actualiza el stock actual (unidades) y el lead time (dias) de un producto."""
+    return inventario.set_stock(pid, s.stock, lead_time_dias=s.lead_time_dias)
 
 
 @router.get("/alertas")

@@ -20,6 +20,7 @@ const GRUPOS: { grupo: string; items: { ruta: string; clave: string }[] }[] = [
     { ruta: "/portafolio", clave: "tab_portafolio" },
     { ruta: "/publicar", clave: "tab_publicar" },
     { ruta: "/ventas", clave: "tab_ventas" },
+    { ruta: "/inventario", clave: "tab_inventario" },
   ]},
   { grupo: "sb.grupo.planificar", items: [
     { ruta: "/caja", clave: "tab_caja" },
