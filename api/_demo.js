@@ -1,9 +1,9 @@
 // api/_demo.js — Registro server-side (solo de marketing, no de seguridad)
-// de quien arranco la demo de 3 dias, para poder mandar un recordatorio
+// de quien arranco la demo de 7 dias, para poder mandar un recordatorio
 // antes de que venza si todavia no compro.
 //
 // IMPORTANTE -- esto NO cambia el modelo de seguridad de la demo: el reloj
-// real de los 3 dias sigue viviendo en localStorage del cliente (ver
+// real de los 7 dias sigue viviendo en localStorage del cliente (ver
 // mobile/js/licencia.js y core/licencia.py), y la licencia paga se sigue
 // validando 100% server-side por HMAC (api/validar.js). Este registro es
 // una copia lateral, best-effort, solo para poder mandar un email -- si

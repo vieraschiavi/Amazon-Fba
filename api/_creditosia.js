@@ -12,7 +12,7 @@
 //     Claude (data.usage, no una estimacion — ver api/ia.js), convertido a
 //     creditos con margen sobre el costo real de la nube.
 //
-// Por que no aplica durante la demo de 3 dias (antes de comprar algo): esta
+// Por que no aplica durante la demo de 7 dias (antes de comprar algo): esta
 // libreria identifica cuentas por email+clave de licencia VALIDADA (HMAC,
 // api/_licencia.js). Durante la demo no existe ese par todavia (ver
 // core/licencia.py: clave_licencia es None hasta activar_licencia) — aceptar

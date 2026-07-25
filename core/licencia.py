@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-core/licencia.py — Registro y demo de 3 dias por usuario, sin servidor.
+core/licencia.py — Registro y demo de 7 dias por usuario, sin servidor.
 
 Nombre comercial del producto: "MV FBA IA" (antes "MV Amazon FBA IA"; se saco
 "Amazon" del nombre de marca para reducir riesgo de marca registrada, ver
@@ -30,7 +30,7 @@ import config  # noqa: E402
 from core import db  # noqa: E402
 
 DOMINIO = "MV-Amazon-Fba"
-DIAS_DEMO = 3
+DIAS_DEMO = 7
 
 # Build "owner" (interno): el instalador del dueño trae un owner_licencia.json
 # con {email, clave} ya adentro, para que el programa se auto-active como Pro
@@ -62,7 +62,7 @@ def obtener():
 
 
 def registrar(nombre, email):
-    """Arranca la demo full de 3 dias para este usuario. Idempotente: si ya
+    """Arranca la demo full de 7 dias para este usuario. Idempotente: si ya
     hay un registro en esta instalacion, lo devuelve sin reiniciar el reloj."""
     _tabla()
     ya = obtener()
@@ -78,7 +78,7 @@ def registrar(nombre, email):
 def _avisar_registro_demo(nombre, email):
     """Copia lateral best-effort en el servidor (api/demo-registro.js), SOLO
     para poder mandar el recordatorio de "tu demo vence mañana" -- el reloj
-    real de los 3 dias sigue siendo la fila de arriba en SQLite. Si esto
+    real de los 7 dias sigue siendo la fila de arriba en SQLite. Si esto
     falla (sin internet en este instante, etc.) la demo funciona exactamente
     igual: nunca se espera ni se revisa esta respuesta."""
     if not email:

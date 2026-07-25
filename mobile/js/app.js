@@ -922,7 +922,7 @@ function pintarConfig() {
 }
 // Saldo de creditos de IA compartida (ver api/_creditosia.js): se muestra
 // SOLO si hay una licencia activada (no tiene sentido para quien todavia
-// esta en la demo de 3 dias sin comprar -- ahi corre el tope generico de
+// esta en la demo de 7 dias sin comprar -- ahi corre el tope generico de
 // api/ia.js en vez del saldo por cuenta).
 async function pintarSaldoIA() {
   const box = $("#saldo-ia-box");
@@ -1005,7 +1005,7 @@ $("#btn-demo").addEventListener("click", () => {
   irAVista("inicio");
 });
 
-// ============================ DEMO / REGISTRO (3 dias, multi-idioma) ============================
+// ============================ DEMO / REGISTRO (7 dias, multi-idioma) ============================
 const LS_IDIOMA = "mvfba_idioma";
 function idiomaActual() {
   const guardado = localStorage.getItem(LS_IDIOMA);
@@ -1032,15 +1032,18 @@ function pintarBadgeDemo() {
   }
 }
 
-// Recordatorio DENTRO de la app durante los 3 dias de demo (no es email/WhatsApp:
+// Recordatorio DENTRO de la app durante los 7 dias de demo (no es email/WhatsApp:
 // no hay backend que dispare esa secuencia; esto usa el mismo reloj local que ya
 // mide diasRestantes y aparece cada vez que se abre Inicio).
+// El aviso "quedan2" se dispara con diasRestantes === 2, asi que el texto habla
+// de los dias que QUEDAN (no de "dia 2 de N"): sigue siendo correcto aunque
+// cambie la duracion de la demo.
 const NUDGE_TXT = {
-  es: { dia2: "Día 2 de tu demo de 3: cargá TU producto real y mirá cuánto podrías ganar.",
+  es: { quedan2: "Te quedan 2 días de demo: cargá TU producto real y mirá cuánto podrías ganar.",
         ultimo: "Último día de tu demo — comprá ahora y seguí sin cortes.", cta: "Ver planes" },
-  en: { dia2: "Day 2 of your 3-day demo: load YOUR real product and see how much you could earn.",
+  en: { quedan2: "2 days left in your demo: load YOUR real product and see how much you could earn.",
         ultimo: "Last day of your demo — buy now and keep going without interruption.", cta: "See plans" },
-  pt: { dia2: "Dia 2 da sua demo de 3: carregue SEU produto real e veja quanto poderia ganhar.",
+  pt: { quedan2: "Faltam 2 dias da sua demo: carregue SEU produto real e veja quanto poderia ganhar.",
         ultimo: "Último dia da sua demo — compre agora e continue sem interrupções.", cta: "Ver planos" },
 };
 function pintarNudgeDemo() {
@@ -1055,7 +1058,7 @@ function pintarNudgeDemo() {
     el.innerHTML = `<span><b>⏳</b>${escapar(t.ultimo)}</span><a href="${url}" target="_blank" rel="noopener">${escapar(t.cta)}</a>`;
   } else if (st.diasRestantes === 2) {
     el.className = "demo-nudge";
-    el.innerHTML = `<span><b>👋</b>${escapar(t.dia2)}</span><a href="${url}" target="_blank" rel="noopener">${escapar(t.cta)}</a>`;
+    el.innerHTML = `<span><b>👋</b>${escapar(t.quedan2)}</span><a href="${url}" target="_blank" rel="noopener">${escapar(t.cta)}</a>`;
   } else {
     el.classList.add("oculto");
   }

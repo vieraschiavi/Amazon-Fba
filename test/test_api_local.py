@@ -74,7 +74,7 @@ def test_licencia_estado_y_registro():
                       json={"nombre": "Test", "email": "test@test.com"})
     assert r2.status_code == 200
     assert r2.json()["registrado"] is True
-    assert r2.json()["vigente"] is True     # demo de 3 dias recien arrancada
+    assert r2.json()["vigente"] is True     # demo de 7 dias recien arrancada
 
 
 def test_owner_autoactivacion():

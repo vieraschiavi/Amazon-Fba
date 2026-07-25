@@ -239,7 +239,7 @@ SECCIONES = [
         "titulo": "Demo, licencia e idioma",
         "para_que": "Como funciona el acceso al programa.",
         "pasos": [
-            "Demo: 3 dias completos gratis con TODAS las funciones, registrandote con "
+            "Demo: 7 dias completos gratis con TODAS las funciones, registrandote con "
             "nombre y email. Sin tarjeta.",
             "Licencia: al comprar recibis una clave atada a tu email; se activa en la "
             "pantalla de inicio (pide internet una vez, despues funciona offline).",
@@ -738,7 +738,7 @@ SECCIONES_PT = [
         "titulo": "Demo, licença e idioma",
         "para_que": "Como funciona o acesso ao programa.",
         "pasos": [
-            "Demo: 3 dias completos grátis com TODAS as funções, cadastrando nome "
+            "Demo: 7 dias completos grátis com TODAS as funções, cadastrando nome "
             "e email. Sem cartão.",
             "Licença: ao comprar você recebe uma chave vinculada ao seu email; "
             "ative na tela inicial (precisa de internet uma vez, depois funciona "

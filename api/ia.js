@@ -10,7 +10,7 @@
 //      consumo REAL de la respuesta de Claude (data.usage), no una estimacion.
 //      Sin base de datos (Vercel KV/Upstash) configurada, esto no se puede
 //      contar de verdad -> cae al nivel 2 en vez de fingir un saldo.
-//   2) Sin licencia o sin saldo de creditos (demo de 3 dias, o cuenta que ya
+//   2) Sin licencia o sin saldo de creditos (demo de 7 dias, o cuenta que ya
 //      gasto todo su saldo): tope generico por dispositivo, bajo, para que
 //      nadie use esto gratis sin limite. Es un tope "blando" (localStorage
 //      puede reinstalarse) -- frena el abuso casual, no a un atacante
