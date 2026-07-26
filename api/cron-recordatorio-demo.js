@@ -1,5 +1,5 @@
 // api/cron-recordatorio-demo.js — Corre una vez por dia (Vercel Cron, ver
-// vercel.json) y manda un email a quien este en el dia 2 de su demo de 3
+// vercel.json) y manda un email a quien este en el dia 6 de su demo de 7
 // dias (le queda 1 dia) y todavia no compro, para que no se le pase sin
 // intentar convertir.
 //
@@ -12,8 +12,11 @@ import { listaDemos, marcarRecordatorioEnviado, yaComproPrevio } from "./_demo.j
 import { enviarEmail, emailConfigurado } from "./_email.js";
 import { almacenConfigurado } from "./_almacen.js";
 
-const DIA_RECORDATORIO_DESDE_HORAS = 40; // ~dia 2: ya paso mas de la mitad del dia 2, queda ~1 dia
-const DIA_RECORDATORIO_HASTA_HORAS = 64; // no seguir mandando si por algun motivo el cron se salteo un dia
+// La demo dura 7 dias (168 h; ver DIAS_DEMO en core/licencia.py y
+// mobile/js/licencia.js). La ventana apunta al ultimo dia: entre ~1,3 y ~0,3
+// dias restantes, para que el mail diga "vence mañana" y siga siendo cierto.
+const DIA_RECORDATORIO_DESDE_HORAS = 136; // ~dia 6: queda ~1 dia de demo
+const DIA_RECORDATORIO_HASTA_HORAS = 160; // no seguir mandando si el cron se salteo un dia
 
 function html(nombre) {
   const saludo = nombre ? `Hola ${nombre},` : "Hola,";

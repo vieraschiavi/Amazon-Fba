@@ -5,7 +5,7 @@
 // jamas redirige ahi directo -- resuelve el asset server-side y redirige al
 // link firmado que da la API de GitHub, que ese si es descargable sin login.
 //
-// ?demo=1: instalador de PC SIN pago (el limite de 3 dias lo controla la
+// ?demo=1: instalador de PC SIN pago (el limite de 7 dias lo controla la
 // propia app al abrirla, no la descarga) -- lo usan los botones "Probar
 // demo" de la landing.
 // Sin ?demo: exige un pago aprobado real (MercadoPago o PayPal, via

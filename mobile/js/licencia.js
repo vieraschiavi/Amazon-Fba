@@ -1,4 +1,4 @@
-// licencia.js — Registro y demo de 3 dias por usuario (PWA / Android / iOS).
+// licencia.js — Registro y demo de 7 dias por usuario (PWA / Android / iOS).
 //
 // Nombre comercial: "MV FBA IA" (antes "MV Amazon FBA IA"; se saco "Amazon"
 // del nombre para reducir riesgo de marca). El dominio/identificador interno
@@ -6,7 +6,7 @@
 // para el usuario, y cambiar la formula HMAC invalidaria licencias ya
 // emitidas a clientes que ya pagaron.
 //
-// Sin servidor de cuentas: el registro y el reloj de 3 dias viven en el
+// Sin servidor de cuentas: el registro y el reloj de 7 dias viven en el
 // localStorage del telefono (misma logica que core/licencia.py para el
 // programa de PC). Reinstalar la app y registrarse con otro email reinicia
 // la demo -- limitacion conocida y aceptada de un esquema sin servidor.
@@ -15,7 +15,7 @@
 // crackear leyendo el codigo. Activar pide internet una vez; despues anda offline.
 const Licencia = (() => {
   const DOMINIO = "MV-Amazon-Fba";
-  const DIAS_DEMO = 3;
+  const DIAS_DEMO = 7;
   // El secreto de la licencia NO vive en el cliente (así no se puede crackear
   // por código): la validación se hace contra el servidor. La activación pide
   // internet una sola vez; después la licencia queda guardada y anda offline.
@@ -43,7 +43,7 @@ const Licencia = (() => {
     _guardar(reg);
     // Copia lateral best-effort en el servidor (api/demo-registro.js), SOLO
     // para poder mandar el recordatorio de "tu demo vence mañana" -- el
-    // reloj real de los 3 dias sigue siendo el localStorage de arriba. Si
+    // reloj real de los 7 dias sigue siendo el localStorage de arriba. Si
     // esto falla (sin internet en este instante, etc.) la demo funciona
     // exactamente igual: nunca se espera esta respuesta.
     try {
@@ -121,11 +121,11 @@ const Licencia = (() => {
   const TXT = {
     es: {
       titulo: "Bienvenido a MV FBA IA",
-      sub: "Registrate para arrancar tu demo completa y gratis de 3 días — sin límites de funciones.",
+      sub: "Registrate para arrancar tu demo completa y gratis de 7 días — sin límites de funciones.",
       nombre: "Tu nombre", email: "Tu email",
-      empezar: "Empezar mi demo de 3 días",
+      empezar: "Empezar mi demo de 7 días",
       falta_email: "Ingresá un email válido para arrancar la demo.",
-      vencida_titulo: "Tu demo de 3 días venció",
+      vencida_titulo: "Tu demo de 7 días venció",
       vencida_sub: "Activá tu licencia para seguir usando MV FBA IA sin límites, o escribinos para comprarla.",
       clave: "Clave de licencia", activar: "Activar licencia",
       clave_invalida: "Esa clave no es válida para este email.",
@@ -137,11 +137,11 @@ const Licencia = (() => {
     },
     en: {
       titulo: "Welcome to MV FBA IA",
-      sub: "Register to start your full, free 3-day demo — no feature limits.",
+      sub: "Register to start your full, free 7-day demo — no feature limits.",
       nombre: "Your name", email: "Your email",
-      empezar: "Start my 3-day demo",
+      empezar: "Start my 7-day demo",
       falta_email: "Enter a valid email to start the demo.",
-      vencida_titulo: "Your 3-day demo expired",
+      vencida_titulo: "Your 7-day demo expired",
       vencida_sub: "Activate your license to keep using MV FBA IA with no limits, or contact us to buy it.",
       clave: "License key", activar: "Activate license",
       clave_invalida: "That key is not valid for this email.",
@@ -153,11 +153,11 @@ const Licencia = (() => {
     },
     pt: {
       titulo: "Bem-vindo ao MV FBA IA",
-      sub: "Cadastre-se para começar seu demo completo e gratuito de 3 dias — sem limites de funções.",
+      sub: "Cadastre-se para começar seu demo completo e gratuito de 7 dias — sem limites de funções.",
       nombre: "Seu nome", email: "Seu email",
-      empezar: "Começar meu demo de 3 dias",
+      empezar: "Começar meu demo de 7 dias",
       falta_email: "Digite um email válido para começar o demo.",
-      vencida_titulo: "Seu demo de 3 dias venceu",
+      vencida_titulo: "Seu demo de 7 dias venceu",
       vencida_sub: "Ative sua licença para continuar usando o MV FBA IA sem limites, ou fale conosco para comprá-la.",
       clave: "Chave de licença", activar: "Ativar licença",
       clave_invalida: "Essa chave não é válida para este email.",

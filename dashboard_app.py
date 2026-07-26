@@ -50,8 +50,8 @@ st.set_page_config(page_title="MV FBA IA",
                    layout="wide", initial_sidebar_state="expanded")
 st.markdown(ui.CSS, unsafe_allow_html=True)
 
-# ==================== DEMO / REGISTRO — 3 dias completos, multi-idioma ==================== #
-# Sin servidor de cuentas: el registro y el reloj de 3 dias viven en la base local
+# ==================== DEMO / REGISTRO — 7 dias completos, multi-idioma ==================== #
+# Sin servidor de cuentas: el registro y el reloj de 7 dias viven en la base local
 # (misma logica en mobile/js/licencia.js para PWA/Android/iOS). El dominio interno
 # del producto para la clave de licencia es "MV-Amazon-Fba" (nombre comercial sin
 # cambios: "MV FBA IA").
@@ -60,11 +60,11 @@ _COD_IDIOMA_DEMO = {"Español": "es", "English": "en", "Português": "pt"}
 _TXT_DEMO = {
     "es": {
         "titulo": "Bienvenido a MV FBA IA",
-        "sub": "Registrate para arrancar tu demo completa y gratis de 3 días — sin límites de funciones.",
+        "sub": "Registrate para arrancar tu demo completa y gratis de 7 días — sin límites de funciones.",
         "nombre": "Tu nombre", "email": "Tu email",
-        "empezar": "Empezar mi demo de 3 días",
+        "empezar": "Empezar mi demo de 7 días",
         "falta_email": "Ingresá un email válido para arrancar la demo.",
-        "vencida_titulo": "Tu demo de 3 días venció",
+        "vencida_titulo": "Tu demo de 7 días venció",
         "vencida_sub": "Activá tu licencia para seguir usando MV FBA IA sin límites, "
                        "o escribinos para comprarla.",
         "clave": "Clave de licencia", "activar": "Activar licencia",
@@ -76,11 +76,11 @@ _TXT_DEMO = {
     },
     "en": {
         "titulo": "Welcome to MV FBA IA",
-        "sub": "Register to start your full, free 3-day demo — no feature limits.",
+        "sub": "Register to start your full, free 7-day demo — no feature limits.",
         "nombre": "Your name", "email": "Your email",
-        "empezar": "Start my 3-day demo",
+        "empezar": "Start my 7-day demo",
         "falta_email": "Enter a valid email to start the demo.",
-        "vencida_titulo": "Your 3-day demo expired",
+        "vencida_titulo": "Your 7-day demo expired",
         "vencida_sub": "Activate your license to keep using MV FBA IA with no limits, "
                        "or contact us to buy it.",
         "clave": "License key", "activar": "Activate license",
@@ -92,11 +92,11 @@ _TXT_DEMO = {
     },
     "pt": {
         "titulo": "Bem-vindo ao MV FBA IA",
-        "sub": "Cadastre-se para começar seu demo completo e gratuito de 3 dias — sem limites de funções.",
+        "sub": "Cadastre-se para começar seu demo completo e gratuito de 7 dias — sem limites de funções.",
         "nombre": "Seu nome", "email": "Seu email",
-        "empezar": "Começar meu demo de 3 dias",
+        "empezar": "Começar meu demo de 7 dias",
         "falta_email": "Digite um email válido para começar o demo.",
-        "vencida_titulo": "Seu demo de 3 dias venceu",
+        "vencida_titulo": "Seu demo de 7 dias venceu",
         "vencida_sub": "Ative sua licença para continuar usando o MV FBA IA sem limites, "
                        "ou fale conosco para comprá-la.",
         "clave": "Chave de licença", "activar": "Ativar licença",

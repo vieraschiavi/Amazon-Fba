@@ -202,7 +202,7 @@ en vez de quedar abierto sin protección.
 
 ## Recordatorio de la demo antes de que venza (email)
 
-Quien arranca la demo de 3 días ahora también queda registrado
+Quien arranca la demo de 7 días ahora también queda registrado
 server-side (solo para esto, no cambia cómo funciona la demo en sí — ver
 `api/_demo.js`). Un cron job diario revisa quién está en su segundo día sin
 haber comprado todavía y le manda un email recordándole que la demo vence
