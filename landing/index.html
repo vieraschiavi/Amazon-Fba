@@ -357,13 +357,13 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
           <h3>MV FBA IA</h3>
           <p data-t="video.cap.intro"></p>
         </div>
-        <div class="scene" data-scene="keywords"><img src="media/escena-investigacion.jpg" alt="" loading="lazy"></div>
-        <div class="scene" data-scene="pricing"><img src="media/escena-pricing.jpg" alt="" loading="lazy"></div>
-        <div class="scene" data-scene="portafolio"><img src="media/escena-portafolio.jpg" alt="" loading="lazy"></div>
-        <div class="scene" data-scene="ganancias"><img src="media/escena-ganancias.jpg" alt="" loading="lazy"></div>
-        <div class="scene" data-scene="mercado"><img src="media/escena-mercado.jpg" alt="" loading="lazy"></div>
-        <div class="scene" data-scene="asistente"><img src="media/escena-asistente.jpg" alt="" loading="lazy"></div>
-        <div class="scene" data-scene="multiplataforma"><img src="media/escena-plataformas.jpg" alt="" loading="lazy"></div>
+        <div class="scene" data-scene="keywords"><img src="media/escena-investigacion-es.jpg" data-base="escena-investigacion" alt="" loading="lazy"></div>
+        <div class="scene" data-scene="pricing"><img src="media/escena-pricing-es.jpg" data-base="escena-pricing" alt="" loading="lazy"></div>
+        <div class="scene" data-scene="portafolio"><img src="media/escena-portafolio-es.jpg" data-base="escena-portafolio" alt="" loading="lazy"></div>
+        <div class="scene" data-scene="ganancias"><img src="media/escena-ganancias-es.jpg" data-base="escena-ganancias" alt="" loading="lazy"></div>
+        <div class="scene" data-scene="mercado"><img src="media/escena-mercado-es.jpg" data-base="escena-mercado" alt="" loading="lazy"></div>
+        <div class="scene" data-scene="asistente"><img src="media/escena-asistente-es.jpg" data-base="escena-asistente" alt="" loading="lazy"></div>
+        <div class="scene" data-scene="multiplataforma"><img src="media/escena-plataformas-es.jpg" data-base="escena-plataformas" alt="" loading="lazy"></div>
         <div class="scene slide" data-scene="cierre">
           <span class="pill2" data-t="video.slidePill">7 días gratis</span>
           <h3 data-t="video.slideCierre">Tu negocio en Amazon, bajo control</h3>
@@ -936,6 +936,15 @@ if (formContacto) {
     for(let k=0;k<s.length;k++){ if(t>=s[k]-0.15) i=k; }
     return i;
   }
+  // Las capturas siguen el idioma: mostrar la app en espanol mientras la
+  // pagina y el audio estan en ingles/portugues quedaba incoherente. Va
+  // aparte del audio para no descargar el mp3 antes de que le den play.
+  function setSceneImgs(){
+    stage.querySelectorAll(".scene img[data-base]").forEach((img)=>{
+      const nueva = `media/${img.dataset.base}-${curLang}.jpg`;
+      if(!img.getAttribute("src").endsWith(nueva)) img.setAttribute("src", nueva);
+    });
+  }
   function setLangSrc(){
     audio.src = AUDIO[curLang] || AUDIO.es;
   }
@@ -974,10 +983,12 @@ if (formContacto) {
     const wasPlaying = audio.src && !audio.paused;
     curLang = lang;
     reset();
+    setSceneImgs();
     setLangSrc();
     if(wasPlaying) play();
   };
   reset();
+  setSceneImgs();   // por si la pagina abrio con un idioma guardado != es
 })();
 
 /* ---------- Atribucion: de que red social/campana vino la visita ---------- */
