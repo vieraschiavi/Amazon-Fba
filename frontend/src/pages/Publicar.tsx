@@ -49,12 +49,12 @@ export function Publicar() {
       <Seccion titulo={t("pub_titulo")} sub={t("pub_sub")} />
       <Card className="mb-4">
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-          <Campo label="Producto" value={nombre} onChange={(e) => setNombre(e.target.value)} />
-          <CampoNumero label="Costo (USD)" value={costo} step={0.1} onValor={setCosto} />
-          <CampoNumero label="Flete (USD)" value={flete} step={0.1} onValor={setFlete} />
-          <CampoNumero label="Arancel (%)" value={arancel} step={0.5} onValor={setArancel} />
-          <CampoNumero label="Prep (USD)" value={prep} step={0.1} onValor={setPrep} />
-          <CampoNumero label="Techo demanda" value={techo} onValor={(v) => setTecho(Math.round(v))} />
+          <Campo label={t("pub.producto")} value={nombre} onChange={(e) => setNombre(e.target.value)} />
+          <CampoNumero label={t("pub.costo")} value={costo} step={0.1} onValor={setCosto} />
+          <CampoNumero label={t("pub.flete")} value={flete} step={0.1} onValor={setFlete} />
+          <CampoNumero label={t("pub.arancel")} value={arancel} step={0.5} onValor={setArancel} />
+          <CampoNumero label={t("pub.prep")} value={prep} step={0.1} onValor={setPrep} />
+          <CampoNumero label={t("pub.techo_demanda")} value={techo} onValor={(v) => setTecho(Math.round(v))} />
         </div>
         <div className="mt-3 flex gap-3">
           <Boton onClick={() => void armar()} disabled={ocupado || !nombre.trim()}>{t("pub_btn")}</Boton>

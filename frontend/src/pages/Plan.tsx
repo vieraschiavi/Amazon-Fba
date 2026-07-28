@@ -59,18 +59,18 @@ export function Plan() {
       <Seccion titulo={t("pl_titulo")} sub={t("pl_sub")} />
       <Card className="mb-5">
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-          <CampoNumero label="Objetivo de ingreso (USD/mes)" value={objetivo} step={100} onValor={setObjetivo} />
-          <CampoNumero label="Capital propio (USD)" value={capital} step={500} onValor={setCapital} />
+          <CampoNumero label={t("pl.objetivo_ingreso_mes")} value={objetivo} step={100} onValor={setObjetivo} />
+          <CampoNumero label={t("pl.capital_propio")} value={capital} step={500} onValor={setCapital} />
         </div>
         <div className="mt-3"><Boton onClick={() => void calcularPlan()}>Calcular plan</Boton></div>
         {plan && (
           <div className="mt-4">
             <FilaKpis>
-              <Kpi label="Productos necesarios" valor={num(plan.n_productos)} hero />
-              <Kpi label="Mes del objetivo" valor={plan.mes_objetivo ? `mes ${plan.mes_objetivo}` : "no alcanzado"}
+              <Kpi label={t("pl.productos_necesarios")} valor={num(plan.n_productos)} hero />
+              <Kpi label={t("pl.mes_objetivo")} valor={plan.mes_objetivo ? `mes ${plan.mes_objetivo}` : "no alcanzado"}
                    tono={plan.alcanzado ? "good" : "warn"} />
-              <Kpi label="Capital propio usado" valor={usd(plan.capital_propio_usado, 0)} />
-              <Kpi label="Ingreso final" valor={usd(plan.ingreso_final, 0)} sub="/mes en meseta" />
+              <Kpi label={t("pl.capital_propio_usado")} valor={usd(plan.capital_propio_usado, 0)} />
+              <Kpi label={t("pl.ingreso_final")} valor={usd(plan.ingreso_final, 0)} sub={t("pl.mes_meseta")} />
             </FilaKpis>
             {plan.advertencia && <Alerta tipo="warn">{plan.advertencia}</Alerta>}
             <Tabla
@@ -84,46 +84,46 @@ export function Plan() {
         )}
       </Card>
 
-      <Seccion titulo="¿Cuántas horas por semana necesito?" sub="Desglosado por tarea, con lo que el sistema ya automatiza" />
+      <Seccion titulo={t("pl.cuantas_horas_semana_necesito")} sub={t("pl.desglosado_tarea_lo_sistema")} />
       <Card className="mb-5">
         <div className="flex gap-3 items-end flex-wrap">
-          <CampoNumero label="Productos en operación" value={nProd} onValor={(v) => setNProd(Math.max(1, Math.round(v)))} className="w-36" />
-          <Selector label="¿Lanzando producto?" value={lanzando ? "1" : "0"}
+          <CampoNumero label={t("pl.productos_operacion")} value={nProd} onValor={(v) => setNProd(Math.max(1, Math.round(v)))} className="w-36" />
+          <Selector label={t("pl.lanzando_producto")} value={lanzando ? "1" : "0"}
                     onChange={(e) => setLanzando(e.target.value === "1")}>
             <option value="0">No</option><option value="1">Sí</option>
           </Selector>
-          <Boton onClick={() => void calcularDedicacion()}>Estimar</Boton>
+          <Boton onClick={() => void calcularDedicacion()}>{t("pl.estimar")}</Boton>
         </div>
         {dedic && (
           <div className="mt-4">
-            <Kpi label="Horas / semana" valor={`${dedic.horas_semana_min}–${dedic.horas_semana_max} h`} hero />
+            <Kpi label={t("pl.horas_semana")} valor={`${dedic.horas_semana_min}–${dedic.horas_semana_max} h`} hero />
             <p className="text-muted text-[12px] mt-2">{dedic.caveat}</p>
           </div>
         )}
       </Card>
 
-      <Seccion titulo="Reinversión compuesta" sub="Con techo de capital productivo — el excedente queda ocioso" />
+      <Seccion titulo={t("pl.reinversion_compuesta")} sub={t("pl.techo_capital_productivo_excedente")} />
       <Card>
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-          <CampoNumero label="Aporte inicial (USD)" value={aporteIni} step={500} onValor={setAporteIni} />
-          <CampoNumero label="Aporte mensual (USD)" value={aportePer} step={50} onValor={setAportePer} />
-          <CampoNumero label="Tasa anual (%)" value={tasa} step={5} onValor={setTasa} />
-          <CampoNumero label="Años" value={anios} onValor={(v) => setAnios(Math.round(v))} />
-          <CampoNumero label="Techo capital (0 = sin)" value={techoCap} step={1000} onValor={setTechoCap} />
+          <CampoNumero label={t("pl.aporte_inicial")} value={aporteIni} step={500} onValor={setAporteIni} />
+          <CampoNumero label={t("pl.aporte_mensual")} value={aportePer} step={50} onValor={setAportePer} />
+          <CampoNumero label={t("pl.tasa_anual")} value={tasa} step={5} onValor={setTasa} />
+          <CampoNumero label={t("pl.anos")} value={anios} onValor={(v) => setAnios(Math.round(v))} />
+          <CampoNumero label={t("pl.techo_capital_0")} value={techoCap} step={1000} onValor={setTechoCap} />
         </div>
-        <div className="mt-3"><Boton onClick={() => void calcularCompuesto()}>Calcular</Boton></div>
+        <div className="mt-3"><Boton onClick={() => void calcularCompuesto()}>{t("pl.calcular")}</Boton></div>
         {comp && (
           <div className="mt-4">
             <FilaKpis>
-              <Kpi label="Capital final" valor={usd(comp.resumen.capital_final, 0)} hero />
-              <Kpi label="Total aportado" valor={usd(comp.resumen.total_aportado, 0)} />
-              <Kpi label="Ganancia" valor={usd(comp.resumen.ganancia, 0)} tono="good"
+              <Kpi label={t("pl.capital_final")} valor={usd(comp.resumen.capital_final, 0)} hero />
+              <Kpi label={t("pl.total_aportado")} valor={usd(comp.resumen.total_aportado, 0)} />
+              <Kpi label={t("pl.ganancia")} valor={usd(comp.resumen.ganancia, 0)} tono="good"
                    sub={`x${comp.resumen.multiplicador}`} />
-              <Kpi label="Capital ocioso" valor={usd(comp.resumen.capital_ocioso_final, 0)}
+              <Kpi label={t("pl.capital_ocioso")} valor={usd(comp.resumen.capital_ocioso_final, 0)}
                    tono={comp.resumen.capital_ocioso_final > 0 ? "warn" : "navy"} />
             </FilaKpis>
             <GraficoLineas datos={comp.filas} x="mes"
-              series={[{ campo: "capital", nombre: "Capital" }, { campo: "aportado", nombre: "Aportado" }]} />
+              series={[{ campo: "capital", nombre: t("pl.serie_capital") }, { campo: "aportado", nombre: t("pl.serie_aportado") }]} />
           </div>
         )}
       </Card>

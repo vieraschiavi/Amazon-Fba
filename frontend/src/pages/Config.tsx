@@ -51,7 +51,7 @@ export function Config() {
       label={`${etiqueta} ${estado?.claves?.[nombre] ? `(${estado.claves[nombre]})` : ""}`}
       type="password"
       value={claves[nombre] || ""}
-      placeholder="pegar clave nueva…"
+      placeholder={t("cfg.pegar_clave_nueva")}
       onChange={(e) => setClaves({ ...claves, [nombre]: e.target.value })}
     />
   );
@@ -63,7 +63,7 @@ export function Config() {
       <Card className="mb-5">
         <h3 className="font-bold text-[14px] mb-2 text-navy-deep">{t("cfg_test_btn")}</h3>
         <div className="flex gap-3 items-end flex-wrap">
-          <Campo label="ASIN Keepa (opcional, gasta 1 token)" value={asin}
+          <Campo label={t("cfg.asin_keepa_opcional_gasta")} value={asin}
                  onChange={(e) => setAsin(e.target.value)} className="w-44" />
           <Boton onClick={() => void probar()} disabled={probando}>{t("cfg_test_btn")}</Boton>
         </div>
@@ -89,7 +89,7 @@ export function Config() {
         </p>
         <div className="flex flex-col gap-2.5">
           <div className="flex items-start gap-3 border border-line rounded-xl p-3">
-            <Badge texto="GRATIS" tono="verde" />
+            <Badge texto={t("cfg.gratis")} tono="verde" />
             <div className="text-[13px]">
               <b>Motor propio + demanda nativa</b> — keywords y demanda relativa por el
               autocompletado de Amazon. Incluido, sin límite, US$0. Ya activo.
@@ -127,7 +127,7 @@ export function Config() {
       <Card>
         <h3 className="font-bold text-[14px] mb-3 text-navy-deep">API keys</h3>
         <div className="grid md:grid-cols-2 gap-3">
-          <Selector label="Proveedor de IA" value={proveedor}
+          <Selector label={t("cfg.proveedor_ia")} value={proveedor}
                     onChange={(e) => setProveedor(e.target.value)}>
             <option value="claude">Claude / Anthropic — recomendada</option>
             <option value="openai">OpenAI (ChatGPT)</option>
@@ -145,7 +145,7 @@ export function Config() {
         </div>
         <div className="mt-4 flex items-center gap-3">
           <Boton onClick={() => void guardar()}>{t("cfg_save_btn")}</Boton>
-          {guardado && <Badge texto="Guardado en .env" tono="verde" />}
+          {guardado && <Badge texto={t("cfg.guardado_env")} tono="verde" />}
         </div>
         <Alerta tipo="info">
           Las claves se guardan LOCALMENTE en tu archivo .env — nunca salen de tu

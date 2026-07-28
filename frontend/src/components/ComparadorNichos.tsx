@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { api } from "../api/cliente";
 import { useApp } from "../stores/app";
+import { useT } from "../i18n";
 import { Badge, Boton, Campo, Spinner, Tabla, num } from "./ui";
 
 interface Demanda {
@@ -12,6 +13,7 @@ interface Demanda {
 interface Comparacion { ok: boolean; ranking: Demanda[]; nota_honesta: string }
 
 export function ComparadorNichos({ inicial = "" }: { inicial?: string }) {
+  const t = useT();
   const modoDemo = useApp((s) => s.modoDemo);
   const [texto, setTexto] = useState(inicial);
   const [comparacion, setComparacion] = useState<Comparacion | null>(null);
@@ -32,15 +34,15 @@ export function ComparadorNichos({ inicial = "" }: { inicial?: string }) {
   return (
     <div>
       <div className="flex gap-3 items-end flex-wrap">
-        <Campo label="Productos separados por coma"
+        <Campo label={t("cmp.productos_separados_coma")}
                value={texto} onChange={(e) => setTexto(e.target.value)}
                placeholder="yoga mat, garlic press, dog bed"
                className="w-96" />
         <Boton tipo="fantasma" onClick={() => void comparar()} disabled={ocupado}>
-          Comparar
+          {t("comun.comparar")}
         </Boton>
       </div>
-      {ocupado && <Spinner texto="Midiendo demanda de cada nicho…" />}
+      {ocupado && <Spinner texto={t("cmp.midiendo_demanda_cada_nicho")} />}
       {comparacion && comparacion.ok && (
         <div className="mt-3">
           <Tabla

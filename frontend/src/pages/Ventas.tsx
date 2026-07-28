@@ -49,15 +49,15 @@ export function Ventas() {
       <Card className="mb-4">
         <form onSubmit={(e) => void registrar(e)} className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           <Campo label="ASIN" value={asin} onChange={(e) => setAsin(e.target.value)} />
-          <CampoNumero label="Unidades" value={unidades} onValor={(v) => setUnidades(Math.max(1, Math.round(v)))} />
-          <CampoNumero label="Precio (USD)" value={precio} step={0.5} onValor={setPrecio} />
-          <CampoNumero label="Neto / unidad (USD)" value={neto} step={0.1} onValor={setNeto} />
-          <Campo label="País" value={pais} onChange={(e) => setPais(e.target.value)} />
-          <Campo label="Segmento" value={segmento} onChange={(e) => setSegmento(e.target.value)} />
+          <CampoNumero label={t("vt.unidades")} value={unidades} onValor={(v) => setUnidades(Math.max(1, Math.round(v)))} />
+          <CampoNumero label={t("vt.precio")} value={precio} step={0.5} onValor={setPrecio} />
+          <CampoNumero label={t("vt.neto_unidad")} value={neto} step={0.1} onValor={setNeto} />
+          <Campo label={t("vt.pais")} value={pais} onChange={(e) => setPais(e.target.value)} />
+          <Campo label={t("vt.segmento")} value={segmento} onChange={(e) => setSegmento(e.target.value)} />
           <div className="col-span-2 lg:col-span-3 flex items-center gap-3">
             <Boton>{t("vt_btn")}</Boton>
-            {guardado === "ok" && <Badge texto="Venta registrada" tono="verde" />}
-            {guardado === "asin" && <Badge texto="Falta el ASIN" tono="amarillo" />}
+            {guardado === "ok" && <Badge texto={t("vt.venta_registrada")} tono="verde" />}
+            {guardado === "asin" && <Badge texto={t("vt.falta_asin")} tono="amarillo" />}
           </div>
         </form>
       </Card>
@@ -65,18 +65,18 @@ export function Ventas() {
       {kpis && (
         <>
           <FilaKpis>
-            <Kpi label="Facturación" valor={usd(kpis.facturacion, 0)} hero />
-            <Kpi label="Neto" valor={usd(kpis.neto, 0)} tono="good" />
-            <Kpi label="Margen global" valor={pct(kpis.margen_global_pct)} />
-            <Kpi label="Órdenes" valor={num(kpis.ordenes)} sub={`${num(kpis.unidades)} unidades`} />
+            <Kpi label={t("vt.facturacion")} valor={usd(kpis.facturacion, 0)} hero />
+            <Kpi label={t("vt.neto")} valor={usd(kpis.neto, 0)} tono="good" />
+            <Kpi label={t("vt.margen_global")} valor={pct(kpis.margen_global_pct)} />
+            <Kpi label={t("vt.ordenes")} valor={num(kpis.ordenes)} sub={`${num(kpis.unidades)} unidades`} />
           </FilaKpis>
           {kpis.por_producto.length > 0 && (
             <Card className="mb-4">
-              <h3 className="font-bold text-[14px] mb-2 text-navy-deep">Mix por producto</h3>
+              <h3 className="font-bold text-[14px] mb-2 text-navy-deep">{t("vt.mix_producto")}</h3>
               <GraficoBarras
                 datos={kpis.por_producto}
                 x="k"
-                series={[{ campo: "ingreso", nombre: "Ingreso" }, { campo: "neto", nombre: "Neto" }]}
+                series={[{ campo: "ingreso", nombre: t("vt.serie_ingreso") }, { campo: "neto", nombre: t("vt.serie_neto") }]}
               />
             </Card>
           )}

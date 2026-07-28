@@ -14,8 +14,8 @@ const TONO: Record<string, string> = {
   sin_stock: "navy", sin_ventas: "navy",
 };
 const ETIQUETA: Record<string, string> = {
-  rojo: "Pedir ya", amarillo: "Pedir pronto", verde: "OK",
-  sin_stock: "Cargá stock", sin_ventas: "Sin ventas",
+  rojo: "rs.est_rojo", amarillo: "rs.est_amarillo", verde: "rs.est_verde",
+  sin_stock: "rs.est_sin_stock", sin_ventas: "rs.est_sin_ventas",
 };
 
 export function Inventario() {
@@ -59,15 +59,15 @@ export function Inventario() {
           <p className="text-muted text-[13px]">{t("rs_sin_productos")}</p>
         ) : (
           <div className="flex gap-3 items-end flex-wrap">
-            <Selector label="Producto" value={pid ?? ""}
+            <Selector label={t("rs.producto")} value={pid ?? ""}
                       onChange={(e) => setPid(e.target.value ? parseInt(e.target.value, 10) : null)}
                       className="max-w-[280px]">
               {(panel?.items || []).map((i) => (
                 <option key={i.id} value={i.id}>{i.nombre}</option>
               ))}
             </Selector>
-            <CampoNumero label="Stock actual (u.)" value={stock} onValor={(v) => setStock(Math.max(0, Math.round(v)))} className="w-32" />
-            <CampoNumero label="Lead time (días)" value={lead} onValor={(v) => setLead(Math.max(1, Math.round(v)))} className="w-32" />
+            <CampoNumero label={t("rs.stock_actual_u")} value={stock} onValor={(v) => setStock(Math.max(0, Math.round(v)))} className="w-32" />
+            <CampoNumero label={t("rs.lead_time_dias")} value={lead} onValor={(v) => setLead(Math.max(1, Math.round(v)))} className="w-32" />
             <Boton onClick={() => void guardar()} disabled={guardando || pid === null}>{t("rs_form_btn")}</Boton>
           </div>
         )}
@@ -85,7 +85,7 @@ export function Inventario() {
           <Alerta tipo="info">{t("rs_nota")}</Alerta>
           <Card>
             <Tabla
-              cabeceras={["Producto", "Stock", "Vel/día", "Se agota", "Pedir antes de", "Reponer", "Capital", "Estado"]}
+              cabeceras={[t("rs.producto"), t("rs.stock"), t("rs.vel_dia"), t("rs.se_agota"), t("rs.pedir_antes"), t("rs.reponer"), t("rs.capital"), t("rs.estado")]}
               filas={panel.items.map((i: ItemRestock) => [
                 i.nombre,
                 i.stock ?? "s/d",
@@ -94,7 +94,7 @@ export function Inventario() {
                 i.fecha_pedir || "—",
                 i.cantidad_sugerida != null ? num(i.cantidad_sugerida) : "—",
                 i.capital_reposicion != null ? usd(i.capital_reposicion, 0) : "—",
-                <Badge key="e" texto={ETIQUETA[i.estado] || i.estado} tono={TONO[i.estado] || "navy"} />,
+                <Badge key="e" texto={ETIQUETA[i.estado] ? t(ETIQUETA[i.estado]) : i.estado} tono={TONO[i.estado] || "navy"} />,
               ])}
             />
             <p className="text-muted text-[12px] mt-2">{t("rs_pie")}</p>

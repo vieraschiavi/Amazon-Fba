@@ -1,5 +1,6 @@
 // Componentes atomicos del design system (spec visual: mobile/css/estilos.css
 // y el panel historico — navy/verde, KPI cards, badges de semaforo).
+import { useT } from "../i18n";
 import { ReactNode, InputHTMLAttributes, SelectHTMLAttributes } from "react";
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
@@ -68,7 +69,12 @@ export function Badge({ texto, tono = "navy" }: { texto: string; tono?: string }
 }
 
 export function Semaforo({ valor }: { valor: string }) {
-  return <Badge texto={valor.toUpperCase()} tono={valor} />;
+  // El backend manda el codigo (verde/amarillo/rojo); la etiqueta se traduce
+  // aca. Si llega un valor inesperado se muestra tal cual, sin romper.
+  const t = useT();
+  const clave = `sem.${valor}`;
+  const etiqueta = t(clave);
+  return <Badge texto={(etiqueta === clave ? valor : etiqueta).toUpperCase()} tono={valor} />;
 }
 
 export function Boton({ children, onClick, tipo = "primario", disabled = false, className = "" }: {

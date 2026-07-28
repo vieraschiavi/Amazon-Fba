@@ -74,7 +74,7 @@ function Glosario() {
     <>
       <Campo label={t("comun.buscar")} value={busqueda}
              onChange={(e) => setBusqueda(e.target.value)}
-             placeholder="ROI, BSR, landed cost…" />
+             placeholder={t("ayu.roi_bsr_landed_cost")} />
       <div className="mt-3 flex flex-col gap-2">
         {busqueda.trim()
           ? resultados.map((r) => (

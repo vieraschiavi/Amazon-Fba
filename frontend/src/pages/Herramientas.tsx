@@ -68,7 +68,7 @@ function GeneradorUrls() {
         <Campo label="ASIN" value={asin} onChange={(e) => setAsin(e.target.value)} className="w-40" placeholder="B0..." />
         <Campo label={t("hr_url_kw")} value={kw} onChange={(e) => setKw(e.target.value)} className="w-52" placeholder="garlic press" />
         <CampoNumero label={t("hr_url_qty")} value={qty} onValor={(v) => setQty(Math.max(1, Math.round(v)))} className="w-24" />
-        <Selector label="Marketplace" value={dom} onChange={(e) => setDom(e.target.value)}>
+        <Selector label={t("hr.marketplace")} value={dom} onChange={(e) => setDom(e.target.value)}>
           {DOMINIOS.map(([d, c]) => <option key={d} value={d}>{c} — {d}</option>)}
         </Selector>
         <Campo label={t("hr_url_tag")} value={tag} onChange={(e) => setTag(e.target.value)} className="w-40" placeholder="tag-20" />
@@ -78,7 +78,7 @@ function GeneradorUrls() {
       ) : (
         <div className="mt-3">
           <Tabla
-            cabeceras={["Tipo", "URL", ""]}
+            cabeceras={[t("hr.tipo"), "URL", ""]}
             filas={urls.map(([nombre, u]) => [
               nombre,
               <a key="u" href={u} target="_blank" rel="noreferrer"
@@ -146,7 +146,7 @@ function GeneradorPoa() {
                   className="border border-line rounded-lg px-3 py-2 text-[13.5px] bg-card focus:outline-none focus:border-navy" />
       </label>
 
-      {ocupado && <Spinner texto="Generando…" />}
+      {ocupado && <Spinner texto={t("hr.generando")} />}
       {res && res.ok && (
         <div className="mt-4">
           <div className="flex items-center gap-3 mb-2">

@@ -48,36 +48,36 @@ export function Caja() {
       <Seccion titulo={t("cj_titulo")} sub={t("cj_sub")} />
       <Card className="mb-4">
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-          <CampoNumero label="Capital (USD)" value={budget} step={500} onValor={setBudget} />
-          <CampoNumero label="Landed / unidad (USD)" value={landed} step={0.1} onValor={setLanded} />
-          <CampoNumero label="Precio venta (USD)" value={precio} step={0.5} onValor={setPrecio} />
-          <CampoNumero label="Neto / unidad (USD)" value={neto} step={0.1} onValor={setNeto} />
-          <CampoNumero label="Techo demanda (unid/mes)" value={techo} onValor={(v) => setTecho(Math.round(v))} />
-          <CampoNumero label="Meses" value={meses} onValor={(v) => setMeses(Math.round(v))} />
+          <CampoNumero label={t("cj.capital")} value={budget} step={500} onValor={setBudget} />
+          <CampoNumero label={t("cj.landed_unidad")} value={landed} step={0.1} onValor={setLanded} />
+          <CampoNumero label={t("cj.precio_venta")} value={precio} step={0.5} onValor={setPrecio} />
+          <CampoNumero label={t("cj.neto_unidad")} value={neto} step={0.1} onValor={setNeto} />
+          <CampoNumero label={t("cj.techo_demanda_unid_mes")} value={techo} onValor={(v) => setTecho(Math.round(v))} />
+          <CampoNumero label={t("cj.meses")} value={meses} onValor={(v) => setMeses(Math.round(v))} />
         </div>
         <div className="mt-3">
-          <Boton onClick={() => void proyectar()} disabled={ocupado}>Proyectar</Boton>
+          <Boton onClick={() => void proyectar()} disabled={ocupado}>{t("cj.proyectar")}</Boton>
         </div>
       </Card>
 
       {proy && r && (
         <>
           <FilaKpis>
-            <Kpi label="Sueldo en meseta" valor={usd(r.sueldo_meseta, 0)} sub="neto sostenido por mes" hero />
-            <Kpi label="Caja mínima" valor={usd(r.caja_minima, 0)} sub="colchón de efectivo"
+            <Kpi label={t("cj.sueldo_meseta")} valor={usd(r.sueldo_meseta, 0)} sub={t("cj.neto_sostenido_mes")} hero />
+            <Kpi label={t("cj.caja_minima")} valor={usd(r.caja_minima, 0)} sub={t("cj.colchon_efectivo")}
                  tono={r.caja_minima < budget * 0.05 ? "warn" : "navy"} />
-            <Kpi label="Primer cobro" valor={`mes ${num(r.mes_primer_cobro)}`} sub="lead time + DD+7" />
-            <Kpi label="Capital invertido" valor={usd(r.inversion, 0)}
+            <Kpi label={t("cj.primer_cobro")} valor={`mes ${num(r.mes_primer_cobro)}`} sub={t("cj.lead_time_dd_7")} />
+            <Kpi label={t("cj.capital_invertido")} valor={usd(r.inversion, 0)}
                  sub={`${num(r.unidades_compra)} unidades`} />
           </FilaKpis>
           {r.alerta && r.alerta !== "ok" && <Alerta tipo="warn">{r.alerta}</Alerta>}
           <Card className="mb-4">
             <GraficoLineas datos={proy.filas} x="mes"
-              series={[{ campo: "caja", nombre: "Caja" }, { campo: "sueldo", nombre: "Sueldo" }]} />
+              series={[{ campo: "caja", nombre: t("cj.caja") }, { campo: "sueldo", nombre: t("cj.sueldo") }]} />
           </Card>
           <Card>
             <Tabla
-              cabeceras={["Mes", "Vendidas", "Cobrado", "Sueldo", "Caja", "Capital atado"]}
+              cabeceras={[t("cj.mes"), t("cj.vendidas"), t("cj.cobrado"), t("cj.sueldo"), t("cj.caja"), t("cj.capital_atado")]}
               filas={proy.filas.map((f) => [
                 f.mes, num(f.vendidas), usd(f.cobrado, 0), usd(f.sueldo, 0),
                 usd(f.caja, 0), usd(f.capital_atado, 0),

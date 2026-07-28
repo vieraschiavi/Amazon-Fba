@@ -45,13 +45,15 @@ export function Portafolio() {
       <Seccion titulo={t("pf_titulo")} sub={t("pf_sub")} />
       {resumen && resumen.n_productos > 0 && (
         <FilaKpis>
-          <Kpi label="Productos activos" valor={String(resumen.n_productos)}
-               sub={`${resumen.semaforos?.verde ?? 0} verde / ${resumen.semaforos?.amarillo ?? 0} amarillo / ${resumen.semaforos?.rojo ?? 0} rojo`} />
-          <Kpi label="Sueldo meseta proyectado" valor={usd(resumen.sueldo_meseta_proyectado, 0)}
-               sub="suma de techo × neto" hero />
-          <Kpi label="Capital en pipeline" valor={usd(resumen.capital_pipeline_total, 0)}
-               sub="~4 meses de stock por producto" />
-          <Kpi label="Ventas reales" valor={usd(resumen.ingreso_real, 0)}
+          <Kpi label={t("pf.productos_activos")} valor={String(resumen.n_productos)}
+               sub={t("pf.semaforos_resumen", { v: resumen.semaforos?.verde ?? 0,
+                                  a: resumen.semaforos?.amarillo ?? 0,
+                                  r: resumen.semaforos?.rojo ?? 0 })} />
+          <Kpi label={t("pf.sueldo_meseta_proyectado")} valor={usd(resumen.sueldo_meseta_proyectado, 0)}
+               sub={t("pf.suma_techo_neto")} hero />
+          <Kpi label={t("pf.capital_pipeline")} valor={usd(resumen.capital_pipeline_total, 0)}
+               sub={t("pf.4_meses_stock_producto")} />
+          <Kpi label={t("pf.ventas_reales")} valor={usd(resumen.ingreso_real, 0)}
                sub={`neto ${usd(resumen.neto_real, 0)}`} tono="good" />
         </FilaKpis>
       )}
@@ -63,7 +65,7 @@ export function Portafolio() {
           </p>
         ) : (
           <Tabla
-            cabeceras={["Producto", "ASIN", "Landed", "Precio", "Neto/u", "Margen", "ROI", "Semáforo", "Techo u/mes", "Ventas"]}
+            cabeceras={[t("pf.producto"), "ASIN", t("pf.landed"), t("pf.precio"), t("pf.neto_u"), t("pf.margen"), "ROI", t("pf.semaforo"), t("pf.techo_u_mes"), t("pf.ventas")]}
             filas={resumen.productos.map((p) => [
               p.nombre, p.asin || "—", usd(p.landed), usd(p.precio), usd(p.neto),
               pct(p.margen), pct(p.roi), <Semaforo key="s" valor={p.semaforo} />,
@@ -75,9 +77,9 @@ export function Portafolio() {
 
       {resumen && resumen.n_productos > 0 && (
         <Card>
-          <h3 className="font-bold text-[14px] mb-3 text-navy-deep">Análisis financiero por producto</h3>
+          <h3 className="font-bold text-[14px] mb-3 text-navy-deep">{t("pf.analisis_financiero_titulo")}</h3>
           <div className="flex gap-3 items-end flex-wrap">
-            <Selector label="Producto" value={sel}
+            <Selector label={t("pf.producto")} value={sel}
                       onChange={(e) => setSel(e.target.value ? parseInt(e.target.value, 10) : "")}>
               <option value="">—</option>
               {resumen.productos.map((p) => (
@@ -94,17 +96,17 @@ export function Portafolio() {
           {analisis?.ok && (
             <div className="mt-4">
               <FilaKpis>
-                <Kpi label="Precio" valor={usd(analisis.unit_economics.precio)} />
-                <Kpi label="Margen" valor={pct(analisis.unit_economics.margen_pct)}
+                <Kpi label={t("pf.precio")} valor={usd(analisis.unit_economics.precio)} />
+                <Kpi label={t("pf.margen")} valor={pct(analisis.unit_economics.margen_pct)}
                      tono={analisis.unit_economics.semaforo === "verde" ? "good" : "warn"} />
                 <Kpi label="ROI" valor={pct(analisis.unit_economics.roi_pct)} />
-                <Kpi label="Capital pipeline" valor={usd(analisis.capital_pipeline, 0)} />
+                <Kpi label={t("pf.capital_pipeline2")} valor={usd(analisis.capital_pipeline, 0)} />
               </FilaKpis>
               {filasProy.length > 0 && (
                 <GraficoLineas
                   datos={filasProy}
                   x="mes"
-                  series={[{ campo: "caja", nombre: "Caja" }, { campo: "sueldo", nombre: "Sueldo" }]}
+                  series={[{ campo: "caja", nombre: t("cj.caja") }, { campo: "sueldo", nombre: t("cj.sueldo") }]}
                 />
               )}
               <div className="mt-3">
