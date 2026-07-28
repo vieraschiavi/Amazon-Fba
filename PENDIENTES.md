@@ -105,27 +105,17 @@ curl -H "x-mv-app: mvfba-web-1" \
 
 ---
 
-## Pendiente de producto — la app está solo a medias en inglés y portugués
+## Pendiente de producto — falta traducir la PWA / app de celular
 
-Salió a la luz al arreglar las capturas del video: **el programa no está traducido
-del todo**. Lo que sí cambia de idioma es el "marco" (menú lateral, títulos de
-pantalla, botones, badge de la demo, selector de idioma). Lo que **sigue en
-español** aunque elijas EN o PT:
+El **panel de escritorio ya está traducido** a inglés y portugués (formularios,
+KPI, tablas y los textos que arma el backend). Lo que **sigue casi todo en
+español** es la **PWA / app de celular** (`mobile/`): solo cambian de idioma la
+pantalla de licencia y poco más; el resto —Resumen ejecutivo, Facturación,
+Accesos rápidos, la barra de navegación— está siempre en castellano.
 
-- Etiquetas de los formularios y de los KPI: `COSTO UNITARIO`, `FLETE UNITARIO`,
-  `ARANCEL`, `PREP`, `PRECIO COMPETENCIA`, `PRECIO SUGERIDO`, `MARGEN`,
-  `NOMBRE DEL PRODUCTO`, `TECHO DEMANDA`… (~104 textos fijos entre las 6
-  pantallas que muestra el video).
-- Encabezados de varias tablas.
-- Textos que arma el backend: `competitivo (-5% vs lider)`, `costo desembarcado`,
-  el semáforo `VERDE/AMARILLO/ROJO`, etc.
-- **La PWA / app de celular está prácticamente sin traducir**: solo cambian de
-  idioma la pantalla de licencia y poco más; el resto (Resumen ejecutivo,
-  Facturación, Accesos rápidos, la barra de navegación) está siempre en español.
-
-Consecuencia comercial: alguien que compra desde la web en inglés recibe un
-programa mayormente en español. Traducirlo es un trabajo aparte y grande, porque
-toca el frontend (React) y también textos que genera el backend en Python.
+Es otra base de código (JS a mano, sin el sistema de i18n del panel), así que
+merece su propio cambio. Mientras tanto, la escena "multiplataforma" del video
+se ve en español en los tres idiomas, porque muestra esa app tal cual es.
 
 ## Ya verificado y funcionando (no tocar)
 
