@@ -59,12 +59,12 @@ export function Inversores() {
     <Card>
       <h3 className="font-bold text-[14px] mb-2 text-navy-deep">{titulo}</h3>
       <div className="grid grid-cols-2 gap-3">
-        <Kpi label="Tu sueldo" valor={usd(e.sueldo_martin, 0)} hero />
-        <Kpi label="Comisión inversor" valor={usd(e.comision_inversor, 0)}
+        <Kpi label={t("iv.sueldo")} valor={usd(e.sueldo_martin, 0)} hero />
+        <Kpi label={t("iv.comision_inversor")} valor={usd(e.comision_inversor, 0)}
              sub={`retorno ${pct(e.retorno_inversor_mes_pct)}/mes`} />
-        <Kpi label="Sin inversor" valor={usd(e.sueldo_sin_inversor, 0)}
+        <Kpi label={t("iv.inversor")} valor={usd(e.sueldo_sin_inversor, 0)}
              sub={`delta ${usd(e.delta, 0)}`} tono={e.delta >= 0 ? "good" : "bad"} />
-        <Kpi label="Cuello de botella" valor={e.cuello} sub={`${num(e.unidades_mes)} unid/mes`} />
+        <Kpi label={t("iv.cuello_botella")} valor={e.cuello} sub={`${num(e.unidades_mes)} unid/mes`} />
       </div>
     </Card>
   );
@@ -74,15 +74,15 @@ export function Inversores() {
       <Seccion titulo={t("iv_titulo")} sub={t("iv_sub")} />
       <Card className="mb-4">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <CampoNumero label="Capital propio (USD)" value={capProp} step={500} onValor={setCapProp} />
-          <CampoNumero label="Capital inversor (USD)" value={capInv} step={500} onValor={setCapInv} />
-          <CampoNumero label="Comisión (% facturación)" value={pctFact} step={1} onValor={setPctFact} />
-          <CampoNumero label="Techo demanda" value={techo} onValor={(v) => setTecho(Math.round(v))} />
-          <CampoNumero label="Precio (USD)" value={precio} step={0.5} onValor={setPrecio} />
-          <CampoNumero label="Neto/unidad (USD)" value={neto} step={0.1} onValor={setNeto} />
-          <CampoNumero label="Landed (USD)" value={landed} step={0.1} onValor={setLanded} />
+          <CampoNumero label={t("iv.capital_propio")} value={capProp} step={500} onValor={setCapProp} />
+          <CampoNumero label={t("iv.capital_inversor")} value={capInv} step={500} onValor={setCapInv} />
+          <CampoNumero label={t("iv.comision_facturacion")} value={pctFact} step={1} onValor={setPctFact} />
+          <CampoNumero label={t("iv.techo_demanda")} value={techo} onValor={(v) => setTecho(Math.round(v))} />
+          <CampoNumero label={t("iv.precio")} value={precio} step={0.5} onValor={setPrecio} />
+          <CampoNumero label={t("iv.neto_unidad")} value={neto} step={0.1} onValor={setNeto} />
+          <CampoNumero label={t("iv.landed")} value={landed} step={0.1} onValor={setLanded} />
         </div>
-        <div className="mt-3"><Boton onClick={() => void simular()}>Simular</Boton></div>
+        <div className="mt-3"><Boton onClick={() => void simular()}>{t("iv.simular")}</Boton></div>
       </Card>
 
       {esc1 && esc2 && (
@@ -92,14 +92,14 @@ export function Inversores() {
         </div>
       )}
 
-      <Seccion titulo="Trayectoria del inversor" sub="Comisión reinvertida con techo honesto — pitch descargable" />
+      <Seccion titulo={t("iv.trayectoria_inversor")} sub={t("iv.comision_reinvertida_techo_honesto")} />
       <Card>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <CampoNumero label="Ticket (USD)" value={ticket} step={250} onValor={setTicket} />
-          <CampoNumero label="Horizonte (meses)" value={meses} onValor={(v) => setMeses(Math.round(v))} />
+          <CampoNumero label={t("iv.ticket")} value={ticket} step={250} onValor={setTicket} />
+          <CampoNumero label={t("iv.horizonte_meses")} value={meses} onValor={(v) => setMeses(Math.round(v))} />
         </div>
         <div className="mt-3 flex gap-3">
-          <Boton onClick={() => void trayectoria()}>Calcular</Boton>
+          <Boton onClick={() => void trayectoria()}>{t("iv.calcular")}</Boton>
           <a href={pitchUrl} target="_blank" rel="noopener"
              className="px-4 py-2 rounded-lg font-bold text-[13.5px] border border-line text-navy hover:bg-navy-soft">
             {t("comun.descargar")} pitch HTML
@@ -108,14 +108,14 @@ export function Inversores() {
         {retorno && (
           <div className="mt-4">
             <FilaKpis>
-              <Kpi label="Comisión inicial" valor={usd(retorno.resumen.comision_inicial, 0)} sub="/mes" />
-              <Kpi label="Comisión en meseta" valor={usd(retorno.resumen.comision_meseta, 0)} sub="/mes" hero />
-              <Kpi label="Mes de saturación" valor={num(retorno.resumen.mes_saturacion)} sub="techo alcanzado" />
-              <Kpi label="Capital final" valor={usd(retorno.resumen.capital_final, 0)}
+              <Kpi label={t("iv.comision_inicial")} valor={usd(retorno.resumen.comision_inicial, 0)} sub={t("iv.mes")} />
+              <Kpi label={t("iv.comision_meseta")} valor={usd(retorno.resumen.comision_meseta, 0)} sub={t("iv.mes")} hero />
+              <Kpi label={t("iv.mes_saturacion")} valor={num(retorno.resumen.mes_saturacion)} sub={t("iv.techo_alcanzado")} />
+              <Kpi label={t("iv.capital_final")} valor={usd(retorno.resumen.capital_final, 0)}
                    sub={`x${retorno.resumen.multiplicador}`} tono="good" />
             </FilaKpis>
             <GraficoLineas datos={retorno.filas} x="mes"
-              series={[{ campo: "comision_mes", nombre: "Comisión/mes" }, { campo: "capital", nombre: "Capital" }]} />
+              series={[{ campo: "comision_mes", nombre: t("iv.serie_comision_mes") }, { campo: "capital", nombre: t("iv.serie_capital") }]} />
           </div>
         )}
       </Card>

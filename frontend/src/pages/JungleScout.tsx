@@ -58,26 +58,26 @@ function ToolKeyword() {
       <h3 className="font-bold text-[14px] text-navy-deep mb-1">{t("js_kw_titulo")}</h3>
       <p className="text-[12px] text-muted mb-3">{t("js_kw_sub")}</p>
       <div className="flex gap-3 items-end flex-wrap">
-        <Campo label="Keyword" value={kw} onChange={(e) => setKw(e.target.value)}
+        <Campo label={t("js.keyword")} value={kw} onChange={(e) => setKw(e.target.value)}
                className="w-64" placeholder="garlic press" />
         <Boton onClick={() => void analizar()} disabled={ocupado}>{t("js_btn")}</Boton>
       </div>
-      {ocupado && <Spinner texto="Consultando Jungle Scout…" />}
+      {ocupado && <Spinner texto={t("js.consultando_jungle_scout")} />}
 
       {vol && (vol.ok ? (
         <div className="mt-4">
           {est && (
             <FilaKpis>
-              <Kpi label="Mejor mes" valor={est.mejor_mes} sub="mayor demanda del año" hero />
-              <Kpi label="Volumen 12m" valor={num(est.volumen_total)} sub="búsquedas exactas" />
-              <Kpi label="Prom. semanal" valor={num(est.volumen_prom_semana)} />
-              <Kpi label="Pico del mes" valor={num(est.volumen_mejor_mes)} tono="good" />
+              <Kpi label={t("js.mejor_mes")} valor={est.mejor_mes} sub={t("js.mayor_demanda_ano")} hero />
+              <Kpi label={t("js.volumen_12m")} valor={num(est.volumen_total)} sub={t("js.busquedas_exactas")} />
+              <Kpi label={t("js.prom_semanal")} valor={num(est.volumen_prom_semana)} />
+              <Kpi label={t("js.pico_mes")} valor={num(est.volumen_mejor_mes)} tono="good" />
             </FilaKpis>
           )}
           <Card className="mt-2">
-            <h4 className="font-bold text-[13px] text-navy-deep mb-2">Volumen de búsqueda semanal</h4>
+            <h4 className="font-bold text-[13px] text-navy-deep mb-2">{t("js.volumen_semanal_titulo")}</h4>
             <GraficoLineas datos={vol.serie} x="fecha"
-                           series={[{ campo: "volumen", nombre: "Búsquedas/semana" }]} />
+                           series={[{ campo: "volumen", nombre: t("js.volumen_semanal_serie") }]} />
           </Card>
         </div>
       ) : (
@@ -87,12 +87,12 @@ function ToolKeyword() {
       {sov && (sov.ok && sov.marcas.length > 0 ? (
         <Card className="mt-3">
           <div className="flex items-center gap-4 flex-wrap mb-2">
-            <h4 className="font-bold text-[13px] text-navy-deep">Share of Voice (quién domina la página)</h4>
+            <h4 className="font-bold text-[13px] text-navy-deep">{t("js.sov_titulo")}</h4>
             {sov.ppc_bid != null && <Badge texto={`PPC bid ${usd(sov.ppc_bid)}`} tono="navy" />}
             {sov.volumen_30d ? <Badge texto={`${num(sov.volumen_30d)} búsq./30d`} tono="verde" /> : null}
           </div>
           <Tabla
-            cabeceras={["Marca", "Share of voice"]}
+            cabeceras={[t("js.marca"), t("js.share_voice")]}
             filas={sov.marcas.map((m) => [m.marca, m.sov_pct != null ? `${m.sov_pct}%` : "s/d"])}
           />
         </Card>
@@ -130,26 +130,26 @@ function ToolAsin() {
       <div className="flex gap-3 items-end flex-wrap">
         <Campo label="ASIN" value={asin} onChange={(e) => setAsin(e.target.value)}
                className="w-48" placeholder="B0..." />
-        <CampoNumero label="Días" value={dias} onValor={(v) => setDias(Math.max(7, Math.min(365, Math.round(v))))} className="w-24" />
+        <CampoNumero label={t("js.dias")} value={dias} onValor={(v) => setDias(Math.max(7, Math.min(365, Math.round(v))))} className="w-24" />
         <Boton onClick={() => void analizar()} disabled={ocupado}>{t("js_btn")}</Boton>
       </div>
-      {ocupado && <Spinner texto="Consultando Jungle Scout…" />}
+      {ocupado && <Spinner texto={t("js.consultando_jungle_scout")} />}
 
       {ventas && (ventas.ok ? (
         <div className="mt-4">
           {r && (
             <FilaKpis>
-              <Kpi label="Unidades" valor={num(r.unidades_total)} sub={`${r.unidades_prom_dia}/día`} hero />
-              <Kpi label="Precio prom." valor={r.precio_prom != null ? usd(r.precio_prom) : "s/d"} />
-              <Kpi label="Precio mín." valor={r.precio_min != null ? usd(r.precio_min) : "s/d"} tono="good" />
-              <Kpi label="Precio máx." valor={r.precio_max != null ? usd(r.precio_max) : "s/d"} tono="warn" />
+              <Kpi label={t("js.unidades")} valor={num(r.unidades_total)} sub={`${r.unidades_prom_dia}/día`} hero />
+              <Kpi label={t("js.precio_prom")} valor={r.precio_prom != null ? usd(r.precio_prom) : "s/d"} />
+              <Kpi label={t("js.precio_min")} valor={r.precio_min != null ? usd(r.precio_min) : "s/d"} tono="good" />
+              <Kpi label={t("js.precio_max")} valor={r.precio_max != null ? usd(r.precio_max) : "s/d"} tono="warn" />
             </FilaKpis>
           )}
           <Card className="mt-2">
-            <h4 className="font-bold text-[13px] text-navy-deep mb-2">Ventas y precio diarios</h4>
+            <h4 className="font-bold text-[13px] text-navy-deep mb-2">{t("js.ventas_precio_titulo")}</h4>
             <GraficoLineas datos={ventas.serie} x="fecha" series={[
-              { campo: "unidades", nombre: "Unidades/día" },
-              { campo: "precio", nombre: "Precio (USD)" },
+              { campo: "unidades", nombre: t("js.serie_unidades") },
+              { campo: "precio", nombre: t("js.serie_precio") },
             ]} />
           </Card>
         </div>
@@ -159,9 +159,9 @@ function ToolAsin() {
 
       {kws && (kws.ok && kws.keywords.length > 0 ? (
         <Card className="mt-3">
-          <h4 className="font-bold text-[13px] text-navy-deep mb-2">Keywords por las que indexa este ASIN</h4>
+          <h4 className="font-bold text-[13px] text-navy-deep mb-2">{t("js.keywords_asin_titulo")}</h4>
           <Tabla
-            cabeceras={["Keyword", "Volumen/mes", "Competidores"]}
+            cabeceras={[t("js.keyword"), t("js.volumen_mes"), t("js.competidores")]}
             filas={kws.keywords.map((k) => [k.keyword, num(k.volumen), num(k.competidores)])}
           />
         </Card>

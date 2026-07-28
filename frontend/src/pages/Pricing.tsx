@@ -7,6 +7,12 @@ import { useProductoActivo } from "../stores/productoActivo";
 
 export function Pricing() {
   const t = useT();
+  // La estrategia la arma el backend en espanol y tiene solo dos valores;
+  // se traduce aca y, ante cualquier otro, se muestra el texto original.
+  const estrategiaTxt = (e: string) =>
+    e === "objetivo" ? t("pr.estr_objetivo")
+    : e.startsWith("competitivo") ? t("pr.estr_competitivo")
+    : e;
   const { activo, A, cargar } = useProductoActivo();
   const [costo, setCosto] = useState(2.1);
   const [flete, setFlete] = useState(0.8);
@@ -56,29 +62,29 @@ export function Pricing() {
       <Seccion titulo={t("pr_titulo")} sub={t("pr_sub")} />
       <Card className="mb-4">
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-          <CampoNumero label="Costo unitario (USD)" value={costo} step={0.1} onValor={setCosto} />
-          <CampoNumero label="Flete unitario (USD)" value={flete} step={0.1} onValor={setFlete} />
-          <CampoNumero label="Arancel (%)" value={arancel} step={0.5} onValor={setArancel} />
-          <CampoNumero label="Prep (USD)" value={prep} step={0.1} onValor={setPrep} />
-          <CampoNumero label="FBA fee (USD)" value={fba} step={0.05} onValor={setFba} />
-          <CampoNumero label="Precio competencia (USD, 0=sin)" value={competencia} step={0.5} onValor={setCompetencia} />
+          <CampoNumero label={t("pr.costo_unitario")} value={costo} step={0.1} onValor={setCosto} />
+          <CampoNumero label={t("pr.flete_unitario")} value={flete} step={0.1} onValor={setFlete} />
+          <CampoNumero label={t("pr.arancel")} value={arancel} step={0.5} onValor={setArancel} />
+          <CampoNumero label={t("pr.prep")} value={prep} step={0.1} onValor={setPrep} />
+          <CampoNumero label={t("pr.fba_fee")} value={fba} step={0.05} onValor={setFba} />
+          <CampoNumero label={t("pr.precio_competencia_0")} value={competencia} step={0.5} onValor={setCompetencia} />
         </div>
       </Card>
 
       {res && (
         <>
           <FilaKpis>
-            <Kpi label="Landed cost" valor={usd(res.landed)} sub="costo desembarcado" />
-            <Kpi label="Precio sugerido" valor={usd(res.precio)} sub={res.estrategia} hero />
-            <Kpi label="Margen" valor={pct(res.margen_pct)} sub="neto / precio"
+            <Kpi label={t("pr.landed_cost")} valor={usd(res.landed)} sub={t("pr.costo_desembarcado")} />
+            <Kpi label={t("pr.precio_sugerido")} valor={usd(res.precio)} sub={estrategiaTxt(res.estrategia)} hero />
+            <Kpi label={t("pr.margen")} valor={pct(res.margen_pct)} sub={t("pr.neto_precio")}
                  tono={res.semaforo === "verde" ? "good" : res.semaforo === "amarillo" ? "warn" : "bad"} />
-            <Kpi label="ROI" valor={pct(res.roi_pct)} sub="neto / landed" />
+            <Kpi label="ROI" valor={pct(res.roi_pct)} sub={t("pr.neto_landed")} />
           </FilaKpis>
           <div className="flex items-center gap-3 mb-4">
             <Semaforo valor={res.semaforo} />
             <span className="text-[13px] text-muted">
-              Break-even {usd(res.break_even)} · Neto/unidad {usd(res.neto)} ·
-              Referral {usd(res.referral)} · Ads {usd(res.ads)}
+              {t("pr.break_even")} {usd(res.break_even)} · {t("pr.neto_unidad")} {usd(res.neto)} ·
+              {t("pr.referral")} {usd(res.referral)} · {t("pr.ads")} {usd(res.ads)}
             </span>
           </div>
         </>
@@ -87,14 +93,14 @@ export function Pricing() {
       <Card>
         <h3 className="font-bold text-[14px] mb-3 text-navy-deep">{t("pr_btn")}</h3>
         <div className="grid md:grid-cols-3 gap-3">
-          <Campo label="Nombre del producto" value={nombre} onChange={(e) => setNombre(e.target.value)} />
-          <Campo label="ASIN (opcional)" value={asin} onChange={(e) => setAsin(e.target.value)} />
-          <CampoNumero label="Techo demanda (unid/mes)" value={techo} onValor={(v) => setTecho(Math.round(v))} />
+          <Campo label={t("pr.nombre_producto")} value={nombre} onChange={(e) => setNombre(e.target.value)} />
+          <Campo label={t("pr.asin_opcional")} value={asin} onChange={(e) => setAsin(e.target.value)} />
+          <CampoNumero label={t("pr.techo_demanda_unid_mes")} value={techo} onValor={(v) => setTecho(Math.round(v))} />
         </div>
         <div className="mt-3 flex items-center gap-3">
           <Boton onClick={() => void guardar()}>{t("pr_btn")}</Boton>
-          {guardado === "ok" && <Badge texto="Guardado" tono="verde" />}
-          {guardado === "nombre" && <Badge texto="Falta el nombre" tono="amarillo" />}
+          {guardado === "ok" && <Badge texto={t("pr.guardado")} tono="verde" />}
+          {guardado === "nombre" && <Badge texto={t("pr.falta_nombre")} tono="amarillo" />}
         </div>
         {activo && (
           <Alerta tipo="info">

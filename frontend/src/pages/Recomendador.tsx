@@ -46,33 +46,33 @@ export function Recomendador() {
       <Seccion titulo={t("rec_titulo")} sub={t("rec_sub")} />
       <Card className="mb-4">
         <div className="flex gap-3 items-end flex-wrap">
-          <CampoNumero label="Precio min (USD)" value={min} onValor={setMin} className="w-28" />
-          <CampoNumero label="Precio max (USD)" value={max} onValor={setMax} className="w-28" />
-          <Selector label="Marketplace" value={mkt} onChange={(e) => setMkt(e.target.value)}>
+          <CampoNumero label={t("rec.precio_min")} value={min} onValor={setMin} className="w-28" />
+          <CampoNumero label={t("rec.precio_max")} value={max} onValor={setMax} className="w-28" />
+          <Selector label={t("rec.marketplace")} value={mkt} onChange={(e) => setMkt(e.target.value)}>
             {mkts.map((m) => <option key={m.codigo} value={m.codigo}>{m.codigo} — {m.nombre}</option>)}
           </Selector>
           <Boton onClick={() => void escanear()} disabled={ocupado}>{t("rec_btn")}</Boton>
         </div>
-        {ocupado && <Spinner texto="Escaneando categorías con el motor propio (puede tardar 1-2 minutos)…" />}
+        {ocupado && <Spinner texto={t("rec.escaneando_categorias_motor_propio")} />}
       </Card>
 
       {res && (res.ok ? (
         <>
           <FilaKpis>
-            <Kpi label="Oportunidades" valor={num(res.oportunidades.length)}
+            <Kpi label={t("rec.oportunidades")} valor={num(res.oportunidades.length)}
                  sub={`de ${res.n_candidatos_evaluados} candidatos`} hero />
-            <Kpi label="Mejor potencial"
+            <Kpi label={t("rec.mejor_potencial")}
                  valor={res.oportunidades[0] ? `${res.oportunidades[0].potencial}/100` : "—"}
                  sub={res.oportunidades[0]?.nicho.slice(0, 26)} />
-            <Kpi label="Rango de precio" valor={`${usd(res.precio_min, 0)}–${usd(res.precio_max, 0)}`}
+            <Kpi label={t("rec.rango_precio")} valor={`${usd(res.precio_min, 0)}–${usd(res.precio_max, 0)}`}
                  sub={res.marketplace} />
-            <Kpi label="Costo" valor="US$0"
+            <Kpi label={t("rec.costo")} valor="US$0"
                  sub={res.fuente.includes("Keepa") ? "+ Keepa conectado" : "sin APIs pagas"} tono="good" />
           </FilaKpis>
           <Alerta tipo="warn">{res.nota_honesta}</Alerta>
           {res.narrativa_ia && (
             <Card>
-              <h3 className="font-bold text-[14px] text-navy-deep mb-2">Recomendación de Claude</h3>
+              <h3 className="font-bold text-[14px] text-navy-deep mb-2">{t("rec.narrativa_titulo")}</h3>
               <Alerta tipo="info">
                 <span className="whitespace-pre-wrap">{res.narrativa_ia.texto}</span>
               </Alerta>
@@ -80,7 +80,7 @@ export function Recomendador() {
           )}
           <Card>
             <Tabla
-              cabeceras={["Nicho", "Potencial", "Veredicto", "Interés", "Competidores", "Ventas/mes", "Precio med."]}
+              cabeceras={[t("rec.nicho"), t("rec.potencial"), t("rec.veredicto"), t("rec.interes"), t("rec.competidores"), t("rec.ventas_mes"), t("rec.precio_med")]}
               filas={res.oportunidades.map((o) => [
                 o.nicho, `${o.potencial}/100`,
                 <Badge key="v" texto={o.veredicto} tono={o.veredicto.toLowerCase()} />,
@@ -102,7 +102,7 @@ export function Recomendador() {
 
       {/* Comparador cara a cara: precargado con los mejores nichos del escaneo */}
       <Card className="mt-4">
-        <h3 className="font-bold text-[14px] text-navy-deep">Comparar nichos cara a cara (gratis)</h3>
+        <h3 className="font-bold text-[14px] text-navy-deep">{t("rec.comparar_titulo")}</h3>
         <p className="text-[12px] text-muted mb-3">
           Medí la demanda relativa de varios candidatos lado a lado — los del escaneo
           vienen precargados, o escribí los tuyos.

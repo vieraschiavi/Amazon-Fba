@@ -82,9 +82,9 @@ export function Mercado() {
       <Seccion titulo={t("mk_titulo")} sub={t("mk_sub")} />
       <Card className="mb-4">
         <div className="flex gap-3 items-end flex-wrap">
-          <Campo label="Producto / keyword" value={kw} onChange={(e) => setKw(e.target.value)} className="w-72" />
-          <CampoNumero label="Precio min" value={min} onValor={setMin} className="w-24" />
-          <CampoNumero label="Precio max" value={max} onValor={setMax} className="w-24" />
+          <Campo label={t("mk.producto_keyword")} value={kw} onChange={(e) => setKw(e.target.value)} className="w-72" />
+          <CampoNumero label={t("mk.precio_min")} value={min} onValor={setMin} className="w-24" />
+          <CampoNumero label={t("mk.precio_max")} value={max} onValor={setMax} className="w-24" />
           <Boton onClick={() => void explorar()} disabled={ocupado}>{t("mk_btn")}</Boton>
         </div>
         {ocupado && <Spinner texto={t("comun.cargando")} />}
@@ -94,24 +94,24 @@ export function Mercado() {
       <Card className="mb-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <h3 className="font-bold text-[14px] text-navy-deep">Demanda del nicho — gratis, sin Keepa</h3>
-            <p className="text-[12px] text-muted">Señal relativa por amplitud de autocompletado de Amazon (US$0)</p>
+            <h3 className="font-bold text-[14px] text-navy-deep">{t("mk.demanda_nicho_titulo")}</h3>
+            <p className="text-[12px] text-muted">{t("mk.demanda_nicho_sub")}</p>
           </div>
           <Boton tipo="fantasma" onClick={() => void medirDemanda()} disabled={midiendoDemanda}>
             Medir demanda
           </Boton>
         </div>
-        {midiendoDemanda && <Spinner texto="Consultando el autocompletado de Amazon (gratis)…" />}
+        {midiendoDemanda && <Spinner texto={t("mk.consultando_autocompletado_amazon_grat")} />}
         {demanda && (demanda.ok ? (
           <div className="mt-3">
             <FilaKpis>
-              <Kpi label="Demanda relativa" valor={`${demanda.demanda_score}/100`}
+              <Kpi label={t("mk.demanda_relativa")} valor={`${demanda.demanda_score}/100`}
                    sub={demanda.nivel} hero
                    tono={demanda.demanda_score >= 65 ? "good" : demanda.demanda_score >= 40 ? "warn" : "bad"} />
-              <Kpi label="Amplitud long-tail" valor={num(demanda.amplitud)}
-                   sub="variantes reales que busca la gente" />
-              <Kpi label="Nichos candidatos" valor={num(demanda.n_nichos)} sub="sub-nichos detectados" />
-              <Kpi label="Costo" valor="US$0" sub={`${demanda.requests} consultas gratis`} tono="good" />
+              <Kpi label={t("mk.amplitud_long_tail")} valor={num(demanda.amplitud)}
+                   sub={t("mk.variantes_reales_busca_gente")} />
+              <Kpi label={t("mk.nichos_candidatos")} valor={num(demanda.n_nichos)} sub={t("mk.sub_nichos_detectados")} />
+              <Kpi label={t("mk.costo")} valor="US$0" sub={`${demanda.requests} consultas gratis`} tono="good" />
             </FilaKpis>
             <p className="text-[11.5px] text-muted mt-1">{demanda.nota_honesta}</p>
           </div>
@@ -132,21 +132,21 @@ export function Mercado() {
         <>
           {comp?.ok && (
             <FilaKpis>
-              <Kpi label="Competidores" valor={num(comp.n_competidores)}
+              <Kpi label={t("mk.competidores")} valor={num(comp.n_competidores)}
                    sub={`${usd(comp.precio_min, 0)}–${usd(comp.precio_max, 0)}`} />
-              <Kpi label="Ventas estimadas" valor={`${num(comp.ventas_estim_total)}/mes`}
-                   sub="suma de líderes (curva BSR)" hero />
-              <Kpi label="Calidad promedio" valor={comp.rating_promedio ? `${comp.rating_promedio}/5` : "s/d"}
-                   sub="rating de la competencia"
+              <Kpi label={t("mk.ventas_estimadas")} valor={`${num(comp.ventas_estim_total)}/mes`}
+                   sub={t("mk.suma_lideres_curva_bsr")} hero />
+              <Kpi label={t("mk.calidad_promedio")} valor={comp.rating_promedio ? `${comp.rating_promedio}/5` : "s/d"}
+                   sub={t("mk.rating_competencia")}
                    tono={(comp.rating_promedio ?? 5) < 4.3 ? "warn" : "navy"} />
-              <Kpi label="Reseñas (mediana)" valor={num(comp.resenas_mediana)} sub="barrera de entrada"
+              <Kpi label={t("mk.resenas_mediana")} valor={num(comp.resenas_mediana)} sub={t("mk.barrera_entrada")}
                    tono={comp.resenas_mediana > 1000 ? "bad" : comp.resenas_mediana < 300 ? "good" : "warn"} />
             </FilaKpis>
           )}
           <Card className="mb-4">
             <p className="text-[12px] text-muted mb-2">Fuente: {res.fuente} · {res.mensaje}</p>
             <Tabla
-              cabeceras={["Producto", "ASIN", "Precio", "BSR", "Ventas/mes", "Rating", "Reseñas", ""]}
+              cabeceras={[t("mk.producto"), "ASIN", t("mk.precio"), "BSR", t("mk.ventas_mes"), t("mk.rating"), t("mk.resenas"), ""]}
               filas={res.productos.map((p) => [
                 p.titulo.slice(0, 55), p.asin, usd(p.precio), num(p.bsr),
                 num(p.ventas_estim), p.rating ?? "—", num(p.resenas),
@@ -179,17 +179,17 @@ export function Mercado() {
 
       {res && (
         <Card>
-          <h3 className="font-bold text-[14px] mb-3 text-navy-deep">Asesor de probabilidad de éxito</h3>
+          <h3 className="font-bold text-[14px] mb-3 text-navy-deep">{t("mk.asesor_exito_titulo")}</h3>
           <div className="flex gap-3 items-end flex-wrap">
-            <CampoNumero label="Tu precio objetivo (USD)" value={precioObj} step={0.5} onValor={setPrecioObj} className="w-32" />
-            <CampoNumero label="Margen calculado % (0 = sin)" value={margen} step={0.5} onValor={setMargen} className="w-32" />
+            <CampoNumero label={t("mk.precio_objetivo")} value={precioObj} step={0.5} onValor={setPrecioObj} className="w-32" />
+            <CampoNumero label={t("mk.margen_calculado_0")} value={margen} step={0.5} onValor={setMargen} className="w-32" />
             <Boton onClick={() => void evaluar()} disabled={evaluando}>{t("mk_ex_btn")}</Boton>
           </div>
           {evaluando && <Spinner texto={t("comun.cargando")} />}
           {ev && (
             <div className="mt-4">
               <div className="flex items-center gap-3 mb-3">
-                <Kpi label="Probabilidad de éxito" valor={`${ev.evaluacion.probabilidad}/100`} hero />
+                <Kpi label={t("mk.probabilidad_exito")} valor={`${ev.evaluacion.probabilidad}/100`} hero />
                 <Badge texto={ev.evaluacion.veredicto} tono={ev.evaluacion.veredicto.toLowerCase()} />
                 <span className="text-[13px] text-muted">{ev.evaluacion.comentario}</span>
               </div>

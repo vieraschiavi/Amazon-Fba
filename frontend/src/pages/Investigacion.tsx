@@ -80,9 +80,9 @@ export function Investigacion() {
           ))}
         </div>
         <div className="flex gap-3 items-end flex-wrap">
-          <Campo label="Nicho / keyword" value={keyword}
+          <Campo label={t("inv.nicho_keyword")} value={keyword}
                  onChange={(e) => setKeyword(e.target.value)} className="w-72" />
-          <Selector label="Marketplace" value={mkt} onChange={(e) => setMkt(e.target.value)}>
+          <Selector label={t("inv.marketplace")} value={mkt} onChange={(e) => setMkt(e.target.value)}>
             {mkts.map((m) => <option key={m.codigo} value={m.codigo}>{m.codigo} — {m.nombre}</option>)}
           </Selector>
           {fuente === "csv" && (
@@ -101,25 +101,25 @@ export function Investigacion() {
       {resMotor && (resMotor.ok ? (
         <>
           <FilaKpis>
-            <Kpi label="Keywords reales" valor={num(resMotor.keywords.length)}
+            <Kpi label={t("inv.keywords_reales")} valor={num(resMotor.keywords.length)}
                  sub={`${resMotor.requests} consultas gratis`} hero />
-            <Kpi label="Nichos candidatos" valor={num(resMotor.nichos.length)} sub="por modificador long-tail" />
-            <Kpi label="Interés máximo"
+            <Kpi label={t("inv.nichos_candidatos")} valor={num(resMotor.nichos.length)} sub={t("inv.modificador_long_tail")} />
+            <Kpi label={t("inv.interes_maximo")}
                  valor={resMotor.keywords[0] ? `${resMotor.keywords[0].interes}/100` : "0"}
-                 sub="proxy de autocompletado" />
-            <Kpi label="Costo" valor="US$0" sub="sin APIs pagas" tono="good" />
+                 sub={t("inv.proxy_autocompletado")} />
+            <Kpi label={t("inv.costo")} valor="US$0" sub={t("inv.apis_pagas")} tono="good" />
           </FilaKpis>
           <Alerta tipo="warn">{resMotor.nota_honesta}</Alerta>
           <div className="grid md:grid-cols-2 gap-4 mb-4">
             <Card>
               <h3 className="font-bold text-[14px] mb-2 text-navy-deep">Top keywords</h3>
-              <Tabla cabeceras={["Keyword", "Interés", "Rank", "Apar."]}
+              <Tabla cabeceras={[t("inv.keyword"), t("inv.interes"), t("inv.rank"), t("inv.apar")]}
                 filas={resMotor.keywords.slice(0, 20).map((k) => [
                   k.keyword, `${k.interes}/100`, k.mejor_rank, k.apariciones])} />
             </Card>
             <Card>
               <h3 className="font-bold text-[14px] mb-2 text-navy-deep">Nichos candidatos</h3>
-              <Tabla cabeceras={["Nicho", "Keywords", "Interés máx"]}
+              <Tabla cabeceras={[t("inv.nicho"), t("inv.keywords"), t("inv.interes_max")]}
                 filas={resMotor.nichos.slice(0, 12).map((n) => [
                   n.nicho, n.keywords.length, n.interes_max])} />
             </Card>
@@ -130,10 +130,10 @@ export function Investigacion() {
       {resCerebro && resCerebro.nicho.ok && (
         <>
           <FilaKpis>
-            <Kpi label="Demanda / mes" valor={num(resCerebro.nicho.demanda_mensual)} sub="unidades estimadas" />
-            <Kpi label="Competidores" valor={num(resCerebro.nicho.competidores)} sub="menos es mejor" />
-            <Kpi label="Oportunidad" valor={`${resCerebro.nicho.oportunidad_valor}/100`} sub="hueco de valor" />
-            <Kpi label="Score nicho" valor={`${resCerebro.nicho.score_nicho}/100`} sub="ganabilidad" hero />
+            <Kpi label={t("inv.demanda_mes")} valor={num(resCerebro.nicho.demanda_mensual)} sub={t("inv.unidades_estimadas")} />
+            <Kpi label={t("inv.competidores")} valor={num(resCerebro.nicho.competidores)} sub={t("inv.menos_es_mejor")} />
+            <Kpi label={t("inv.oportunidad")} valor={`${resCerebro.nicho.oportunidad_valor}/100`} sub={t("inv.hueco_valor")} />
+            <Kpi label={t("inv.score_nicho")} valor={`${resCerebro.nicho.score_nicho}/100`} sub={t("inv.ganabilidad")} hero />
           </FilaKpis>
           <div className="mb-4 flex items-center gap-3">
             <Badge texto={resCerebro.nicho.veredicto} tono={resCerebro.nicho.veredicto.toLowerCase()} />

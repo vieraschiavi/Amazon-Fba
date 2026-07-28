@@ -19,7 +19,7 @@ export function Alertas() {
         {alertas.length === 0
           ? <p className="text-muted text-[13px]">{t("comun.sin_datos")}</p>
           : <Tabla
-              cabeceras={["Fecha", "Asunto", "Para", "Estado"]}
+              cabeceras={[t("al.fecha"), t("al.asunto"), t("al.para"), t("al.estado")]}
               filas={alertas.map((a) => [
                 a.fecha, a.asunto, a.para,
                 <Badge key="e" texto={a.enviado ? "enviada" : "dry-run"}

@@ -136,7 +136,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <Selector
             value={idioma}
             onChange={(e) => fijarIdioma(e.target.value as Idioma)}
-            aria-label="Idioma"
+            aria-label={t("sb.idioma")}
           >
             {IDIOMAS.map((i) => (
               <option key={i.codigo} value={i.codigo}>{i.nombre}</option>

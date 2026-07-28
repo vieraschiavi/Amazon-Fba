@@ -105,6 +105,18 @@ curl -H "x-mv-app: mvfba-web-1" \
 
 ---
 
+## Pendiente de producto — falta traducir la PWA / app de celular
+
+El **panel de escritorio ya está traducido** a inglés y portugués (formularios,
+KPI, tablas y los textos que arma el backend). Lo que **sigue casi todo en
+español** es la **PWA / app de celular** (`mobile/`): solo cambian de idioma la
+pantalla de licencia y poco más; el resto —Resumen ejecutivo, Facturación,
+Accesos rápidos, la barra de navegación— está siempre en castellano.
+
+Es otra base de código (JS a mano, sin el sistema de i18n del panel), así que
+merece su propio cambio. Mientras tanto, la escena "multiplataforma" del video
+se ve en español en los tres idiomas, porque muestra esa app tal cual es.
+
 ## Ya verificado y funcionando (no tocar)
 
 | Cosa | Estado |
