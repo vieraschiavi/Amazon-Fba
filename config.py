@@ -9,8 +9,48 @@ import os
 _AQUI = os.path.dirname(os.path.abspath(__file__))
 
 
+def _dir_datos():
+    """Carpeta de datos DEL USUARIO (base, .env, CSV), separada del programa.
+
+    Antes todo esto vivia dentro de la carpeta de instalacion, lo que obligaba a
+    instalar en %LOCALAPPDATA% (en "Archivos de programa" Windows bloquea la
+    escritura). Separandolo, el instalador puede dejar elegir cualquier carpeta.
+    Se puede forzar con MVFBA_DATA_DIR (util para tests y portable).
+    """
+    forzado = os.environ.get("MVFBA_DATA_DIR", "").strip()
+    if forzado:
+        return forzado
+    if os.name == "nt":
+        base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
+        return os.path.join(base, "MV FBA IA")
+    return os.path.join(os.path.expanduser("~"), ".local", "share", "mv-fba-ia")
+
+
+DIR_DATOS = _dir_datos()
+try:
+    os.makedirs(DIR_DATOS, exist_ok=True)
+except OSError:            # sin permisos: se cae al comportamiento viejo
+    DIR_DATOS = _AQUI
+
+
+def _migrar_legacy(nombre, destino):
+    """Instalaciones viejas guardaban los datos junto al programa. Si aparece
+    ese archivo y todavia no hay uno nuevo, se copia (no se mueve: si algo sale
+    mal, el original sigue donde estaba). Se hace una sola vez."""
+    viejo = os.path.join(_AQUI, nombre)
+    if destino == viejo or os.path.exists(destino) or not os.path.isfile(viejo):
+        return
+    try:
+        import shutil
+        shutil.copy2(viejo, destino)
+    except OSError:
+        pass
+
+
 def _cargar_dotenv():
-    for ruta in (os.path.join(_AQUI, ".env"), os.path.join(os.getcwd(), ".env")):
+    # El .env de la carpeta de datos manda: es donde el panel guarda las claves.
+    for ruta in (os.path.join(DIR_DATOS, ".env"),
+                 os.path.join(_AQUI, ".env"), os.path.join(os.getcwd(), ".env")):
         if os.path.isfile(ruta):
             try:
                 with open(ruta, "r", encoding="utf-8") as f:
@@ -82,12 +122,13 @@ KEEPA_DOMAIN = int(env("KEEPA_DOMAIN", "1"))           # 1 = amazon.com (US)
 JUNGLE_SCOUT_API_KEY = env("JUNGLE_SCOUT_API_KEY")
 JUNGLE_SCOUT_KEY_NAME = env("JUNGLE_SCOUT_KEY_NAME")
 JUNGLE_SCOUT_MARKETPLACE = env("JUNGLE_SCOUT_MARKETPLACE", "us")
-CEREBRO_CSV_DIR = env("CEREBRO_CSV_DIR", os.path.join(_AQUI, "data", "cerebro_exports"))
+CEREBRO_CSV_DIR = env("CEREBRO_CSV_DIR", os.path.join(DIR_DATOS, "cerebro_exports"))
 USAR_CEREBRO = env_b("USAR_CEREBRO", True)
 MARKETPLACE = env("CEREBRO_MARKETPLACE", "US")
 
 # --- DB ---
-DB_PATH = env("DB_PATH", os.path.join(_AQUI, "fba.db"))
+DB_PATH = env("DB_PATH", os.path.join(DIR_DATOS, "fba.db"))
+_migrar_legacy("fba.db", DB_PATH)
 
 # --- Email / alertas ---
 ALERT_TO = env("ALERT_TO", "vieraschiavi@gmail.com")
@@ -133,7 +174,8 @@ def estado_config():
 # --------------------------------------------------------------------------- #
 # Guardado seguro de claves (.env) — usado por la pestana Config del panel.
 # --------------------------------------------------------------------------- #
-ENV_PATH = os.path.join(_AQUI, ".env")
+ENV_PATH = os.path.join(DIR_DATOS, ".env")
+_migrar_legacy(".env", ENV_PATH)
 
 # Claves que el panel puede guardar. Nada fuera de esta lista se escribe.
 CLAVES_GUARDABLES = ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY",
