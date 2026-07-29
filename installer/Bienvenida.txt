@@ -12,7 +12,12 @@ Requisitos:
     falta instalar nada por separado ni tener internet para arrancarlo
     la primera vez.
 
-Tus datos y tus claves (Keepa, Claude, email) quedan SIEMPRE en tu equipo,
-en un archivo .env local que nunca se comparte ni se sube a ningun lado.
+Podes elegir en que carpeta instalarlo, y si lo instalas para todos los
+usuarios del equipo o solo para vos.
+
+Tus datos y tus claves (Keepa, Claude, email) quedan SIEMPRE en tu equipo.
+Se guardan en tu carpeta personal (%LOCALAPPDATA%\MV FBA IA), aparte del
+programa: asi podes mover o reinstalar MV FBA IA sin perder tu portafolio,
+tus ventas ni tus claves. Nada se comparte ni se sube a ningun lado.
 
 Toca Siguiente para continuar.

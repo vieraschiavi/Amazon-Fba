@@ -6,11 +6,13 @@
 ;   3. Apreta Build > Compile (F9). El instalador queda en installer\Output\.
 ;   O desde la consola: "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" MV_Amazon_FBA_IA.iss
 ;
-; Se instala en el perfil del usuario (sin pedir permisos de administrador) para
-; que el panel pueda escribir su base de datos y su .env sin friccion de UAC.
+; El usuario elige DONDE instalar y si lo hace para todos los usuarios (Archivos
+; de programa, pide UAC) o solo para el (sin UAC). Se puede instalar en cualquier
+; carpeta porque los datos del usuario (base, .env, CSV) ya NO viven junto al
+; programa: van a %LOCALAPPDATA%\MV FBA IA (ver _dir_datos() en config.py).
 
 #define MyAppName "MV FBA IA"
-#define MyAppVersion "1.1.0"
+#define MyAppVersion "1.2.0"
 #define MyAppPublisher "MV FBA IA"
 #define MyAppExeDescription "Cockpit inteligente para tu negocio Amazon FBA"
 
@@ -20,17 +22,24 @@ AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppComments={#MyAppExeDescription}
-DefaultDirName={localappdata}\Programs\MV FBA IA
+; {autopf} = "Archivos de programa" si instala como admin, o la carpeta del
+; usuario si elige "solo para mi". El usuario puede cambiarla en el asistente.
+DefaultDirName={autopf}\MV FBA IA
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
+; Siempre mostrar la pagina de "elegir carpeta", tambien al actualizar.
+DisableDirPage=no
+; Arranca sin pedir admin, pero deja elegir "para todos los usuarios" en un
+; dialogo al inicio (ahi si eleva permisos).
 PrivilegesRequired=lowest
+PrivilegesRequiredOverridesAllowed=dialog
 ; Se bundlea un runtime de Python embebido x64 + wheels compiladas (pandas,
 ; pillow, pywebview/pythonnet, uvicorn[standard]) — ya NO es independiente
-; de arquitectura. No hace falta ArchitecturesInstallIn64BitMode porque se
-; instala en {localappdata} (sin tocar Program Files ni el registro de
-; 64 bits), pero se exige x64compatible para evitar instalar en un Windows
-; de 32 bits donde el runtime embebido no arrancaria.
+; de arquitectura, por eso se exige x64compatible. Y como ahora SI puede
+; instalarse en "Archivos de programa", hace falta el modo de 64 bits para
+; que {autopf} sea "C:\Program Files" y no "C:\Program Files (x86)".
 ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
 OutputBaseFilename=MV_Amazon_FBA_IA_Setup
 OutputDir=Output
 SetupIconFile=assets\icon.ico
@@ -110,21 +119,29 @@ end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
-  AppDir: String;
+  AppDir, DatosDir: String;
 begin
-  if (CurUninstallStep = usPostUninstall) and BorrarDatosDelUsuario then
+  if CurUninstallStep = usPostUninstall then
   begin
     AppDir := ExpandConstant('{app}');
-    // Solo se borra lo que la instalacion NUNCA gestiono (generado en uso):
-    // la base de datos, las claves y los .pyc. El resto del programa ya lo
-    // quita el desinstalador automatico de Inno Setup.
-    DeleteFile(AppDir + '\fba.db');
-    DeleteFile(AppDir + '\.env');
-    DelTree(AppDir + '\data\cerebro_exports', False, True, False);
+    // Los .pyc se generan al usar el programa: el desinstalador de Inno no los
+    // conoce y dejarian la carpeta sin borrar.
     DelTree(AppDir + '\__pycache__', True, True, True);
     DelTree(AppDir + '\agents\__pycache__', True, True, True);
     DelTree(AppDir + '\core\__pycache__', True, True, True);
     DelTree(AppDir + '\data\__pycache__', True, True, True);
     DelTree(AppDir, True, False, False);
+
+    if BorrarDatosDelUsuario then
+    begin
+      // Los datos del usuario ya NO viven junto al programa (asi se puede
+      // instalar en "Archivos de programa"): estan en %LOCALAPPDATA%, igual
+      // que en _dir_datos() de config.py.
+      DatosDir := ExpandConstant('{localappdata}\MV FBA IA');
+      DeleteFile(DatosDir + '\fba.db');
+      DeleteFile(DatosDir + '\.env');
+      DelTree(DatosDir + '\cerebro_exports', True, True, True);
+      DelTree(DatosDir, True, False, False);
+    end;
   end;
 end;
