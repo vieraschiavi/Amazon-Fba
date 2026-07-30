@@ -22,9 +22,12 @@ AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppComments={#MyAppExeDescription}
-; {autopf} = "Archivos de programa" si instala como admin, o la carpeta del
-; usuario si elige "solo para mi". El usuario puede cambiarla en el asistente.
-DefaultDirName={autopf}\MV FBA IA
+; La carpeta por defecto se resuelve en [Code]: "Archivos de programa" si
+; instala como admin, o la carpeta del usuario si elige "solo para mi".
+; NO se usa {autopf}: depende de SHGetKnownFolderPath(FOLDERID_UserProgramFiles),
+; que en algunos entornos falla y aborta el instalador con "Failed to expand
+; shell folder constant". {commonpf} y {localappdata} son estables.
+DefaultDirName={code:CarpetaPorDefecto}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 ; Siempre mostrar la pagina de "elegir carpeta", tambien al actualizar.
@@ -37,7 +40,7 @@ PrivilegesRequiredOverridesAllowed=dialog
 ; pillow, pywebview/pythonnet, uvicorn[standard]) — ya NO es independiente
 ; de arquitectura, por eso se exige x64compatible. Y como ahora SI puede
 ; instalarse en "Archivos de programa", hace falta el modo de 64 bits para
-; que {autopf} sea "C:\Program Files" y no "C:\Program Files (x86)".
+; que {commonpf} sea "C:\Program Files" y no "C:\Program Files (x86)".
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputBaseFilename=MV_Amazon_FBA_IA_Setup
@@ -107,14 +110,28 @@ Filename: "{app}\App_Escritorio.vbs"; Description: "Abrir {#MyAppName} ahora"; F
 var
   BorrarDatosDelUsuario: Boolean;
 
+// Carpeta propuesta al abrir la pagina de destino. Se calcula aca en vez de
+// usar la constante autopf, que puede fallar y abortar la instalacion.
+function CarpetaPorDefecto(Param: String): String;
+begin
+  if IsAdminInstallMode then
+    Result := ExpandConstant('{commonpf}\MV FBA IA')
+  else
+    Result := ExpandConstant('{localappdata}\Programs\MV FBA IA');
+end;
+
 function InitializeUninstall(): Boolean;
 begin
   Result := True;
+  // SuppressibleMsgBox y no MsgBox: en una desinstalacion silenciosa
+  // (/VERYSILENT) un MsgBox comun se queda esperando un clic que nunca llega y
+  // el desinstalador cuelga. Asi, sin nadie mirando, responde IDNO: se borra el
+  // programa pero los datos del usuario NO se tocan.
   BorrarDatosDelUsuario :=
-    (MsgBox('¿Tambien queres borrar tu base de datos y tus claves guardadas ' +
-            '(.env)? Si tocás "No", se desinstala el programa pero tus datos ' +
-            'quedan en la carpeta por si reinstalás mas adelante.',
-            mbConfirmation, MB_YESNO) = IDYES);
+    (SuppressibleMsgBox('¿Tambien queres borrar tu base de datos y tus claves ' +
+            'guardadas (.env)? Si tocás "No", se desinstala el programa pero ' +
+            'tus datos quedan en la carpeta por si reinstalás mas adelante.',
+            mbConfirmation, MB_YESNO, IDNO) = IDYES);
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
