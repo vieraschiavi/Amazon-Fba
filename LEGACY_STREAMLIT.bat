@@ -12,7 +12,11 @@ echo  ============================================================
 echo.
 
 set "PYTHON="
-if exist "C:\ProgramData\Anaconda3\python.exe" set "PYTHON=C:\ProgramData\Anaconda3\python.exe"
+rem Primero el runtime que trae el instalador: el cliente no instalo Python
+rem aparte y no tiene por que hacerlo. Recien si no esta (repo clonado a mano)
+rem se busca uno del sistema.
+if exist "%~dp0runtime\python.exe" set "PYTHON=%~dp0runtime\python.exe"
+if not defined PYTHON if exist "C:\ProgramData\Anaconda3\python.exe" set "PYTHON=C:\ProgramData\Anaconda3\python.exe"
 if not defined PYTHON if exist "%USERPROFILE%\anaconda3\python.exe" set "PYTHON=%USERPROFILE%\anaconda3\python.exe"
 if not defined PYTHON if exist "%USERPROFILE%\miniconda3\python.exe" set "PYTHON=%USERPROFILE%\miniconda3\python.exe"
 if not defined PYTHON if exist "C:\ProgramData\miniconda3\python.exe" set "PYTHON=C:\ProgramData\miniconda3\python.exe"
@@ -24,7 +28,9 @@ if not defined PYTHON (
     del "%TEMP%\pyfba.txt" >nul 2>&1
 )
 if not defined PYTHON (
-    echo  [ERROR] No se encontro Python. Instala Anaconda o Python 3.10+ y volve a probar.
+    echo  [ERROR] No se encontro Python. Si instalaste MV FBA IA, reinstalalo:
+    echo  el runtime incluido (runtime\python.exe) esta incompleto o fue borrado.
+    echo  Si clonaste el repo a mano, instala Python 3.10+ y volve a probar.
     pause
     exit /b 1
 )
