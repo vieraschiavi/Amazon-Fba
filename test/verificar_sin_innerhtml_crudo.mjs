@@ -34,16 +34,19 @@ const ARCHIVOS = [
   "landing/gracias.html",
 ];
 
-// clave = "archivo:linea_de_apertura_del_innerHTML" -> Set de expresiones
-// ${...} ya auditadas para ese sitio, con el motivo. Si el codigo cambia y
-// aparece una expresion nueva en un sitio ya conocido, o un sitio nuevo, el
-// test falla (hay que revisar y clasificar antes de agregarlo aca).
+// clave = archivo -> lista de grupos auditados. Cada grupo tiene el motivo
+// por el que sus expresiones son seguras y las expresiones exactas aprobadas.
+//
+// Se indexa por ARCHIVO + TEXTO de la expresion, NO por numero de linea: si
+// se indexara por linea, agregar cualquier parrafo mas arriba correria todo y
+// obligaria a "re-auditar" codigo que no cambio -- ruido, no senal. Asi,
+// mover codigo no dispara nada y cambiar QUE se interpola si.
 const INVENTARIO = {
-  "mobile/js/app.js:213": {
+  "mobile/js/app.js#popover-info": {
     motivo: "INFO_METRICAS: diccionario fijo escrito en este mismo archivo, no dato externo",
     ok: ["d.que", "d.objetivo", "d.desvio"],
   },
-  "mobile/js/app.js:264": {
+  "mobile/js/app.js#kpis-portafolio": {
     motivo: "4 llamadas a kpiHtml(): labels fijos + numeros via fmtMoney/fmtPct/fmtNum + conteos propios",
     ok: [
       'kpiHtml("Productos", r.n, `${s.verde || 0} verde · ${s.amarillo || 0} amarillo · ${s.rojo || 0} rojo`, null, true)',
@@ -52,18 +55,18 @@ const INVENTARIO = {
       'kpiHtml("Ordenes", fmtNum(ordenes), fmtNum(unidades) + " unidades")',
     ],
   },
-  "mobile/js/app.js:293": {
+  "mobile/js/app.js#tarjeta-producto": {
     motivo: "escapar(p.nombre); semaforo/id/numeros: enum fijo, id de la propia DB local, o via fmt*",
     ok: ["escapar(p.nombre)", "tonoSemaforo(p.semaforo)", "p.semaforo.toUpperCase()",
       "fmtMoney2(p.precio)", "fmtPct(p.margen)", '_iconoInfo("margen")', "fmtPct(p.roi)",
       '_iconoInfo("roi")', "fmtMoney2(p.neto_unidad)", "fmtMoney(p.ingreso_real)",
       "fmtNum(p.unidades_reales)", "p.id"],
   },
-  "mobile/js/app.js:435": {
+  "mobile/js/app.js#error-api": {
     motivo: "escapar(r.mensaje): mensaje de error que puede incluir texto de la API",
     ok: ["escapar(r.mensaje)"],
   },
-  "mobile/js/app.js:444": {
+  "mobile/js/app.js#tabla-ganancias": {
     motivo: "kpiHtml()/fmt* con numeros; filas ya construida con fmtMoney() sobre claves fijas de costos; caveat escapado",
     ok: [
       'kpiHtml("Ganancia neta", fmtMoney(lo.ganancia_neta), r.entrada, tonoG, true, "ganancia_neta")',
@@ -74,50 +77,67 @@ const INVENTARIO = {
       "fmtNum(lo.unidades_compradas)", "fmtNum(lo.meses_para_venderlo)",
       're.mes_primer_cobro || "—"', "escapar(r.caveat)"],
   },
-  "mobile/js/app.js:595": {
+  "mobile/js/app.js#keywords-amazon": {
     motivo: "kws.map(k => ...escapar(k)...): cada keyword de Amazon pasa por escapar() adentro del map",
     ok: ['kws.map((k) => `<span class="chip">${escapar(k)}</span>`).join("")'],
   },
-  "mobile/js/app.js:919": {
+  "mobile/js/app.js#conteo-config": {
     motivo: "conteos numericos propios (cantidad de productos/ventas guardadas en este telefono)",
     ok: ["r.n", "estado.ventas.length"],
   },
-  "mobile/js/app.js:1057": {
+  "mobile/js/app.js#nudge-demo-ultimo": {
     motivo: "escapar(t.ultimo/t.cta): textos del diccionario I18N propio; url es constante literal del archivo",
     ok: ["escapar(t.ultimo)", "url", "escapar(t.cta)"],
   },
-  "mobile/js/app.js:1060": {
-    motivo: "mismo caso que 1057, otro mensaje del diccionario I18N",
+  "mobile/js/app.js#nudge-demo-quedan2": {
+    motivo: "mismo caso que nudge-demo-ultimo, otro mensaje del diccionario I18N",
     ok: ["escapar(t.quedan2)", "url", "escapar(t.cta)"],
   },
-  "mobile/js/app.js:1165": {
+  "mobile/js/app.js#puntos-tour": {
     motivo: "ternario fijo que arma el propio codigo (paso actual del tour), no dato externo",
     ok: ['i === _tourPaso ? "on" : ""'],
   },
-  "landing/index.html:1110": {
+  "landing/index.html#resenas-vacio": {
     motivo: "txt: texto del diccionario I18N propio (reviews.vacio) via t(), no dato externo",
     ok: ["txt"],
   },
-  "landing/index.html:1114": {
+  "landing/index.html#resenas-resumen": {
     motivo: "numeros formateados + texto I18N con reemplazo de un numero",
     ok: ["resumen.promedio.toFixed(1)", "estrellas(resumen.promedio)", "totalTxt"],
   },
-  "landing/index.html:1118": {
+  "landing/index.html#resenas-lista": {
     motivo: "estrellas(): devuelve solo caracteres ★/☆; comentario/nombre de la reseña pasan por escaparHtml()",
     ok: ["estrellas(r.puntaje)", "escaparHtml(r.comentario)", "escaparHtml(r.nombre)"],
   },
-  "landing/gracias.html:97": {
+  "landing/gracias.html#licencia-y-descargas": {
     motivo: "d.licencia: charset fijo MVFBA-XXXX-XXXX-XXXX-XXXX (api/_licencia.js, hex+guiones). "
       + "email de MercadoPago YA pasa por escaparHtml() mas arriba (variable `email`, no `d.email` directo). "
       + "payment_id/proc van por encodeURIComponent (posicion de atributo href).",
     ok: ["d.licencia", "email",
       'encodeURIComponent(d._pid || "")', 'd._proc ? "&proc=" + encodeURIComponent(d._proc) : ""'],
   },
-  "landing/gracias.html:239": {
+  "landing/gracias.html#mensaje-error": {
     motivo: "mostrarError() siempre se llama con un literal de texto escrito en este archivo, nunca con dato externo",
     ok: ["msg"],
   },
 };
+
+// Aplana el INVENTARIO a archivo -> Set de expresiones aprobadas. Lo que va
+// despues del "#" es solo una ETIQUETA legible para poder tener varios grupos
+// (con motivos distintos) en un mismo archivo: NO es un numero de linea ni se
+// usa para localizar nada. Para el chequeo, lo unico que importa es el archivo.
+const _cache = new Map();
+function aprobadas(rel) {
+  if (!_cache.has(rel)) {
+    const set = new Set();
+    for (const [clave, grupo] of Object.entries(INVENTARIO)) {
+      if (clave.split("#")[0] !== rel) continue;
+      for (const e of grupo.ok) set.add(e);
+    }
+    _cache.set(rel, set);
+  }
+  return _cache.get(rel);
+}
 
 let fallas = 0;
 let vistos = 0;
@@ -135,30 +155,22 @@ for (const rel of ARCHIVOS) {
       j++;
       bloque += "\n" + lineas[j];
     }
-    const clave = `${rel}:${i + 1}`;
     // Interpolaciones de primer nivel (no baja a las anidadas dentro de un
-    // .map(...) ya clasificado como una sola unidad -- ver mobile/js/app.js:595).
+    // .map(...) ya clasificado como una sola unidad -- ver el grupo de kws).
     const interpolaciones = [...bloque.matchAll(/\$\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}/g)].map((m) => m[1].trim());
     if (interpolaciones.length === 0) continue; // solo texto fijo: nada que auditar
-    const entrada = INVENTARIO[clave];
     vistos += interpolaciones.length;
-    if (!entrada) {
-      console.error(`FALLA  ${clave}: innerHTML SIN CLASIFICAR (agrega una entrada a INVENTARIO tras auditarlo)`);
-      console.error(`        expresiones encontradas: ${JSON.stringify(interpolaciones)}`);
-      fallas++;
-      continue;
-    }
     for (const expr of interpolaciones) {
-      if (!entrada.ok.includes(expr)) {
-        console.error(`FALLA  ${clave}: expresion NUEVA o CAMBIADA sin auditar: \${${expr}}`);
-        console.error(`        esperadas para este sitio: ${JSON.stringify(entrada.ok)}`);
+      if (!aprobadas(rel).has(expr)) {
+        console.error(`FALLA  ${rel}:${i + 1}: expresion NUEVA o CAMBIADA sin auditar: \${${expr}}`);
+        console.error(`        (si es segura, agregala a INVENTARIO con el motivo)`);
         fallas++;
       }
     }
   }
 }
 
-// Chequeo puntual: el sitio "landing/gracias.html:97" confia en que la
+// Chequeo puntual: el sitio "landing/gracias.html#licencia-y-descargas" confia en que la
 // variable `email` que interpola ya llega escapada -- eso se construye en OTRA
 // linea (el `const email = ...` de mas arriba), que el barrido de arriba no
 // mira (no seria un innerHTML). Sin esto, alguien podria sacarle el
