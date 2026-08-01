@@ -20,7 +20,7 @@
 // En la versión DESCARGADA (APK/iOS/PC) sin clave propia (BYOK), la app llama
 // a este mismo endpoint como fallback -- por eso valida licencia acá y no
 // confía en lo que diga el cliente.
-import { aplicarCors, clienteValido } from "./_seguridad.js";
+import { aplicarCors, clienteValido, ipDeRequest } from "./_seguridad.js";
 import { claveValida } from "./_licencia.js";
 import { revisarSaldo, descontarCreditos } from "./_creditosia.js";
 import { kvGet, kvSet, almacenConfigurado } from "./_almacen.js";
@@ -33,11 +33,17 @@ const MAX_TOKENS_DEMO = 500;
 const MAX_TOKENS_CREDITOS = 900;
 const TOPE_ANONIMO = 30; // preguntas totales para quien no tiene creditos activos
 
-async function revisarAnonimo(id) {
-  // Sin almacen o sin id de dispositivo, no hay forma honesta de contar --
-  // no se bloquea (mejor eso a inventar un conteo), pero queda documentado.
-  if (!almacenConfigurado() || !id) return { permitido: true, sinConteo: true };
-  const k = "anon:" + String(id).slice(0, 80);
+async function revisarAnonimo(req, id) {
+  // Sin almacen, no hay forma honesta de contar -- no se bloquea (mejor eso
+  // a inventar un conteo), pero queda documentado. Con almacen SI hay: antes,
+  // sin dispositivo y sin email (ambos strings vacios), esta funcion devolvia
+  // "permitido sin contar" -- un script de 5 lineas que nunca mande
+  // "dispositivo" (o lo rote en cada request) tenia preguntas ilimitadas
+  // gratis a costa de la clave de Claude del dueño. Ahora, sin id propio, se
+  // cuenta por IP -- no es perfecto (varias personas detras del mismo NAT
+  // comparten cupo), pero cierra el bypass total.
+  if (!almacenConfigurado()) return { permitido: true, sinConteo: true };
+  const k = "anon:" + String(id || ("ip:" + ipDeRequest(req))).slice(0, 80);
   const actual = (await kvGet(k)) || { usadas: 0 };
   if (actual.usadas >= TOPE_ANONIMO) return { permitido: false };
   actual.usadas += 1;
@@ -95,7 +101,7 @@ export default async function handler(req, res) {
   }
 
   if (modo === "demo") {
-    const chequeo = await revisarAnonimo(dispositivo || email);
+    const chequeo = await revisarAnonimo(req, dispositivo || email);
     if (!chequeo.permitido) {
       return res.status(429).json({
         error: "tope_alcanzado",

@@ -6,7 +6,7 @@ set -e
 mkdir -p landing/app/css landing/app/js landing/app/icons
 cp mobile/index.html mobile/manifest.json mobile/service-worker.js landing/app/
 cp mobile/css/estilos.css landing/app/css/
-cp mobile/js/nucleo.js mobile/js/licencia.js mobile/js/app.js landing/app/js/
+cp mobile/js/seguro.js mobile/js/nucleo.js mobile/js/licencia.js mobile/js/app.js landing/app/js/
 cp mobile/icons/*.png landing/app/icons/
 
 # Vercel sirve /app/ con trailingSlash=false, redirige a /app y ahí los links

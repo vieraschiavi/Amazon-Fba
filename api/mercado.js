@@ -13,7 +13,7 @@
 // HONESTIDAD: Keepa da BSR, no ventas exactas. ventas_estim es una estimación por
 // curva BSR->ventas (gruesa), igual que en el programa de PC (data/keepa.py).
 
-import { aplicarCors, clienteValido } from "./_seguridad.js";
+import { aplicarCors, clienteValido, limitarPorIp } from "./_seguridad.js";
 
 const DOMAIN = 1; // amazon.com (US)
 const UA = "mv-amazon-fba-ia/1.0";
@@ -47,9 +47,22 @@ export default async function handler(req, res) {
   const keyword = String(body.keyword || "").slice(0, 120).trim();
   const min = Math.max(0, Number(body.min) || 0);
   const max = Math.max(min + 1, Number(body.max) || 100);
-  const key = String(body.keepaKey || "").trim() || process.env.KEEPA_API_KEY;
+  const keyPropia = String(body.keepaKey || "").trim();
+  const key = keyPropia || process.env.KEEPA_API_KEY;
 
   if (!key) return res.status(503).json({ ok: false, error: "sin_clave_keepa" });
+
+  // Si quien llama trae SU propia clave de Keepa, el costo es suyo -- no hace
+  // falta limitarlo. Sin clave propia se usa la del dueño del demo: sin
+  // ningun tope, un script podia consumirla sin limite (2 llamadas upstream
+  // por request). 20 busquedas/hora por IP alcanza para probar el demo de
+  // sobra y frena el abuso de volumen.
+  if (!keyPropia) {
+    const limite = await limitarPorIp(req, "mercado", 20, 3600);
+    if (!limite.permitido) {
+      return res.status(429).json({ ok: false, error: "demasiadas_busquedas" });
+    }
+  }
   if (keyword.length < 3) return res.status(400).json({ ok: false, error: "keyword_corta" });
 
   try {

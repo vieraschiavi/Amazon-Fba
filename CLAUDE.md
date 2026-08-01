@@ -58,12 +58,13 @@ sistema lo dice en vez de simular un resultado.
 | Objetivo | Comando |
 |---|---|
 | Instalar deps Python | `pip install -r requirements.txt` |
-| Instalar deps de test | `pip install pytest httpx` (httpx ya está en requirements.txt) |
+| Instalar deps de test | `pip install -r requirements-test.txt` |
 | Correr la API + panel | `python -m uvicorn app:app --host 0.0.0.0 --port 8000` (o `API.bat` / `INICIAR.bat` en Windows) |
 | Correr el panel Streamlit legado | `streamlit run dashboard_app.py` (o `LEGACY_STREAMLIT.bat`) |
 | Verificar conexiones (Keepa/Claude/SMTP/CSV) | `python test_conexiones.py` |
-| Tests | `python -m pytest test/test_api_local.py -q` |
+| Tests (Python) | `python -m pytest test/test_api_local.py -q` |
 | Un test puntual | `python -m pytest test/test_api_local.py::test_legacy_health -v` |
+| Tests (JS: motor portado + seguridad + créditos) | `node test/verificar_nucleo.js && node test/verificar_escapar.js && node test/verificar_seguridad.mjs && node test/verificar_creditosia.mjs && node test/verificar_sin_innerhtml_crudo.mjs && node test/verificar_i18n_landing.mjs` (sin `npm install`, solo Node >= 18) |
 | Instalar deps del frontend | `cd frontend && npm install` |
 | Frontend en desarrollo | `cd frontend && npm run dev` |
 | Build del frontend (para desktop/instalador) | `cd frontend && npm run build` |

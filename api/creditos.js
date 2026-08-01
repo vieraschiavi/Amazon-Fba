@@ -14,7 +14,7 @@
 // sumar api/resenas.js hizo que el deploy fallara. GET y POST no se pisan
 // (metodos distintos), asi que cada uno mantiene su propia logica de CORS
 // intacta.
-import { aplicarCors, clienteValido } from "./_seguridad.js";
+import { aplicarCors, clienteValido, limitarPorIp } from "./_seguridad.js";
 import { claveValida } from "./_licencia.js";
 import { revisarSaldo } from "./_creditosia.js";
 import { registrarDemo } from "./_demo.js";
@@ -35,6 +35,15 @@ export default async function handler(req, res) {
     const email = String(body.email || "").trim().toLowerCase();
     const nombre = String(body.nombre || "").trim();
     if (!email || !email.includes("@")) return res.status(200).json({ ok: false });
+
+    // Esta rama no tiene clienteValido (CORS abierto a * a proposito: la
+    // llaman apps nativas sin Origin/header consistente). Sin ningun freno,
+    // cualquiera podia spamear emails ajenos/inventados -- y el cron de
+    // recordatorio despues les manda un mail real de "tu demo vence manana"
+    // a gente que nunca la pidio (reputacion de envio del dominio). 5/hora
+    // por IP alcanza de sobra para un uso legitimo.
+    const limite = await limitarPorIp(req, "demoreg", 5, 3600);
+    if (!limite.permitido) return res.status(200).json({ ok: false });
 
     try {
       await registrarDemo(nombre, email);

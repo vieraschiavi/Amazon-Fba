@@ -20,6 +20,7 @@
 // todos los planes, se activa en el dashboard del proyecto → Firewall →
 // Rules). Estas dos capas de acá son un complemento de código, no un
 // reemplazo de eso.
+import { almacenConfigurado, kvGet, kvSet } from "./_almacen.js";
 
 // Dominio propio (mvfbaia.com, conectado al proyecto de Vercel) + los
 // previews *.vercel.app del mismo proyecto.
@@ -38,4 +39,32 @@ export function aplicarCors(req, res, metodos) {
 
 export function clienteValido(req) {
   return req.headers[APP_HEADER] === APP_TOKEN;
+}
+
+// Vercel corre detras de su propio proxy: el IP real del visitante llega en
+// x-forwarded-for (el primero de la lista, si hay varios proxies en cadena).
+export function ipDeRequest(req) {
+  const fwd = req.headers["x-forwarded-for"];
+  if (fwd) return String(fwd).split(",")[0].trim();
+  return (req.socket && req.socket.remoteAddress) || "desconocida";
+}
+
+// Limite de intentos por IP en una ventana de tiempo. Pensado para lo que
+// CORS y clienteValido NO frenan: un script que llama directo al endpoint
+// (curl, Python) probando muchos valores seguidos -- enumerar payment_id
+// ajenos en api/licencia.js, o gastar sin limite la clave de Claude/Keepa del
+// dueño en api/ia.js y api/mercado.js cuando el que llama no manda un
+// identificador propio (dispositivo vacio, o key propia vacia).
+//
+// Sin almacen configurado no hay forma honesta de contar -> no bloquea
+// (mismo criterio que revisarAnonimo en api/ia.js: mejor eso que inventar un
+// conteo). Queda documentado, no es un fallback silencioso.
+export async function limitarPorIp(req, prefijo, tope, ventanaSeg) {
+  if (!almacenConfigurado()) return { permitido: true, sinConteo: true };
+  const clave = prefijo + ":" + ipDeRequest(req);
+  const actual = (await kvGet(clave)) || { usos: 0 };
+  if (actual.usos >= tope) return { permitido: false };
+  actual.usos += 1;
+  await kvSet(clave, actual, ventanaSeg);
+  return { permitido: true, restantes: tope - actual.usos };
 }

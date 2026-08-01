@@ -6,7 +6,7 @@
 // la app para validarla (core/licencia.py y mobile/js/licencia.js). La licencia
 // queda a nombre del email con el que el comprador pagó: ese mismo email va en
 // la app para activarla.
-import { aplicarCors, clienteValido } from "./_seguridad.js";
+import { aplicarCors, clienteValido, limitarPorIp } from "./_seguridad.js";
 import { generarClave } from "./_licencia.js";
 import { otorgarBonoBienvenidaSiNuevo, acreditarRecargaSiNueva, esPackRecarga, PACKS_RECARGA } from "./_creditosia.js";
 import { avisarCreditosPorEmail } from "./_email_creditos.js";
@@ -22,6 +22,16 @@ export default async function handler(req, res) {
   // licencia. El header no detiene a un atacante dirigido, pero saca del
   // medio el escaneo automatico generico.
   if (!clienteValido(req)) return res.status(403).json({ error: "cliente_no_reconocido" });
+
+  // Segunda capa, para el atacante dirigido que SI conoce el header: sin
+  // esto, nada frenaba probar payment_id al azar (numericos, rango acotado
+  // en MercadoPago) hasta pescar un pago aprobado ajeno -- no hace falta
+  // romper el HMAC de la licencia, alcanza con encontrar UN payment_id que
+  // haya aprobado alguien mas. 20/hora por IP alcanza de sobra para un
+  // comprador real (gracias.html llama esto una vez, quizas dos si recarga
+  // la pagina) y vuelve la enumeracion impracticable.
+  const limite = await limitarPorIp(req, "lic", 20, 3600);
+  if (!limite.permitido) return res.status(429).json({ error: "demasiados_intentos" });
 
   const q = req.query || {};
 

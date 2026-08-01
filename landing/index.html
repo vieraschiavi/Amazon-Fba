@@ -226,6 +226,23 @@ section{padding:76px 0}
 .vs .bad li::before{content:"✕";color:#c0392b;flex:none}
 .vs .good li::before{content:"✓";color:var(--green-ink);font-weight:800;flex:none}
 
+/* comparacion nombrando competidores */
+.cmp-intro{max-width:760px;margin:28px auto 16px;text-align:center;font-size:15.5px;line-height:1.65;color:var(--slate)}
+.cmp-intro b{color:var(--ink)}
+.cmp-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:14px;border:1px solid var(--line);background:var(--card);box-shadow:var(--shadow-sm)}
+.cmp{width:100%;min-width:660px;border-collapse:collapse;font-size:14px}
+.cmp th,.cmp td{padding:13px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+.cmp thead th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;background:var(--paper)}
+.cmp thead th.mine{color:var(--green-ink)}
+.cmp tbody tr:last-child td{border-bottom:0}
+.cmp td:first-child{color:var(--ink);font-weight:600;width:26%}
+.cmp td.mine{background:rgba(76,138,23,.055)}
+.cmp td.si::before{content:"✓ ";color:var(--green-ink);font-weight:800}
+.cmp td.no::before{content:"✕ ";color:#c0392b;font-weight:800}
+.cmp td.parcial::before{content:"~ ";color:var(--accent-ink);font-weight:800}
+.cmp td b{color:var(--ink)}
+.cmp-nota{max-width:760px;margin:14px auto 0;text-align:center;font-size:13px;line-height:1.6;color:var(--muted)}
+
 /* pricing */
 .price-card{display:flex;flex-direction:column;gap:14px;position:relative}
 .price-card.hot{border-color:var(--accent);box-shadow:0 0 0 1.5px var(--accent),var(--shadow)}
@@ -396,6 +413,11 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
         <button id="vtoggle" data-t="video.play">▶ Reproducir</button>
         <span id="vtime">0:00</span>
         <span class="vhint" data-t="video.hint">Voz neutra/latina · sin costo de datos</span>
+        <!-- El mismo video como .mp4, para poder compartirlo fuera del sitio
+             (redes, anuncios, WhatsApp). Lo genera scripts/generar_video.py a
+             partir de estas mismas capturas y esta misma narracion. El href
+             lo actualiza applyLang segun el idioma activo. -->
+        <a id="vdl" class="vhint" href="media/video-mvfbaia-es.mp4" download data-t="video.descargar">Descargar el video</a>
       </div>
     </div>
   </div>
@@ -426,8 +448,8 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
     <h2 class="h2" data-t="vs.h2">Vas a saber cuánto ganás antes de gastar un dólar en stock</h2>
     <div class="card vs">
       <div class="side bad">
-        <div class="klabel" style="color:var(--muted)" data-t="vs.badLabel">Suites por suscripción</div>
-        <div class="price-old tabular">US$49–99<span style="font-size:15px">/mes</span></div>
+        <div class="klabel" style="color:var(--muted)" data-t="vs.badLabel">Helium 10 · Jungle Scout</div>
+        <div class="price-old tabular">US$49–99<span style="font-size:15px" data-t="vs.mes">/mes</span></div>
         <ul class="bad">
           <li data-t="vs.bad1">Suscripción recurrente de por vida</li>
           <li data-t="vs.bad2">Pagás módulos que no usás</li>
@@ -445,6 +467,59 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
         </ul>
       </div>
     </div>
+
+    <!-- Comparacion NOMBRANDO a los competidores. Cada fila tiene que ser
+         defendible: por eso la fila "volumen de busqueda real" dice
+         explicitamente que ELLOS ganan (el motor propio usa un proxy del
+         autocompletado, ver data/motor_propio.py::_NOTA) y por eso el cierre
+         es "se suma", no "los reemplaza": el sistema LEE el CSV de Cerebro
+         (data/cerebro.py) y la API de Jungle Scout (data/jungle_scout.py). -->
+    <p class="cmp-intro" data-t="cmp.intro">No compite con ellos: se les suma. MV FBA IA <b>lee</b> tu export de Helium 10 Cerebro y se conecta a la <b>API de Jungle Scout</b> — y convierte esos datos en la decisión que ninguna de las dos toma por vos: <b>¿este producto deja plata, a este precio, con tu capital?</b></p>
+    <div class="cmp-scroll">
+      <table class="cmp">
+        <thead>
+          <tr>
+            <th data-t="cmp.th0">&nbsp;</th>
+            <th data-t="cmp.th1">Helium 10</th>
+            <th data-t="cmp.th2">Jungle Scout</th>
+            <th class="mine" data-t="cmp.th3">MV FBA IA</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td data-t="cmp.r1">Volumen de búsqueda real (base propia)</td>
+            <td class="si" data-t="cmp.r1a">Sí — es su fuerte</td>
+            <td class="si" data-t="cmp.r1b">Sí — es su fuerte</td>
+            <td class="parcial mine" data-t="cmp.r1c">Con tu clave de Jungle Scout. El motor propio da un <b>proxy</b>, no volumen real</td>
+          </tr>
+          <tr>
+            <td data-t="cmp.r2">Landed cost → margen → ROI, con semáforo</td>
+            <td class="parcial" data-t="cmp.r2a">Calculadora de fees</td>
+            <td class="parcial" data-t="cmp.r2b">Calculadora de fees</td>
+            <td class="si mine" data-t="cmp.r2c">Producto por producto, con tu costo, flete, arancel y prep</td>
+          </tr>
+          <tr>
+            <td data-t="cmp.r3">Proyección de caja 12 meses (lead time, cobro DD+7, devoluciones, techo de demanda)</td>
+            <td class="no" data-t="cmp.r3a">No</td>
+            <td class="no" data-t="cmp.r3b">No</td>
+            <td class="si mine" data-t="cmp.r3c">Sí — te dice en qué mes cobrás y cuánto capital queda atado</td>
+          </tr>
+          <tr>
+            <td data-t="cmp.r4">Corre en tu PC, datos en tu disco</td>
+            <td class="no" data-t="cmp.r4a">Nube</td>
+            <td class="no" data-t="cmp.r4b">Nube</td>
+            <td class="si mine" data-t="cmp.r4c">App de escritorio + Android. Tu base y tus claves nunca salen de tu equipo</td>
+          </tr>
+          <tr>
+            <td data-t="cmp.r5">Qué pagás</td>
+            <td class="no" data-t="cmp.r5a">Suscripción mensual</td>
+            <td class="no" data-t="cmp.r5b">Suscripción mensual</td>
+            <td class="si mine" data-t="cmp.r5c">US$129 una vez</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cmp-nota" data-t="cmp.nota">Precios de lista de los planes de entrada al momento de escribir esto — verificalos en su sitio, cambian. Si ya pagás una de las dos, seguí pagándola: este programa te sirve igual, porque el hueco que llena está del lado de tu plata, no del lado del dato.</p>
   </div>
 </section>
 
@@ -666,7 +741,7 @@ const I18N = {
     "reviews.sub":"Reseñas reales de compradores, verificadas contra el pago — no se publica ninguna sin una compra real detrás.",
     "reviews.vacio":"Sé el primero en dejar tu reseña — se publica apenas confirmes tu compra.",
     "reviews.total":"{n} reseñas",
-    "nav.video":"Video","video.label":"En acción","video.h2":"Mirá el programa funcionando, de punta a punta","video.sub":"Un recorrido narrado por todo el sistema. El audio sigue el idioma que elijas arriba.","video.play":"▶ Reproducir","video.pause":"⏸ Pausar","video.replay":"↻ Ver de nuevo","video.hint":"Voz neutra/latina · sin costo de datos","video.slidePill":"7 días gratis","video.slideCierre":"Tu negocio en Amazon, bajo control","video.cap.intro":"Tenés el capital y las ganas de vender en Amazon. Lo que falta es un sistema que te diga qué vender, a qué precio, y cuánto vas a ganar. Eso es MV FBA IA.","video.cap.keywords":"Investigá nichos con nuestro motor propio: keywords reales de Amazon en diez mercados, sin suscripciones mensuales.","video.cap.pricing":"Cargá tu costo real y el sistema calcula el precio, el margen y el retorno, con un semáforo que te dice al toque si el producto conviene.","video.cap.portafolio":"Todos tus productos en un tablero: tu sueldo estable proyectado, el capital en juego y qué producto tira del resto.","video.cap.ganancias":"Poné cuánto invertís y mirá el desglose completo: unidades, ingreso, costos y ganancia real, sin sorpresas.","video.cap.mercado":"Evaluá cualquier producto: competencia, demanda y una probabilidad de éxito honesta, para no jugarte la plata a ciegas.","video.cap.asistente":"Y un asistente con inteligencia artificial que responde sobre tus números, tu portafolio y tu estrategia, cuando lo necesites.","video.cap.multiplataforma":"Todo en tu PC y en tu celular Android. Los cálculos y tus datos quedan en tu dispositivo; la búsqueda de keywords y la IA usan internet.","video.cap.cierre":"Probalo gratis siete días, con todas las funciones. Sin factura mensual. MV FBA IA: tu negocio en Amazon, bajo control.",
+    "nav.video":"Video","video.label":"En acción","video.h2":"Mirá el programa funcionando, de punta a punta","video.sub":"Un recorrido narrado por todo el sistema. El audio sigue el idioma que elijas arriba.","video.play":"▶ Reproducir","video.pause":"⏸ Pausar","video.replay":"↻ Ver de nuevo","video.hint":"Voz neutra/latina · sin costo de datos","video.descargar":"Descargar el video","video.slidePill":"7 días gratis","video.slideCierre":"Tu negocio en Amazon, bajo control","video.cap.intro":"Tenés el capital y las ganas de vender en Amazon. Lo que falta es un sistema que te diga qué vender, a qué precio, y cuánto vas a ganar. Eso es MV FBA IA.","video.cap.keywords":"Investigá nichos con nuestro motor propio: keywords reales de Amazon en diez mercados, sin suscripciones mensuales.","video.cap.pricing":"Cargá tu costo real y el sistema calcula el precio, el margen y el retorno, con un semáforo que te dice al toque si el producto conviene.","video.cap.portafolio":"Todos tus productos en un tablero: tu sueldo estable proyectado, el capital en juego y qué producto tira del resto.","video.cap.ganancias":"Poné cuánto invertís y mirá el desglose completo: unidades, ingreso, costos y ganancia real, sin sorpresas.","video.cap.mercado":"Evaluá cualquier producto: competencia, demanda y una probabilidad de éxito honesta, para no jugarte la plata a ciegas.","video.cap.asistente":"Y un asistente con inteligencia artificial que responde sobre tus números, tu portafolio y tu estrategia, cuando lo necesites.","video.cap.multiplataforma":"Todo en tu PC y en tu celular Android. Los cálculos y tus datos quedan en tu dispositivo; la búsqueda de keywords y la IA usan internet.","video.cap.cierre":"Probalo gratis siete días, con todas las funciones. Sin factura mensual. MV FBA IA: tu negocio en Amazon, bajo control.",
 
     "hero.eyebrow":"Sabé cuánto vas a ganar, antes de invertir",
     "hero.h1":'Sabé cuánto vas a ganar en Amazon, <em>antes de arriesgar tu plata</em>',
@@ -685,9 +760,17 @@ const I18N = {
     "feat.f7.h":"PC + Android","feat.f7.p":"App de escritorio nativa y app Android autocontenida — los cálculos corren sin conexión.",
     "feat.f8.h":"Tus datos, tus claves","feat.f8.p":"Guardado seguro y local. Vos elegís si usar tus APIs o las nuestras.",
     "vs.label":"La diferencia","vs.h2":"Vas a saber cuánto ganás antes de gastar un dólar en stock",
-    "vs.badLabel":"Suites por suscripción","vs.goodLabel":"MV FBA IA","vs.once":" pago único",
+    "vs.badLabel":"Helium 10 · Jungle Scout","vs.goodLabel":"MV FBA IA","vs.once":" pago único","vs.mes":"/mes",
     "vs.bad1":"Suscripción recurrente de por vida","vs.bad2":"Pagás módulos que no usás","vs.bad3":"Sin app nativa de escritorio",
     "vs.good1":"Semáforo de margen y ganancia real antes de comprar","vs.good2":"Pago único, en tu tarjeta, una vez","vs.good3":"Investigación incluida (Keepa opcional, no obligatorio)",
+    "cmp.intro":"No compite con ellos: se les suma. MV FBA IA <b>lee</b> tu export de Helium 10 Cerebro y se conecta a la <b>API de Jungle Scout</b> — y convierte esos datos en la decisión que ninguna de las dos toma por vos: <b>¿este producto deja plata, a este precio, con tu capital?</b>",
+    "cmp.th0":"&nbsp;","cmp.th1":"Helium 10","cmp.th2":"Jungle Scout","cmp.th3":"MV FBA IA",
+    "cmp.r1":"Volumen de búsqueda real (base propia)","cmp.r1a":"Sí — es su fuerte","cmp.r1b":"Sí — es su fuerte","cmp.r1c":"Con tu clave de Jungle Scout. El motor propio da un <b>proxy</b>, no volumen real",
+    "cmp.r2":"Landed cost → margen → ROI, con semáforo","cmp.r2a":"Calculadora de fees","cmp.r2b":"Calculadora de fees","cmp.r2c":"Producto por producto, con tu costo, flete, arancel y prep",
+    "cmp.r3":"Proyección de caja 12 meses (lead time, cobro DD+7, devoluciones, techo de demanda)","cmp.r3a":"No","cmp.r3b":"No","cmp.r3c":"Sí — te dice en qué mes cobrás y cuánto capital queda atado",
+    "cmp.r4":"Corre en tu PC, datos en tu disco","cmp.r4a":"Nube","cmp.r4b":"Nube","cmp.r4c":"App de escritorio + Android. Tu base y tus claves nunca salen de tu equipo",
+    "cmp.r5":"Qué pagás","cmp.r5a":"Suscripción mensual","cmp.r5b":"Suscripción mensual","cmp.r5c":"US$129 una vez",
+    "cmp.nota":"Precios de lista de los planes de entrada al momento de escribir esto — verificalos en su sitio, cambian. Si ya pagás una de las dos, seguí pagándola: este programa te sirve igual, porque el hueco que llena está del lado de tu plata, no del lado del dato.",
     "pricing.label":"Precios","pricing.h2":"Elegí tu plan","pricing.sub":"Pago único o mensual. Descargás la versión que compraste apenas se confirma el pago.",
     "pricing.monedaAviso":"Precio de referencia en USD — MercadoPago procesa el cobro en pesos uruguayos (UYU) al tipo de cambio del día del pago.",
     "pricing.demoBanner":"Descargá la demo completa de escritorio (Windows) — 7 días gratis, todas las funciones",
@@ -737,7 +820,7 @@ const I18N = {
     "reviews.sub":"Real reviews from buyers, verified against the actual payment — none are published without a real purchase behind them.",
     "reviews.vacio":"Be the first to leave a review — it publishes as soon as your purchase is confirmed.",
     "reviews.total":"{n} reviews",
-    "nav.video":"Video","video.label":"In action","video.h2":"See the program working, end to end","video.sub":"A narrated tour of the whole system. The audio follows the language you pick above.","video.play":"▶ Play","video.pause":"⏸ Pause","video.replay":"↻ Watch again","video.hint":"Neutral/Latin voice · no data cost","video.slidePill":"7 days free","video.slideCierre":"Your Amazon business, under control","video.cap.intro":"You've got the capital and the drive to sell on Amazon. What's missing is a system that tells you what to sell, at what price, and how much you'll make. That's MV FBA IA.","video.cap.keywords":"Research niches with our own engine: real Amazon keywords across ten marketplaces, with no monthly subscriptions.","video.cap.pricing":"Enter your real cost and the system computes price, margin and return, with a traffic light that tells you instantly if the product is worth it.","video.cap.portafolio":"All your products on one board: your projected steady salary, the capital at play, and which product carries the rest.","video.cap.ganancias":"Enter how much you invest and see the full breakdown: units, revenue, costs and real profit, with no surprises.","video.cap.mercado":"Evaluate any product: competition, demand and an honest success probability, so you don't bet your money blindly.","video.cap.asistente":"And an AI assistant that answers about your numbers, your portfolio and your strategy, whenever you need it.","video.cap.multiplataforma":"Everything on your PC and your Android phone. Calculations and your data stay on your device; keyword research and AI use the internet.","video.cap.cierre":"Try it free for seven days, with every feature. No monthly bill. MV FBA IA: your Amazon business, under control.",
+    "nav.video":"Video","video.label":"In action","video.h2":"See the program working, end to end","video.sub":"A narrated tour of the whole system. The audio follows the language you pick above.","video.play":"▶ Play","video.pause":"⏸ Pause","video.replay":"↻ Watch again","video.hint":"Neutral/Latin voice · no data cost","video.descargar":"Download the video","video.slidePill":"7 days free","video.slideCierre":"Your Amazon business, under control","video.cap.intro":"You've got the capital and the drive to sell on Amazon. What's missing is a system that tells you what to sell, at what price, and how much you'll make. That's MV FBA IA.","video.cap.keywords":"Research niches with our own engine: real Amazon keywords across ten marketplaces, with no monthly subscriptions.","video.cap.pricing":"Enter your real cost and the system computes price, margin and return, with a traffic light that tells you instantly if the product is worth it.","video.cap.portafolio":"All your products on one board: your projected steady salary, the capital at play, and which product carries the rest.","video.cap.ganancias":"Enter how much you invest and see the full breakdown: units, revenue, costs and real profit, with no surprises.","video.cap.mercado":"Evaluate any product: competition, demand and an honest success probability, so you don't bet your money blindly.","video.cap.asistente":"And an AI assistant that answers about your numbers, your portfolio and your strategy, whenever you need it.","video.cap.multiplataforma":"Everything on your PC and your Android phone. Calculations and your data stay on your device; keyword research and AI use the internet.","video.cap.cierre":"Try it free for seven days, with every feature. No monthly bill. MV FBA IA: your Amazon business, under control.",
 
     "hero.eyebrow":"Know your profit, before you invest",
     "hero.h1":'Know how much you’ll make on Amazon, <em>before you risk your money</em>',
@@ -756,9 +839,17 @@ const I18N = {
     "feat.f7.h":"PC + Android","feat.f7.p":"Native desktop app and self-contained Android app — the calculations run offline.",
     "feat.f8.h":"Your data, your keys","feat.f8.p":"Saved securely and locally. You choose whether to use your own APIs or ours.",
     "vs.label":"The difference","vs.h2":"You'll know your profit before you spend a dollar on stock",
-    "vs.badLabel":"Subscription suites","vs.goodLabel":"MV FBA IA","vs.once":" one-time",
+    "vs.badLabel":"Helium 10 · Jungle Scout","vs.goodLabel":"MV FBA IA","vs.once":" one-time","vs.mes":"/mo",
     "vs.bad1":"Recurring subscription forever","vs.bad2":"You pay for modules you don't use","vs.bad3":"No native desktop app",
     "vs.good1":"Margin traffic-light and real profit before you buy","vs.good2":"One-time payment, on your card, once","vs.good3":"Research included (Keepa optional, never required)",
+    "cmp.intro":"It doesn't compete with them: it adds to them. MV FBA IA <b>reads</b> your Helium 10 Cerebro export and connects to the <b>Jungle Scout API</b> — then turns that data into the call neither of them makes for you: <b>does this product actually make money, at this price, with your capital?</b>",
+    "cmp.th0":"&nbsp;","cmp.th1":"Helium 10","cmp.th2":"Jungle Scout","cmp.th3":"MV FBA IA",
+    "cmp.r1":"Real search volume (own database)","cmp.r1a":"Yes — that's their strength","cmp.r1b":"Yes — that's their strength","cmp.r1c":"With your own Jungle Scout key. The built-in engine gives a <b>proxy</b>, not real volume",
+    "cmp.r2":"Landed cost → margin → ROI, with traffic-light","cmp.r2a":"Fee calculator","cmp.r2b":"Fee calculator","cmp.r2c":"Product by product, with your cost, freight, duty and prep",
+    "cmp.r3":"12-month cash projection (lead time, DD+7 payout, returns, demand ceiling)","cmp.r3a":"No","cmp.r3b":"No","cmp.r3c":"Yes — tells you which month you get paid and how much capital stays tied up",
+    "cmp.r4":"Runs on your PC, data on your disk","cmp.r4a":"Cloud","cmp.r4b":"Cloud","cmp.r4c":"Desktop app + Android. Your database and your keys never leave your machine",
+    "cmp.r5":"What you pay","cmp.r5a":"Monthly subscription","cmp.r5b":"Monthly subscription","cmp.r5c":"US$129 once",
+    "cmp.nota":"List prices for entry plans at the time of writing — check their site, they change. If you already pay for one of them, keep paying it: this still helps you, because the gap it fills is on your money side, not the data side.",
     "pricing.label":"Pricing","pricing.h2":"Choose your plan","pricing.sub":"One-time or monthly. Download the version you bought as soon as payment is confirmed.",
     "pricing.monedaAviso":"Reference price in USD — MercadoPago processes the charge in Uruguayan pesos (UYU) at the exchange rate on the day of payment.",
     "pricing.demoBanner":"Download the full desktop demo (Windows) — 7 days free, every feature unlocked",
@@ -808,7 +899,7 @@ const I18N = {
     "reviews.sub":"Avaliações reais de compradores, verificadas contra o pagamento — nenhuma é publicada sem uma compra real por trás.",
     "reviews.vacio":"Seja o primeiro a deixar sua avaliação — é publicada assim que sua compra for confirmada.",
     "reviews.total":"{n} avaliações",
-    "nav.video":"Vídeo","video.label":"Em ação","video.h2":"Veja o programa funcionando, de ponta a ponta","video.sub":"Um tour narrado por todo o sistema. O áudio segue o idioma que você escolher acima.","video.play":"▶ Reproduzir","video.pause":"⏸ Pausar","video.replay":"↻ Ver de novo","video.hint":"Voz neutra/latina · sem custo de dados","video.slidePill":"7 dias grátis","video.slideCierre":"Seu negócio na Amazon, sob controle","video.cap.intro":"Você tem o capital e a vontade de vender na Amazon. Falta um sistema que diga o que vender, a que preço, e quanto você vai ganhar. Isso é o MV FBA IA.","video.cap.keywords":"Pesquise nichos com o nosso motor próprio: palavras-chave reais da Amazon em dez mercados, sem assinaturas mensais.","video.cap.pricing":"Coloque seu custo real e o sistema calcula o preço, a margem e o retorno, com um semáforo que diz na hora se o produto vale a pena.","video.cap.portafolio":"Todos os seus produtos em um painel: seu salário estável projetado, o capital em jogo e qual produto puxa o resto.","video.cap.ganancias":"Informe quanto investe e veja o detalhamento completo: unidades, receita, custos e lucro real, sem surpresas.","video.cap.mercado":"Avalie qualquer produto: concorrência, demanda e uma probabilidade de sucesso honesta, para não apostar seu dinheiro às cegas.","video.cap.asistente":"E um assistente com inteligência artificial que responde sobre seus números, seu portfólio e sua estratégia, quando você precisar.","video.cap.multiplataforma":"Tudo no seu PC e no seu celular Android. Os cálculos e seus dados ficam no seu dispositivo; a busca de palavras-chave e a IA usam internet.","video.cap.cierre":"Experimente grátis por sete dias, com todas as funções. Sem fatura mensal. MV FBA IA: seu negócio na Amazon, sob controle.",
+    "nav.video":"Vídeo","video.label":"Em ação","video.h2":"Veja o programa funcionando, de ponta a ponta","video.sub":"Um tour narrado por todo o sistema. O áudio segue o idioma que você escolher acima.","video.play":"▶ Reproduzir","video.pause":"⏸ Pausar","video.replay":"↻ Ver de novo","video.hint":"Voz neutra/latina · sem custo de dados","video.descargar":"Baixar o vídeo","video.slidePill":"7 dias grátis","video.slideCierre":"Seu negócio na Amazon, sob controle","video.cap.intro":"Você tem o capital e a vontade de vender na Amazon. Falta um sistema que diga o que vender, a que preço, e quanto você vai ganhar. Isso é o MV FBA IA.","video.cap.keywords":"Pesquise nichos com o nosso motor próprio: palavras-chave reais da Amazon em dez mercados, sem assinaturas mensais.","video.cap.pricing":"Coloque seu custo real e o sistema calcula o preço, a margem e o retorno, com um semáforo que diz na hora se o produto vale a pena.","video.cap.portafolio":"Todos os seus produtos em um painel: seu salário estável projetado, o capital em jogo e qual produto puxa o resto.","video.cap.ganancias":"Informe quanto investe e veja o detalhamento completo: unidades, receita, custos e lucro real, sem surpresas.","video.cap.mercado":"Avalie qualquer produto: concorrência, demanda e uma probabilidade de sucesso honesta, para não apostar seu dinheiro às cegas.","video.cap.asistente":"E um assistente com inteligência artificial que responde sobre seus números, seu portfólio e sua estratégia, quando você precisar.","video.cap.multiplataforma":"Tudo no seu PC e no seu celular Android. Os cálculos e seus dados ficam no seu dispositivo; a busca de palavras-chave e a IA usam internet.","video.cap.cierre":"Experimente grátis por sete dias, com todas as funções. Sem fatura mensal. MV FBA IA: seu negócio na Amazon, sob controle.",
 
     "hero.eyebrow":"Saiba quanto vai ganhar, antes de investir",
     "hero.h1":'Saiba quanto você vai ganhar na Amazon, <em>antes de arriscar seu dinheiro</em>',
@@ -827,9 +918,17 @@ const I18N = {
     "feat.f7.h":"PC + Android","feat.f7.p":"App de desktop nativo e app Android autocontido — os cálculos rodam sem internet.",
     "feat.f8.h":"Seus dados, suas chaves","feat.f8.p":"Salvo com segurança e localmente. Você escolhe usar suas APIs ou as nossas.",
     "vs.label":"A diferença","vs.h2":"Você vai saber quanto ganha antes de gastar um dólar em estoque",
-    "vs.badLabel":"Suítes por assinatura","vs.goodLabel":"MV FBA IA","vs.once":" pagamento único",
+    "vs.badLabel":"Helium 10 · Jungle Scout","vs.goodLabel":"MV FBA IA","vs.once":" pagamento único","vs.mes":"/mês",
     "vs.bad1":"Assinatura recorrente para sempre","vs.bad2":"Você paga por módulos que não usa","vs.bad3":"Sem app de desktop nativo",
     "vs.good1":"Semáforo de margem e lucro real antes de comprar","vs.good2":"Pagamento único, no seu cartão, uma vez","vs.good3":"Pesquisa incluída (Keepa opcional, nunca obrigatório)",
+    "cmp.intro":"Não compete com eles: soma-se a eles. O MV FBA IA <b>lê</b> o seu export do Helium 10 Cerebro e conecta na <b>API do Jungle Scout</b> — e transforma esses dados na decisão que nenhum dos dois toma por você: <b>este produto dá lucro, neste preço, com o seu capital?</b>",
+    "cmp.th0":"&nbsp;","cmp.th1":"Helium 10","cmp.th2":"Jungle Scout","cmp.th3":"MV FBA IA",
+    "cmp.r1":"Volume de busca real (base própria)","cmp.r1a":"Sim — é o forte deles","cmp.r1b":"Sim — é o forte deles","cmp.r1c":"Com a sua chave do Jungle Scout. O motor próprio dá um <b>proxy</b>, não volume real",
+    "cmp.r2":"Landed cost → margem → ROI, com semáforo","cmp.r2a":"Calculadora de taxas","cmp.r2b":"Calculadora de taxas","cmp.r2c":"Produto por produto, com seu custo, frete, imposto e prep",
+    "cmp.r3":"Projeção de caixa 12 meses (lead time, recebimento DD+7, devoluções, teto de demanda)","cmp.r3a":"Não","cmp.r3b":"Não","cmp.r3c":"Sim — diz em que mês você recebe e quanto capital fica preso",
+    "cmp.r4":"Roda no seu PC, dados no seu disco","cmp.r4a":"Nuvem","cmp.r4b":"Nuvem","cmp.r4c":"App de desktop + Android. Sua base e suas chaves nunca saem do seu equipamento",
+    "cmp.r5":"O que você paga","cmp.r5a":"Assinatura mensal","cmp.r5b":"Assinatura mensal","cmp.r5c":"US$129 uma vez",
+    "cmp.nota":"Preços de tabela dos planos de entrada no momento em que isto foi escrito — confira no site deles, mudam. Se você já paga um dos dois, continue pagando: este programa serve igual, porque a lacuna que ele preenche está do lado do seu dinheiro, não do lado do dado.",
     "pricing.label":"Preços","pricing.h2":"Escolha seu plano","pricing.sub":"Pagamento único ou mensal. Baixe a versão comprada assim que o pagamento for confirmado.",
     "pricing.monedaAviso":"Preço de referência em USD — o MercadoPago processa a cobrança em pesos uruguaios (UYU) na cotação do dia do pagamento.",
     "pricing.demoBanner":"Baixe a demo completa de desktop (Windows) — 7 dias grátis, todas as funções",
@@ -966,6 +1065,9 @@ if (formContacto) {
   }
   function setLangSrc(){
     audio.src = AUDIO[curLang] || AUDIO.es;
+    // El .mp4 descargable sigue el mismo idioma que la narracion.
+    const dl = document.getElementById("vdl");
+    if (dl) dl.href = `media/video-mvfbaia-${curLang}.mp4`;
   }
   function reset(){
     audio.pause(); audio.removeAttribute("src"); audio.load();
