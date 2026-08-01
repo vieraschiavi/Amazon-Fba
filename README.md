@@ -405,6 +405,29 @@ Importá los 3 JSON de `n8n/` en n8n y apuntá la URL base a `http://localhost:8
   real del proveedor. Nada reemplaza la **orden de prueba** (USD 1.000–2.000) antes
   de escalar.
 
+## Tests — correrlos en una máquina limpia
+
+Sin preguntarle a nadie ni tocar nada más que esto, desde una copia recién clonada:
+
+```bash
+pip install -r requirements.txt -r requirements-test.txt
+python -m pytest test/test_api_local.py -q          # 47 tests: API FastAPI vs. la función Python equivalente
+node test/verificar_nucleo.js                       # motor JS (mobile/, Android) == motor Python, hasta el centavo
+node test/verificar_escapar.js                       # regresión de seguridad: escape de HTML (mobile/js/seguro.js)
+node test/verificar_seguridad.mjs                     # regresión de seguridad: rate limiting por IP (api/_seguridad.js)
+node test/verificar_creditosia.mjs                    # regresión de dinero: saldo de créditos (api/_creditosia.js)
+node test/verificar_sin_innerhtml_crudo.mjs           # inventario auditado: cada innerHTML de mobile/+landing/ está escapado
+```
+
+Los tests de Node no necesitan `npm install`: solo usan el runtime de Node (>= 18) y
+un servidor HTTP mínimo en memoria que emula la API REST de Vercel KV/Upstash
+(`test/mock_kv_servidor.mjs`) — no hace falta una base de datos real ni credenciales
+para correrlos. `test/test_api_local.py` crea su propia base SQLite temporal.
+
+Nada de esto pega a APIs externas reales (Keepa, Anthropic, MercadoPago): sin claves
+configuradas, cada modo cae a su comportamiento honesto documentado (offline/demo),
+que es justo lo que los tests verifican.
+
 ## Validación
 
 Todo se validó **corriendo, no solo compilando**: `py_compile` de los 17 módulos,

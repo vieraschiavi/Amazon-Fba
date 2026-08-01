@@ -1,0 +1,2 @@
+pytest
+httpx2   # calla el StarletteDeprecationWarning de starlette.testclient (no cambia nada de httpx)
