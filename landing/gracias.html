@@ -84,11 +84,16 @@
 // querySelector si acepta "#id" -- mismo criterio que ya usa mobile/js/app.js.
 const $ = (sel) => document.querySelector(sel);
 function params(){ const p = new URLSearchParams(location.search); const o={}; for (const [k,v] of p) o[k]=v; return o; }
+// d.email viene de api/licencia.js (payer.email de MercadoPago/PayPal): dato
+// de una API EXTERNA, no algo que este archivo controle. d.licencia en cambio
+// es siempre "MVFBA-XXXX-XXXX-XXXX-XXXX" (api/_licencia.js: hex + guiones),
+// asi que no necesita escape -- pero el email si, antes de ir a innerHTML.
+function escaparHtml(s){ const d = document.createElement("div"); d.textContent = String(s||""); return d.innerHTML; }
 
 function mostrarAprobado(d){
   $("#titulo").textContent = "¡Gracias por tu compra! 🎉";
   $("#sub").innerHTML = "Tu pago se aprobó. Esta es tu <b>licencia</b> — guardala y usala en la app con el <b>mismo email</b> con el que pagaste.";
-  const email = d.email ? `<p class="email-note">Licencia a nombre de <b>${d.email}</b>. Ingresá ese email al activar.</p>` : "";
+  const email = d.email ? `<p class="email-note">Licencia a nombre de <b>${escaparHtml(d.email)}</b>. Ingresá ese email al activar.</p>` : "";
   $("#contenido").innerHTML = `
     <div class="lic-box">
       <div class="lic-label">Tu clave de licencia</div>

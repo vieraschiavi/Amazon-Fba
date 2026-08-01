@@ -317,20 +317,8 @@ function cargarPortafolio() {
   $all("[data-borrar]", listaEl).forEach((b) => b.addEventListener("click", () => borrarProducto(b.dataset.borrar)));
 }
 
-// Escapa para insertar texto en HTML. Incluye las comillas a proposito: mucho
-// de lo que se pinta aca sale de Amazon (titulos via Keepa/Jungle Scout) o lo
-// escribe el usuario, y termina dentro de un atributo — por ejemplo
-// value="${escapar(d.nombre)}" en el modal de producto. Sin escapar la comilla
-// doble, un titulo tan comun como 'Bamboo Set 10" Kitchen' corta el atributo:
-// rompe el formulario y deja lugar para colgar un handler (onfocus=...).
-function escapar(t) {
-  return String(t == null ? "" : t)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
+// escapar() vive en js/seguro.js (un solo lugar, un solo test de regresion:
+// test/verificar_escapar.js). Se carga antes que este archivo en index.html.
 
 // --- modal de alta/edicion de producto ---
 function abrirProducto(id) {
