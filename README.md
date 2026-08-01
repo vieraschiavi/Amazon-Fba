@@ -417,6 +417,7 @@ node test/verificar_escapar.js                       # regresión de seguridad: 
 node test/verificar_seguridad.mjs                     # regresión de seguridad: rate limiting por IP (api/_seguridad.js)
 node test/verificar_creditosia.mjs                    # regresión de dinero: saldo de créditos (api/_creditosia.js)
 node test/verificar_sin_innerhtml_crudo.mjs           # inventario auditado: cada innerHTML de mobile/+landing/ está escapado
+node test/verificar_i18n_landing.mjs                  # la landing trilingüe: mismas claves en es/en/pt, sin data-t huérfanos
 ```
 
 Los tests de Node no necesitan `npm install`: solo usan el runtime de Node (>= 18) y
