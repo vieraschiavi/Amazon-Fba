@@ -6,10 +6,15 @@ title MV FBA IA - Diagnostico
 echo ============================================================
 echo  DIAGNOSTICO
 echo ============================================================
-set "PYTHON=%~dp0runtime\python.exe"
-if not exist "!PYTHON!" (
-    echo  [ERROR] Falta el runtime de Python embebido. Reinstala MV FBA IA;
-    echo  el runtime esta incompleto o fue borrado.
+call "%~dp0_entorno.bat" buscar_python
+if errorlevel 1 (
+    echo  [ERROR] No se encontro Python.
+    echo.
+    echo  Si INSTALASTE MV FBA IA: reinstalalo, el runtime incluido
+    echo  ^(runtime\python.exe^) esta incompleto o fue borrado.
+    echo  Si bajaste el CODIGO del repositorio: instala Python 3.10+
+    echo  desde python.org y volve a abrir este archivo.
+    echo.
     pause
     exit /b 1
 )

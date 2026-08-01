@@ -72,7 +72,17 @@ jobs:
           Expand-Archive -Path python-embed.zip -DestinationPath runtime -Force
           Remove-Item python-embed.zip
 
-      - name: Habilitar site-packages en el runtime embebido
+      # El paquete embebido de python.org trae un python311._pth que CONTROLA
+      # sys.path por completo: ignora PYTHONPATH y NO agrega el directorio
+      # actual. Las rutas de adentro se resuelven contra la carpeta donde esta
+      # python.exe (o sea runtime\), asi que hay que declarar las dos cosas:
+      #   Lib\site-packages -> las dependencias que instala pip aca abajo
+      #   ..                -> la carpeta del programa (app.py, agents/, core/),
+      #                        que esta un nivel arriba de runtime\
+      # Sin el ".." el propio smoke test de mas abajo falla con
+      # "ModuleNotFoundError: No module named 'app'" -- y, peor, el programa
+      # instalado tampoco podria importar sus modulos.
+      - name: Habilitar site-packages y la carpeta del programa en el runtime
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
@@ -80,7 +90,10 @@ jobs:
           $content = Get-Content $pth
           $content = $content -replace '^#import site$', 'import site'
           $content += "Lib\site-packages"
+          $content += ".."
           Set-Content -Path $pth -Value $content -Encoding UTF8
+          Write-Host "--- python311._pth resultante ---"
+          Get-Content $pth
 
       - name: Instalar pip en el runtime embebido
         shell: pwsh

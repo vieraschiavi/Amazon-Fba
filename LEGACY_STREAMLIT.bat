@@ -11,26 +11,16 @@ echo    Panel + API + base de datos, todo con un doble clic.
 echo  ============================================================
 echo.
 
-set "PYTHON="
-rem Primero el runtime que trae el instalador: el cliente no instalo Python
-rem aparte y no tiene por que hacerlo. Recien si no esta (repo clonado a mano)
-rem se busca uno del sistema.
-if exist "%~dp0runtime\python.exe" set "PYTHON=%~dp0runtime\python.exe"
-if not defined PYTHON if exist "C:\ProgramData\Anaconda3\python.exe" set "PYTHON=C:\ProgramData\Anaconda3\python.exe"
-if not defined PYTHON if exist "%USERPROFILE%\anaconda3\python.exe" set "PYTHON=%USERPROFILE%\anaconda3\python.exe"
-if not defined PYTHON if exist "%USERPROFILE%\miniconda3\python.exe" set "PYTHON=%USERPROFILE%\miniconda3\python.exe"
-if not defined PYTHON if exist "C:\ProgramData\miniconda3\python.exe" set "PYTHON=C:\ProgramData\miniconda3\python.exe"
-if not defined PYTHON if exist "%LOCALAPPDATA%\anaconda3\python.exe" set "PYTHON=%LOCALAPPDATA%\anaconda3\python.exe"
-if not defined PYTHON ( for %%V in (313 312 311 310) do if not defined PYTHON if exist "%LOCALAPPDATA%\Programs\Python\Python%%V\python.exe" set "PYTHON=%LOCALAPPDATA%\Programs\Python\Python%%V\python.exe" )
-if not defined PYTHON (
-    py -c "import sys;print(sys.executable)" >"%TEMP%\pyfba.txt" 2>nul
-    if not errorlevel 1 set /p PYTHON=<"%TEMP%\pyfba.txt"
-    del "%TEMP%\pyfba.txt" >nul 2>&1
-)
-if not defined PYTHON (
-    echo  [ERROR] No se encontro Python. Si instalaste MV FBA IA, reinstalalo:
-    echo  el runtime incluido (runtime\python.exe) esta incompleto o fue borrado.
-    echo  Si clonaste el repo a mano, instala Python 3.10+ y volve a probar.
+rem Runtime embebido si esta; si no, Python del sistema (ver _entorno.bat).
+call "%~dp0_entorno.bat" buscar_python
+if errorlevel 1 (
+    echo  [ERROR] No se encontro Python.
+    echo.
+    echo  Si INSTALASTE MV FBA IA: reinstalalo, el runtime incluido
+    echo  ^(runtime\python.exe^) esta incompleto o fue borrado.
+    echo  Si bajaste el CODIGO del repositorio: instala Python 3.10+
+    echo  desde python.org y volve a abrir este archivo.
+    echo.
     pause
     exit /b 1
 )
@@ -62,29 +52,38 @@ if errorlevel 1 "!PYTHON!" -m pip install --user -U typing_extensions "altair>=5
 echo  [3/4] Preparando base de datos...
 "!PYTHON!" core\db.py >nul 2>&1
 
-set "OCUPADO="
-for /f "tokens=*" %%a in ('netstat -ano ^| findstr ":8000" ^| findstr LISTENING') do set "OCUPADO=1"
-if defined OCUPADO (
-    echo  [4/4] API ya corriendo en el puerto 8000 - no se levanta de nuevo.
+rem Puertos: no pisar los de otra aplicacion (bind real, core/puerto.py).
+call "%~dp0_entorno.bat" buscar_puerto 8000
+set "PUERTO_API=!PUERTO!"
+call "%~dp0_entorno.bat" buscar_puerto 8501
+set "PUERTO_PANEL=!PUERTO!"
+if not defined PUERTO_PANEL (
+    echo  [ERROR] No hay puerto libre para el panel entre el 8501 y el 8520.
+    pause
+    exit /b 1
+)
+
+if not defined PUERTO_API (
+    echo  [4/4] API omitida: no hay puerto libre entre el 8000 y el 8019.
 ) else (
     "!PYTHON!" -c "import fastapi,uvicorn" >nul 2>&1
     if errorlevel 1 (
         echo  [4/4] API omitida: faltan fastapi/uvicorn ^(reintenta con internet^).
     ) else (
-        echo  [4/4] Levantando API en http://localhost:8000 ^(ventana minimizada^)...
-        start "FBA - API" /min "!PYTHON!" -m uvicorn app:app --host 0.0.0.0 --port 8000
+        echo  [4/4] Levantando API en http://localhost:!PUERTO_API! ^(ventana minimizada^)...
+        start "FBA - API" /min "!PYTHON!" -m uvicorn app:app --host 0.0.0.0 --port !PUERTO_API!
     )
 )
 
 echo.
 echo  ============================================================
-echo    Panel : http://localhost:8501
-echo    API   : http://localhost:8000  ^(para n8n / automatizacion^)
+echo    Panel : http://localhost:!PUERTO_PANEL!
+echo    API   : http://localhost:!PUERTO_API!  ^(para n8n / automatizacion^)
 echo    DEJA ESTA VENTANA ABIERTA mientras uses el sistema.
 echo    Si el navegador no abre solo, copia el link del panel a mano.
 echo  ============================================================
 echo.
-"!PYTHON!" -m streamlit run dashboard_app.py
+"!PYTHON!" -m streamlit run dashboard_app.py --server.port !PUERTO_PANEL!
 echo.
 echo  (el panel se cerro)
 pause

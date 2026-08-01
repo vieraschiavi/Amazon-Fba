@@ -64,7 +64,7 @@ sistema lo dice en vez de simular un resultado.
 | Verificar conexiones (Keepa/Claude/SMTP/CSV) | `python test_conexiones.py` |
 | Tests (Python) | `python -m pytest test/test_api_local.py -q` |
 | Un test puntual | `python -m pytest test/test_api_local.py::test_legacy_health -v` |
-| Tests (JS: motor portado + seguridad + créditos) | `node test/verificar_nucleo.js && node test/verificar_escapar.js && node test/verificar_seguridad.mjs && node test/verificar_creditosia.mjs && node test/verificar_sin_innerhtml_crudo.mjs && node test/verificar_i18n_landing.mjs` (sin `npm install`, solo Node >= 18) |
+| Tests (JS: motor portado + seguridad + créditos) | `node test/verificar_nucleo.js && node test/verificar_escapar.js && node test/verificar_seguridad.mjs && node test/verificar_creditosia.mjs && node test/verificar_sin_innerhtml_crudo.mjs && node test/verificar_i18n_landing.mjs && node test/verificar_lanzadores.mjs` (sin `npm install`, solo Node >= 18) |
 | Instalar deps del frontend | `cd frontend && npm install` |
 | Frontend en desarrollo | `cd frontend && npm run dev` |
 | Build del frontend (para desktop/instalador) | `cd frontend && npm run build` |
