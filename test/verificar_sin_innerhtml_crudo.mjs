@@ -93,6 +93,24 @@ const INVENTARIO = {
     motivo: "mismo caso que nudge-demo-ultimo, otro mensaje del diccionario I18N",
     ok: ["escapar(t.quedan2)", "url", "escapar(t.cta)"],
   },
+  "mobile/js/app.js#ventas-por-bsr": {
+    motivo: "estimacion por BSR: el numero va por fmtNum(); bsr/categoria/confianza "
+      + "pasan por escapar() aunque salgan del texto que pego el usuario",
+    ok: ["fmtNum(r.ventas_estim)", "escapar(String(r.bsr))",
+      'escapar(r.categoria || "—")', "escapar(r.confianza)"],
+  },
+  "mobile/js/app.js#vendedores-principales": {
+    motivo: "ranking de vendedores: totales y precios via fmtNum/fmtMoney2; asin, bsr "
+      + "y demas texto pegado por el usuario pasan por escapar(); cuota/potencial "
+      + "son numeros calculados por el motor local",
+    ok: ["fmtNum(r.ventas_estim_total)", "filas",
+      'escapar(p.asin || "sin ASIN")',
+      'p.ventas_estim ? fmtNum(p.ventas_estim) + " u/mes" : "sin BSR"',
+      'escapar(p.bsr != null ? String(p.bsr) : "—")',
+      'p.precio != null ? fmtMoney2(p.precio) : "—"',
+      'p.cuota_pct != null ? p.cuota_pct + "%" : "—"',
+      'p.potencial != null ? p.potencial + (p.potencial_parcial ? " *" : "") : "—"'],
+  },
   "mobile/js/app.js#puntos-tour": {
     motivo: "ternario fijo que arma el propio codigo (paso actual del tour), no dato externo",
     ok: ['i === _tourPaso ? "on" : ""'],

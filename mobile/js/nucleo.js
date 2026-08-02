@@ -392,9 +392,245 @@ const MV = (function () {
     };
   }
 
+  // ======================================================================= //
+  // Estimacion de ventas por BSR — puerto de data/bsr.py
+  //
+  // Por que vive tambien aca: la conversion BSR -> ventas/mes es CALCULO PURO.
+  // No necesita servidor ni API, asi que la app movil la puede hacer offline y
+  // dar exactamente el mismo numero que la PC. El BSR lo lee el usuario de la
+  // pagina de Amazon que ya esta mirando.
+  //
+  // Los numeros tienen que dar IDENTICO a Python: lo verifica
+  // test/verificar_nucleo.js contra la referencia generada desde data/bsr.py.
+  // ======================================================================= //
+  const CURVA_BSR = [[100, 9000], [500, 3000], [1000, 1800], [5000, 500],
+                     [10000, 230], [50000, 45], [100000, 18], [500000, 3]];
+
+  const FACTOR_CATEGORIA = {
+    "clothing, shoes & jewelry": 1.20, "books": 0.90, "health & household": 0.85,
+    "home & kitchen": 1.00, "beauty & personal care": 0.80, "electronics": 0.75,
+    "sports & outdoors": 0.70, "toys & games": 0.70,
+    "tools & home improvement": 0.65, "cell phones & accessories": 0.60,
+    "automotive": 0.55, "pet supplies": 0.55, "grocery & gourmet food": 0.50,
+    "patio, lawn & garden": 0.50, "office products": 0.45, "baby": 0.40,
+    "video games": 0.35, "arts, crafts & sewing": 0.35,
+    "industrial & scientific": 0.30, "musical instruments": 0.20,
+  };
+
+  const ALIAS_CATEGORIA = {
+    "hogar y cocina": "home & kitchen", "home and kitchen": "home & kitchen",
+    "kitchen & dining": "home & kitchen", "ropa": "clothing, shoes & jewelry",
+    "clothing": "clothing, shoes & jewelry", "libros": "books",
+    "salud y hogar": "health & household", "health and household": "health & household",
+    "belleza": "beauty & personal care", "beauty": "beauty & personal care",
+    "electronica": "electronics", "electrónica": "electronics",
+    "deportes y aire libre": "sports & outdoors",
+    "sports and outdoors": "sports & outdoors",
+    "juguetes y juegos": "toys & games", "toys and games": "toys & games",
+    "herramientas": "tools & home improvement", "tools": "tools & home improvement",
+    "automotriz": "automotive", "productos para mascotas": "pet supplies",
+    "mascotas": "pet supplies", "alimentos y bebidas": "grocery & gourmet food",
+    "grocery": "grocery & gourmet food", "jardin": "patio, lawn & garden",
+    "jardín": "patio, lawn & garden", "oficina": "office products",
+    "productos de oficina": "office products", "bebe": "baby", "bebé": "baby",
+    "videojuegos": "video games", "instrumentos musicales": "musical instruments",
+  };
+
+  function normalizarCategoria(cat) {
+    if (!cat) return null;
+    let c = String(cat).trim().toLowerCase().replace(/\s+/g, " ");
+    c = c.replace(/\(.*?\)/g, "").trim().replace(/ and /g, " & ");
+    if (Object.prototype.hasOwnProperty.call(FACTOR_CATEGORIA, c)) return c;
+    if (Object.prototype.hasOwnProperty.call(ALIAS_CATEGORIA, c)) return ALIAS_CATEGORIA[c];
+    return null;
+  }
+
+  function factorCategoria(cat) {
+    const clave = normalizarCategoria(cat);
+    return clave ? FACTOR_CATEGORIA[clave] : 1.0;
+  }
+
+  function ventasDesdeBsr(bsr, categoria) {
+    const n = parseInt(bsr, 10);
+    if (!Number.isFinite(n) || n <= 0) return 0;
+    let base;
+    if (n <= CURVA_BSR[0][0]) base = CURVA_BSR[0][1];
+    else if (n >= CURVA_BSR[CURVA_BSR.length - 1][0]) base = CURVA_BSR[CURVA_BSR.length - 1][1];
+    else {
+      base = 0;
+      for (let i = 0; i < CURVA_BSR.length - 1; i++) {
+        const [b1, v1] = CURVA_BSR[i], [b2, v2] = CURVA_BSR[i + 1];
+        if (b1 <= n && n <= b2) {
+          const t = (Math.log10(n) - Math.log10(b1)) / (Math.log10(b2) - Math.log10(b1));
+          base = v1 * Math.pow(v2 / v1, t);
+          break;
+        }
+      }
+    }
+    return Math.round(base * factorCategoria(categoria));
+  }
+
+  function confianzaBsr(bsr, categoria) {
+    const n = parseInt(bsr, 10);
+    if (!Number.isFinite(n) || n <= 0) return "baja";
+    const conocida = normalizarCategoria(categoria) !== null;
+    if (n > 200000) return "baja";
+    if (n > 50000) return conocida ? "media" : "baja";
+    return conocida ? "alta" : "media";
+  }
+
+  // "#1,234 in Home & Kitchen" / "nº1.234 en Hogar y cocina" / "No. 1234 in X"
+  const RE_RANK = /(?:#|n[.º°o]{0,3}\s*|no\.?\s*)([\d][\d., \s]*)\s*(?:in|en)\s+([^\n(#]+)/i;
+
+  function aEntero(txt) {
+    const limpio = String(txt || "").replace(/[^\d]/g, "");
+    return limpio ? parseInt(limpio, 10) : null;
+  }
+
+  function parsearBloqueBsr(texto) {
+    const t = String(texto || "").trim();
+    if (!t) {
+      return { ok: false, bsr: null, categoria: null,
+               mensaje: 'Pegá el bloque "Best Sellers Rank" de la página del '
+                        + "producto en Amazon, o escribí el número de BSR." };
+    }
+    if (/^[\d., \s]+$/.test(t)) {
+      const n = aEntero(t);
+      if (n && n > 0) {
+        return { ok: true, bsr: n, categoria: null,
+                 mensaje: "BSR leído (sin categoría: curva base)." };
+      }
+      return { ok: false, bsr: null, categoria: null,
+               mensaje: "Ese número de BSR no es válido." };
+    }
+    const m = RE_RANK.exec(t);
+    if (!m) {
+      return { ok: false, bsr: null, categoria: null,
+               mensaje: 'No encontré un ranking con el formato "#1,234 in '
+                        + 'Categoría". Pegá el bloque tal cual sale en Amazon o '
+                        + "escribí sólo el número de BSR." };
+    }
+    const bsr = aEntero(m[1]);
+    if (!bsr || bsr <= 0) {
+      return { ok: false, bsr: null, categoria: null,
+               mensaje: "No pude leer el número de BSR del texto pegado." };
+    }
+    // Mismos cortes de ruido que Python: parentesis, precio y columnas pegadas.
+    let cat = String(m[2] || "").split(/\(|\bUS\$|\$|\s{2,}|\t|\||;/)[0];
+    cat = cat.split(/\s+/).filter(Boolean).join(" ").replace(/^[\s.,-]+|[\s.,-]+$/g, "");
+    return { ok: true, bsr: bsr, categoria: cat || null,
+             mensaje: `BSR ${bsr} leído.` };
+  }
+
+  function estimarPorBsr(textoOBsr, categoria) {
+    let leido;
+    if (typeof textoOBsr === "number") {
+      leido = { ok: true, bsr: Math.trunc(textoOBsr), categoria: categoria || null };
+    } else {
+      leido = parsearBloqueBsr(textoOBsr);
+      if (categoria && leido.ok) leido.categoria = categoria;
+    }
+    if (!leido.ok) {
+      return { ok: false, bsr: null, categoria: null, ventas_estim: null,
+               confianza: null, mensaje: leido.mensaje };
+    }
+    const ventas = ventasDesdeBsr(leido.bsr, leido.categoria);
+    const conf = confianzaBsr(leido.bsr, leido.categoria);
+    const catTxt = leido.categoria ? ` en ${leido.categoria}` : "";
+    return {
+      ok: true, bsr: leido.bsr, categoria: leido.categoria,
+      ventas_estim: ventas, confianza: conf, fuente: "BSR de Amazon (curva)",
+      mensaje: `BSR #${leido.bsr}${catTxt} → ~${ventas} u/mes estimadas `
+               + `(confianza ${conf}). Es una estimación por curva, igual que la `
+               + "que hacen Jungle Scout y Helium 10.",
+    };
+  }
+
+  // --- Potencial de un producto (puerto de data/mercado.potencial_producto) ---
+  const PESOS_POTENCIAL = { demanda: 0.40, calidad: 0.25, barrera: 0.20, precio: 0.15 };
+
+  function normLog(valor, techo) {
+    if (!valor || valor <= 0) return 0;
+    return Math.min(1, Math.log10(1 + valor) / Math.log10(1 + techo));
+  }
+
+  function potencialProducto(o) {
+    const { ventas, rating, resenas, precio } = o || {};
+    const partes = {};
+    if (ventas) partes.demanda = normLog(ventas, 3000);
+    if (rating) partes.calidad = Math.max(0, Math.min(1, (5.0 - Number(rating)) / 1.5));
+    if (resenas !== null && resenas !== undefined) partes.barrera = 1 - normLog(resenas, 3000);
+    if (precio) partes.precio = Math.max(0, Math.min(1, (Number(precio) - 8.0) / 42.0));
+    const claves = Object.keys(partes);
+    if (!claves.length) return { potencial: null, componentes: [], parcial: true };
+    const pesoTotal = claves.reduce((s, k) => s + PESOS_POTENCIAL[k], 0);
+    const score = claves.reduce((s, k) => s + PESOS_POTENCIAL[k] * partes[k], 0) / pesoTotal;
+    return {
+      potencial: Math.round(score * 100 * 10) / 10,
+      componentes: claves.sort(),
+      parcial: claves.length < Object.keys(PESOS_POTENCIAL).length,
+    };
+  }
+
+  // Vendedores principales desde un bloque pegado (puerto acotado de
+  // data/mercado.vendedores_principales, sin las columnas que solo trae un CSV).
+  const RE_ASIN = /\b(B0[A-Z0-9]{8})\b/;
+  const RE_PRECIO = /(?:US\$|\$|USD\s*)\s*(\d+(?:[.,]\d{1,2})?)/;
+
+  function vendedoresPrincipales(texto) {
+    const lineas = String(texto || "").split("\n").map((l) => l.trim()).filter(Boolean);
+    if (!lineas.length) {
+      return { ok: false, productos: [], ventas_estim_total: 0, ventas_estim_lider: 0,
+               mensaje: "Pegá un competidor por línea, con su ASIN y su BSR." };
+    }
+    let sinBsr = 0;
+    const productos = lineas.map((linea) => {
+      const mA = RE_ASIN.exec(linea.toUpperCase());
+      const asin = mA ? mA[1] : null;
+      const resto = asin ? linea.toUpperCase().replace(asin, " ") : linea;
+      const lect = parsearBloqueBsr(resto);
+      const mP = RE_PRECIO.exec(linea);
+      const precio = mP ? Math.round(parseFloat(mP[1].replace(",", ".")) * 100) / 100 : null;
+      const bsr = lect.ok ? lect.bsr : null;
+      const categoria = lect.ok ? lect.categoria : null;
+      if (!bsr) sinBsr += 1;
+      const ventas = bsr ? ventasDesdeBsr(bsr, categoria) : null;
+      const det = potencialProducto({ ventas: ventas, precio: precio });
+      return {
+        asin: asin, titulo: linea.replace(/\s+/g, " ").slice(0, 120), precio: precio,
+        bsr: bsr, categoria: categoria, ventas_estim: ventas,
+        confianza: bsr ? confianzaBsr(bsr, categoria) : null,
+        potencial: det.potencial, potencial_parcial: det.parcial,
+        link: asin ? `https://www.amazon.com/dp/${asin}` : null,
+      };
+    });
+    const conVenta = productos.filter((p) => p.ventas_estim);
+    const total = conVenta.reduce((s, p) => s + p.ventas_estim, 0);
+    productos.forEach((p) => {
+      p.cuota_pct = (p.ventas_estim && total)
+        ? Math.round(p.ventas_estim * 1000 / total) / 10 : null;
+      p.ingreso_estim_mes = (p.ventas_estim && p.precio)
+        ? Math.round(p.ventas_estim * p.precio * 100) / 100 : null;
+    });
+    productos.sort((a, b) => (b.ventas_estim || -1) - (a.ventas_estim || -1));
+    const avisos = [];
+    if (sinBsr) avisos.push(`${sinBsr} línea(s) sin BSR: se listan sin estimación.`);
+    if (conVenta.length) avisos.push(`${conVenta.length} estimados: ${total} u/mes entre ellos.`);
+    return {
+      ok: conVenta.length > 0, productos: productos, ventas_estim_total: total,
+      ventas_estim_lider: conVenta.length
+        ? Math.max.apply(null, conVenta.map((p) => p.ventas_estim)) : 0,
+      mensaje: (avisos.join(" ") || "Ninguna línea traía un BSR legible.")
+               + " La cuota es sobre los competidores que pegaste, no sobre el nicho entero.",
+    };
+  }
+
   return {
     CFG, landedCost, evaluarPrecio, proyeccionRealista, simularGanancias,
     evaluarExito, estimarDedicacion,
+    // Investigacion de producto sin API (identico a la PC, y offline):
+    ventasDesdeBsr, confianzaBsr, parsearBloqueBsr, estimarPorBsr,
+    potencialProducto, vendedoresPrincipales,
   };
 })();
 

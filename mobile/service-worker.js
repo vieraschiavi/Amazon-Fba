@@ -12,11 +12,18 @@
 //   - CSS/JS/iconos: cache-first PERO se refrescan en segundo plano en cada
 //     visita (stale-while-revalidate), asi la proxima apertura ya esta al dia.
 //   - El bump de version purga el cache viejo en cuanto el telefono revisita.
-const CACHE = "mv-fba-ia-shell-v3";
+// v4 — dos cosas:
+//   - FIX: js/seguro.js se cargaba en index.html pero NO estaba en esta lista,
+//     asi que un arranque EN FRIO sin conexion lo pedia a la red, fallaba, y
+//     escapar() quedaba sin definir -> la app rompia entera al primer render.
+//     Lo cubre test/verificar_sw_precache.mjs para que no vuelva a pasar.
+//   - El bump purga el cache viejo: nucleo.js suma la estimacion por BSR.
+const CACHE = "mv-fba-ia-shell-v4";
 const SHELL = [
   "./",
   "./index.html",
   "./css/estilos.css",
+  "./js/seguro.js",
   "./js/nucleo.js",
   "./js/licencia.js",
   "./js/app.js",
