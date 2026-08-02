@@ -686,6 +686,65 @@ def test_estimar_ventas_sin_fuente_no_inventa():
         jungle_scout.ventas_asin, keepa.producto = ojs, okp
 
 
+def test_run_rate_propio_necesita_historial_minimo():
+    """El fallback GRATIS no extrapola con poco historial: 2 ventas de hoy NO
+    son 60 u/mes. Sin dias suficientes devuelve None (no proyecta nada)."""
+    from agents import productos, analytics
+    asin = "B0RUNRATE1"
+    productos.guardar(nombre="Run rate corto", asin=asin, costo=2.0, flete=0.5,
+                      arancel_pct=5, prep=0.3, techo_demanda=100)
+    analytics.registrar_venta(asin, 2, 20.0, 6.0, alertar=False)   # venta de HOY
+    assert productos._run_rate_propio(asin) is None
+
+
+def test_run_rate_propio_calcula_ritmo_real():
+    """Con historial suficiente, el run-rate sale de las ventas REALES: 60
+    unidades en 30 dias -> ~60 u/mes. Sin ninguna API."""
+    from datetime import datetime, timedelta
+    from agents import productos, analytics
+    from core import db
+    asin = "B0RUNRATE2"
+    productos.guardar(nombre="Run rate largo", asin=asin, costo=2.0, flete=0.5,
+                      arancel_pct=5, prep=0.3, techo_demanda=100)
+    analytics.registrar_venta(asin, 60, 20.0, 6.0, alertar=False)
+    # se envejece la orden 30 dias para simular historial real
+    hace30 = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+    db.execute("UPDATE orders SET fecha=? WHERE asin=?", (hace30, asin))
+    r = productos._run_rate_propio(asin)
+    assert r is not None
+    assert r["unidades_total"] == 60 and 29 <= r["dias"] <= 31
+    assert 55 <= r["unidades_mes"] <= 65      # ~60 u/mes
+
+
+def test_estimar_ventas_fallback_sin_apis_usa_ventas_propias():
+    """Sin Jungle Scout ni Keepa, cae al run-rate de ventas propias (gratis) y
+    lo guarda en la ficha etiquetado como tal (no como dato de mercado)."""
+    from datetime import datetime, timedelta
+    from agents import productos, analytics
+    from core import db
+    from data import jungle_scout, keepa
+    asin = "B0FALLBACK1"
+    alta = productos.guardar(nombre="Fallback gratis", asin=asin, costo=2.0,
+                             flete=0.5, arancel_pct=5, prep=0.3, techo_demanda=100)
+    pid = alta["id"]
+    analytics.registrar_venta(asin, 90, 20.0, 6.0, alertar=False)
+    hace30 = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+    db.execute("UPDATE orders SET fecha=? WHERE asin=?", (hace30, asin))
+    ojs, okp = jungle_scout.ventas_asin, keepa.producto
+    try:
+        jungle_scout.ventas_asin = lambda a, timeout=25: {"ok": False, "mensaje": "sin JS"}
+        keepa.producto = lambda a, timeout=25: {"ok": False, "mensaje": "sin Keepa"}
+        r = productos.estimar_ventas(pid)
+        assert r["ok"] is True
+        assert 85 <= r["ventas_estim_mes"] <= 95          # ~90 u/mes reales
+        assert r["ventas_estim_fuente"].startswith("Tus ventas")
+        # persistido en la ficha
+        p = next(x for x in productos.listar() if x["id"] == pid)
+        assert p["ventas_estim_mes"] == r["ventas_estim_mes"]
+    finally:
+        jungle_scout.ventas_asin, keepa.producto = ojs, okp
+
+
 def test_estimar_ventas_endpoint_passthrough():
     """POST /api/productos/{pid}/estimar-ventas == productos.estimar_ventas(pid)."""
     from agents import productos

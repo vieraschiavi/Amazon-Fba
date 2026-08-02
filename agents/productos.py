@@ -20,6 +20,7 @@ import argparse
 import json
 import os
 import sys
+from datetime import datetime
 
 _RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _RAIZ not in sys.path:
@@ -91,16 +92,62 @@ def desactivar(pid):
     return {"ok": n > 0, "mensaje": "Producto desactivado." if n else "No existe."}
 
 
+# Historial minimo para proyectar un run-rate desde ventas propias. Con menos
+# dias, multiplicar por 30 amplifica ruido: 2 ventas en 2 dias NO son 30/mes.
+MIN_DIAS_RUN_RATE = 7
+
+
+def _run_rate_propio(asin, hoy=None):
+    """Ventas/mes medidas de TUS PROPIAS ordenes registradas (tabla `orders`).
+
+    No es una estimacion de mercado: es el run-rate REAL de lo que vendiste. Para
+    un producto de marca propia (tu ASIN, tu listing) eso ES lo que vende ese
+    ASIN. No cuesta nada y no depende de ninguna API.
+
+    Devuelve {unidades_mes, dias, unidades_total} o None si no hay historial
+    suficiente (ver MIN_DIAS_RUN_RATE) -- en ese caso NO se proyecta nada."""
+    filas = db.rows(
+        "SELECT SUM(unidades) AS u, MIN(fecha) AS desde, MAX(fecha) AS hasta, "
+        "COUNT(*) AS n FROM orders WHERE asin=?", (asin,))
+    if not filas or not filas[0].get("u"):
+        return None
+    f = filas[0]
+    total = int(f["u"] or 0)
+    if total <= 0:
+        return None
+    # Ventana observada: de la PRIMERA venta hasta hoy (no hasta la ultima: los
+    # dias sin vender tambien cuentan, si no se sobreestima el ritmo).
+    ref = hoy or datetime.now()
+    try:
+        desde = datetime.fromisoformat(str(f["desde"]))
+    except ValueError:
+        return None
+    dias = (ref - desde).total_seconds() / 86400.0
+    if dias < MIN_DIAS_RUN_RATE:
+        return None
+    return {"unidades_mes": int(round(total / dias * 30.0)),
+            "dias": int(round(dias)), "unidades_total": total}
+
+
 def estimar_ventas(pid):
     """Estima cuantas unidades/mes vende ESE producto en Amazon, por su ASIN, y
     guarda el resultado dentro de la ficha (ventas_estim_mes/_fuente/_fecha).
 
-    SIN DATOS INVENTADOS (regla del proyecto): la estimacion sale SOLO de una
-    fuente real, en este orden de preferencia:
+    SIN DATOS INVENTADOS (regla del proyecto): el numero sale SOLO de una fuente
+    real, en este orden de preferencia:
       1) Jungle Scout (ventas reales por ASIN, sales_estimates) — es lo mejor;
-      2) Keepa (BSR real -> curva BSR/ventas, estimacion gruesa documentada).
-    Si el producto no tiene ASIN, o no hay ninguna clave conectada, NO se
-    inventa un numero: se avisa que falta y no se guarda nada."""
+      2) Keepa (BSR real -> curva BSR/ventas, estimacion gruesa documentada);
+      3) TUS PROPIAS VENTAS registradas (run-rate de `orders`) — gratis, sin
+         ninguna API. Ojo con que significa: no es el mercado, es lo que VOS
+         vendiste; para tu propio ASIN de marca privada, eso es justamente lo
+         que vende ese ASIN. Necesita al menos MIN_DIAS_RUN_RATE dias de
+         historial, si no seria ruido multiplicado por 30.
+
+    Por que no hay una cuarta fuente gratis que de unidades/mes de un ASIN
+    AJENO: no existe una legal. Lo explica data/demanda_nativa.py -- el
+    autocompletado publico de Amazon da senal de demanda RELATIVA (sirve para
+    comparar nichos), nunca unidades absolutas. Convertir eso a "u/mes" seria
+    inventar, que es exactamente lo que este sistema no hace."""
     from data import jungle_scout, keepa      # conectores reales (import diferido)
 
     filas = db.rows("SELECT * FROM products WHERE id=?", (pid,))
@@ -113,6 +160,8 @@ def estimar_ventas(pid):
 
     # 1) Jungle Scout: ventas reales por ASIN (lo preferido).
     js = jungle_scout.ventas_asin(asin)
+    kp = {}
+    propio = None
     if js.get("ok") and js.get("ventas_estim"):
         est, fuente = int(js["ventas_estim"]), "Jungle Scout"
     else:
@@ -121,12 +170,20 @@ def estimar_ventas(pid):
         if kp.get("ok") and kp.get("ventas_estim"):
             est, fuente = int(kp["ventas_estim"]), "Keepa (BSR)"
         else:
-            # Nada real disponible: se avisa que falta, no se inventa.
-            motivo = js.get("mensaje") or kp.get("mensaje") or ""
-            return {"ok": False, "asin": asin, "mensaje":
-                    "No se pudo estimar las ventas reales de este ASIN. Conectá tu "
-                    "clave de Jungle Scout (ventas reales por ASIN) o de Keepa (BSR) "
-                    "en Config. " + motivo}
+            # 3) Fallback GRATIS: run-rate de tus propias ventas registradas.
+            propio = _run_rate_propio(asin)
+            if propio:
+                est = propio["unidades_mes"]
+                fuente = f"Tus ventas ({propio['dias']} días)"
+            else:
+                # Nada real disponible: se avisa que falta, no se inventa.
+                motivo = js.get("mensaje") or kp.get("mensaje") or ""
+                return {"ok": False, "asin": asin, "mensaje":
+                        "Todavía no se puede estimar las ventas de este ASIN. Tres "
+                        "caminos: conectá tu clave de Jungle Scout (ventas reales por "
+                        "ASIN) o de Keepa (BSR) en Config, o registrá tus ventas — con "
+                        f"{MIN_DIAS_RUN_RATE} días de historial se calcula el ritmo real "
+                        "sin pagar ninguna API. " + motivo}
 
     # Se guarda en la ficha con fuente y fecha, para que sea auditable.
     db.execute("UPDATE products SET ventas_estim_mes=?, ventas_estim_fuente=?, "

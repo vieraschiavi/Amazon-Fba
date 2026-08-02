@@ -245,7 +245,7 @@
  "pf.ventas_reales": "Actual sales",
  "pf.ventas_mercado": "Market sales",
  "pf.estimar_btn": "Estimate ASIN sales",
- "pf.estim_ayuda": "Pulls how much that ASIN sells on Amazon (Jungle Scout or Keepa) and saves it on the card. No ASIN or no key: it says so, it doesn't make it up.",
+ "pf.estim_ayuda": "Pulls how much that ASIN sells on Amazon (Jungle Scout or Keepa). Without those keys, it uses the real run-rate of your own registered sales — free, no API. It never makes a number up.",
  "pf.no_estimado": "not estimated",
  "pf_btn": "Add to portfolio",
  "pf_del_btn": "Remove from portfolio",
