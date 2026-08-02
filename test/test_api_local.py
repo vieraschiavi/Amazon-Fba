@@ -921,6 +921,154 @@ def test_endpoints_bsr_y_vendedores():
     assert cliente.post("/api/mercado/bsr", json={"bsr": "nada"}).json()["ok"] is False
 
 
+_XRAY_CSV = (
+    "ASIN,Product Details,Brand,Price $,Sales,Revenue,BSR,Category,Review Count,Rating\n"
+    "B08XYZ1234,Bamboo Cutting Board Set,EcoChef,24.99,1420,35485.80,1234,Home & Kitchen,2840,4.6\n"
+    "B07ABC5678,Cutting Board Pro,KitchenPro,19.99,860,17191.40,5600,Home & Kitchen,1520,4.4\n"
+    "B09QWE1111,Eco Board Bundle,GreenHome,31.50,240,7560.00,18900,Home & Kitchen,410,4.2\n")
+
+_BLACKBOX_SIN_VENTAS = (
+    "ASIN,Title,Price,BSR,Category,Reviews\n"
+    "B01AAA1111,Board classic,22.00,3200,Home & Kitchen,700\n"
+    "B01BBB2222,Board mini,12.50,45000,Home & Kitchen,90\n"
+    "B01CCC3333,Board sin datos,15.00,,Home & Kitchen,10\n")
+
+
+def _csv_tmp(tmp_path, nombre, contenido):
+    p = tmp_path / nombre
+    p.write_text(contenido, encoding="utf-8")
+    return str(p)
+
+
+def test_csv_productos_usa_las_ventas_del_export(tmp_path):
+    """Si el export trae ventas propias (Helium 10 / Jungle Scout), esas mandan:
+    estan calibradas con datos que nosotros no tenemos."""
+    from data.helium_productos import vendedores_desde_csv
+    r = vendedores_desde_csv(_csv_tmp(tmp_path, "xray.csv", _XRAY_CSV))
+    assert r["ok"] is True and len(r["productos"]) == 3
+    lider = r["productos"][0]
+    assert lider["asin"] == "B08XYZ1234"          # ordenado por ventas desc
+    assert lider["ventas_estim"] == 1420          # el numero del CSV, tal cual
+    assert lider["fuente_ventas"].startswith("CSV")
+    assert lider["marca"] == "EcoChef"
+    assert lider["ingreso_estim_mes"] == 35485.80  # tambien del CSV
+    assert r["ventas_estim_total"] == 1420 + 860 + 240
+    cuotas = [p["cuota_pct"] for p in r["productos"] if p["cuota_pct"]]
+    assert abs(sum(cuotas) - 100.0) < 0.5
+
+
+def test_csv_productos_sin_ventas_cae_a_la_curva_del_bsr(tmp_path):
+    """Sin columna de ventas pero con BSR, se estima con la curva y se ETIQUETA
+    distinto. Sin ninguna de las dos, la fila va sin numero (no se inventa)."""
+    from data.helium_productos import vendedores_desde_csv
+    from data.bsr import ventas_desde_bsr
+    r = vendedores_desde_csv(_csv_tmp(tmp_path, "bb.csv", _BLACKBOX_SIN_VENTAS))
+    assert r["ok"] is True
+    por_asin = {p["asin"]: p for p in r["productos"]}
+    assert por_asin["B01AAA1111"]["ventas_estim"] == ventas_desde_bsr(3200, "Home & Kitchen")
+    assert por_asin["B01AAA1111"]["fuente_ventas"] == "BSR del CSV (curva)"
+    # el que no tiene ni ventas ni BSR queda SIN numero
+    sin = por_asin["B01CCC3333"]
+    assert sin["ventas_estim"] is None and sin["cuota_pct"] is None
+    assert "no se inventa" in r["mensaje"]
+
+
+def test_csv_productos_rechaza_el_csv_de_keywords(tmp_path):
+    """Subir el CSV de keywords de Cerebro por esta puerta avisa, no rompe ni
+    devuelve un ranking vacio y silencioso."""
+    from data.helium_productos import vendedores_desde_csv
+    kw = "Keyword Phrase,Search Volume,Competing Products\nbamboo board,42000,1200\n"
+    r = vendedores_desde_csv(_csv_tmp(tmp_path, "cerebro.csv", kw))
+    assert r["ok"] is False
+    assert "ASIN" in r["mensaje"] and "Cerebro" in r["mensaje"]
+    # y uno con ASIN pero sin nada con que estimar tampoco pasa en silencio
+    solo_asin = "ASIN,Title\nB01AAA1111,Board\n"
+    r2 = vendedores_desde_csv(_csv_tmp(tmp_path, "flaco.csv", solo_asin))
+    assert r2["ok"] is False and "BSR" in r2["mensaje"]
+
+
+def test_csv_productos_dedupe_por_asin(tmp_path):
+    """Los exports repiten el ASIN por variante: se queda con el de mas ventas."""
+    from data.helium_productos import vendedores_desde_csv
+    dup = ("ASIN,Title,Price,Sales,BSR\n"
+           "B01AAA1111,Board rojo,22.00,100,3200\n"
+           "B01AAA1111,Board azul,22.00,450,3200\n")
+    r = vendedores_desde_csv(_csv_tmp(tmp_path, "dup.csv", dup))
+    assert len(r["productos"]) == 1
+    assert r["productos"][0]["ventas_estim"] == 450
+
+
+def test_endpoint_vendedores_csv(tmp_path):
+    """POST /api/mercado/vendedores-csv == vendedores_desde_csv, y rechaza no-CSV."""
+    from data.helium_productos import vendedores_desde_csv
+    api = cliente.post("/api/mercado/vendedores-csv",
+                       files={"file": ("xray.csv", _XRAY_CSV, "text/csv")}).json()
+    directo = vendedores_desde_csv(_csv_tmp(tmp_path, "x.csv", _XRAY_CSV))
+    assert api["ok"] == directo["ok"]
+    assert api["ventas_estim_total"] == directo["ventas_estim_total"]
+    assert [p["asin"] for p in api["productos"]] == [p["asin"] for p in directo["productos"]]
+    malo = cliente.post("/api/mercado/vendedores-csv",
+                        files={"file": ("x.pdf", b"%PDF-", "application/pdf")}).json()
+    assert malo["ok"] is False and ".csv" in malo["mensaje"]
+
+
+def test_potencial_producto_ordena_como_corresponde():
+    """El potencial NO mide margen: mide que tan atractivo es competirle a ese
+    producto. Mas demanda, peor rating ajeno, menos resenas y mas precio -> mas
+    potencial. Cada componente que falta se excluye y los pesos se renormalizan."""
+    from data.mercado import potencial_producto
+    base = potencial_producto(ventas=500, rating=4.5, resenas=800, precio=25)
+    assert base is not None and 0 <= base <= 100
+    # mas demanda sube
+    assert potencial_producto(ventas=2500, rating=4.5, resenas=800, precio=25) > base
+    # rating ajeno peor = mas hueco = sube
+    assert potencial_producto(ventas=500, rating=3.4, resenas=800, precio=25) > base
+    # muchas resenas = barrera alta = baja
+    assert potencial_producto(ventas=500, rating=4.5, resenas=5000, precio=25) < base
+    # precio mas alto = mas aire = sube
+    assert potencial_producto(ventas=500, rating=4.5, resenas=800, precio=45) > base
+    # sin ningun dato NO inventa un score
+    assert potencial_producto() is None
+    # con un solo componente igual devuelve algo (pesos renormalizados)
+    assert potencial_producto(ventas=500) is not None
+
+
+def test_vendedores_traen_potencial_para_ordenar():
+    """Los dos caminos (pegado y export) devuelven `potencial` para que el panel
+    pueda ordenar por ese criterio."""
+    from data.mercado import vendedores_principales
+    r = vendedores_principales(
+        "B08XYZ1234 #1,234 in Home & Kitchen $24.99\nB07ABC5678 #5,600 $19.99")
+    assert all(p["potencial"] is not None for p in r["productos"])
+
+
+def test_orden_por_criterio_deja_los_sin_dato_al_final(tmp_path):
+    """REGLA: una fila sin el dato del criterio va al final en LOS DOS sentidos.
+    Si no, ordenar ascendente la pondria primera y pareceria la mejor."""
+    from data.helium_productos import vendedores_desde_csv
+    csv_txt = ("ASIN,Title,Price,Sales,BSR,Rating,Reviews\n"
+               "B01AAA1111,Caro,45.00,300,3200,4.1,200\n"
+               "B01BBB2222,Barato,12.00,900,1500,4.8,3000\n"
+               "B01CCC3333,Sin precio,,150,9000,4.0,50\n")
+    r = vendedores_desde_csv(_csv_tmp(tmp_path, "orden.csv", csv_txt))
+    prods = r["productos"]
+    sin_precio = [p for p in prods if p["precio"] is None]
+    assert len(sin_precio) == 1, "el fixture deberia tener exactamente uno sin precio"
+
+    def ordenar(campo, desc):
+        con = [p for p in prods if p.get(campo) is not None]
+        sin = [p for p in prods if p.get(campo) is None]
+        return sorted(con, key=lambda p: p[campo], reverse=desc) + sin
+
+    for desc in (True, False):
+        salida = ordenar("precio", desc)
+        assert salida[-1]["asin"] == "B01CCC3333", (
+            f"el que no tiene precio quedo primero con desc={desc}")
+    # y el orden real funciona en los dos sentidos
+    assert ordenar("precio", True)[0]["asin"] == "B01AAA1111"    # 45.00
+    assert ordenar("precio", False)[0]["asin"] == "B01BBB2222"   # 12.00
+
+
 def test_estimar_ventas_endpoint_passthrough():
     """POST /api/productos/{pid}/estimar-ventas == productos.estimar_ventas(pid)."""
     from agents import productos

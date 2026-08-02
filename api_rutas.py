@@ -48,6 +48,7 @@ from agents.market_intel import market_intel
 from data import demanda_nativa
 from data import jungle_scout
 from data import bsr as data_bsr
+from data import helium_productos
 from data import mercado as data_mercado
 from data import motor_propio
 
@@ -309,6 +310,27 @@ async def subir_cerebro(file: UploadFile):
     with open(destino, "wb") as f:
         f.write(await file.read())
     return {"ok": True, "csv_path": destino, "nombre": nombre}
+
+
+@router.post("/mercado/vendedores-csv")
+async def subir_vendedores_csv(file: UploadFile):
+    """Vendedores principales desde un export de PRODUCTOS que ya pagas.
+
+    Acepta Helium 10 Xray/Black Box y Jungle Scout Product Database. Resuelve el
+    hueco que el BSR pegado a mano no cubre: DESCUBRIR que ASINs compiten en el
+    nicho, sin ninguna API. Si el export trae ventas propias se usan esas
+    (calibradas); si solo trae BSR, se convierte con la curva."""
+    nombre = re.sub(r"[^A-Za-z0-9._-]", "_", file.filename or "productos.csv")
+    if not nombre.lower().endswith(".csv"):
+        return {"ok": False, "productos": [], "ventas_estim_total": 0,
+                "ventas_estim_lider": 0,
+                "mensaje": "Solo se aceptan archivos .csv exportados de Helium 10 "
+                           "(Xray/Black Box) o de Jungle Scout."}
+    os.makedirs(config.CEREBRO_CSV_DIR, exist_ok=True)
+    destino = os.path.join(config.CEREBRO_CSV_DIR, nombre)
+    with open(destino, "wb") as f:
+        f.write(await file.read())
+    return helium_productos.vendedores_desde_csv(destino)
 
 
 @router.post("/investigacion")

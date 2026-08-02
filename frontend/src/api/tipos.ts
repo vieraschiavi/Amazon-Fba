@@ -53,7 +53,8 @@ export interface EstimacionVentas {
   bsr?: number | null;
 }
 
-// Vendedores principales estimados desde el BSR publico (sin API paga).
+// Vendedores principales estimados desde el BSR publico (sin API paga) o desde
+// un export de productos (Helium 10 / Jungle Scout) si el usuario ya lo paga.
 export interface VendedorPrincipal {
   asin: string | null;
   titulo: string;
@@ -64,7 +65,14 @@ export interface VendedorPrincipal {
   confianza: string | null;
   cuota_pct: number | null;
   ingreso_estim_mes: number | null;
+  potencial?: number | null;
   link: string | null;
+  // Solo vienen por el camino del export de productos.
+  marca?: string | null;
+  vendedor?: string | null;
+  rating?: number | null;
+  resenas?: number | null;
+  fuente_ventas?: string | null;
 }
 
 export interface ResVendedores {
@@ -75,6 +83,9 @@ export interface ResVendedores {
   ventas_estim_lider: number;
   mensaje: string;
 }
+
+// Criterios de orden del ranking de productos del nicho.
+export type OrdenCampo = "precio" | "ventas" | "potencial" | "rating" | "bsr";
 
 export interface ResumenPortafolio {
   ok: boolean; n_productos: number;

@@ -266,6 +266,57 @@ def resumen_competencia(productos):
 
 
 # --------------------------------------------------------------------------- #
+# Potencial de un PRODUCTO dentro de su nicho
+# --------------------------------------------------------------------------- #
+# OJO: esto es un score NUEVO y distinto del score de NICHO de
+# agents/market_intel.py (que mide ganabilidad del nicho con la formula
+# 0.35/0.30/0.35 y NO se toca). Este mide otra cosa: dado un nicho, que tan
+# atractivo es meterse contra ESE competidor puntual.
+#
+# Formula, explicita para que se pueda discutir y ajustar:
+#   40%  demanda      -> cuanto vende (log, porque 2000 u/mes no es "el doble
+#                        de bueno" que 1000: ya es mercado grande en los dos casos)
+#   25%  hueco de calidad -> rating bajo del competidor = clientes insatisfechos
+#   20%  barrera baja  -> pocas resenas = se le puede alcanzar
+#   15%  precio        -> precio alto = mas aire para margen
+#
+# NO mide margen: eso lo decide el pricing con tu costo real. Un potencial alto
+# con un landed cost malo sigue siendo un mal negocio.
+PESOS_POTENCIAL = {"demanda": 0.40, "calidad": 0.25, "barrera": 0.20, "precio": 0.15}
+
+
+def _norm_log(valor, techo):
+    """Normaliza 0-1 en escala log (rendimientos decrecientes)."""
+    import math
+    if not valor or valor <= 0:
+        return 0.0
+    return min(1.0, math.log10(1 + valor) / math.log10(1 + techo))
+
+
+def potencial_producto(ventas=None, rating=None, resenas=None, precio=None):
+    """Potencial 0-100 de competirle a un producto. None si no hay con que.
+
+    Cada componente que falta se excluye y los pesos se renormalizan, para no
+    castigar a un producto solo porque el export no traia esa columna."""
+    partes = {}
+    if ventas:
+        partes["demanda"] = _norm_log(ventas, 3000)
+    if rating:
+        # 5.0 = no hay hueco; 3.5 o menos = hueco grande.
+        partes["calidad"] = max(0.0, min(1.0, (5.0 - float(rating)) / 1.5))
+    if resenas is not None:
+        # 0 resenas = barrera nula; 3000+ = barrera total.
+        partes["barrera"] = 1.0 - _norm_log(resenas, 3000)
+    if precio:
+        partes["precio"] = max(0.0, min(1.0, (float(precio) - 8.0) / 42.0))
+    if not partes:
+        return None
+    total_peso = sum(PESOS_POTENCIAL[k] for k in partes)
+    score = sum(PESOS_POTENCIAL[k] * v for k, v in partes.items()) / total_peso
+    return round(score * 100, 1)
+
+
+# --------------------------------------------------------------------------- #
 # Vendedores principales SIN API (camino gratis)
 # --------------------------------------------------------------------------- #
 _RE_ASIN = re.compile(r"\b(B0[A-Z0-9]{8})\b")
@@ -335,6 +386,8 @@ def vendedores_principales(texto):
             item["ventas_estim"] = None
             item["confianza"] = None
             sin_bsr += 1
+        item["potencial"] = potencial_producto(
+            ventas=item["ventas_estim"], precio=item["precio"])
         productos.append(item)
 
     con_venta = [p for p in productos if p.get("ventas_estim")]
