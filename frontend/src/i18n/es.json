@@ -217,6 +217,7 @@
  "mk.vend_potencial": "Potencial",
  "mk.vend_orden_ayuda": "Clic en BSR, ventas, precio, calificación o potencial para ordenar. Otro clic invierte ascendente/descendente.",
  "mk.vend_potencial_ayuda": "Potencial 0-100 = 40% demanda + 25% hueco de calidad + 20% barrera de reseñas + 15% precio. NO mide margen: eso lo decide el pricing con tu costo real.",
+ "mk.vend_potencial_parcial": "* Potencial calculado con menos datos (pegando a mano no hay calificación ni reseñas): comparalo sólo contra otros con asterisco.",
  "mk.demanda_nicho_titulo": "Demanda del nicho — gratis, sin Keepa",
  "mk.demanda_relativa": "Demanda relativa",
  "mk.margen_calculado_0": "Margen calculado % (0 = sin)",

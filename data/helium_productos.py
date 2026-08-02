@@ -188,6 +188,10 @@ def vendedores_desde_csv(path, max_n=25):
         if ingreso is None and ventas and f_["precio"]:
             ingreso = round(ventas * f_["precio"], 2)
 
+        _det_pot = mercado.potencial_producto(
+            ventas=ventas, rating=f_["rating"], resenas=f_["resenas"],
+            precio=f_["precio"], detalle=True)
+
         productos.append({
             "asin": f_["asin"], "titulo": f_["titulo"], "marca": f_["marca"],
             "vendedor": f_["vendedor"], "precio": f_["precio"], "bsr": f_["bsr"],
@@ -195,11 +199,12 @@ def vendedores_desde_csv(path, max_n=25):
             "confianza": conf, "fuente_ventas": fuente,
             "ingreso_estim_mes": ingreso, "resenas": f_["resenas"],
             "rating": f_["rating"],
-            # Un export trae rating y resenas, asi que el potencial sale con los
-            # 4 componentes (el camino de pegado a mano solo tiene 2).
-            "potencial": mercado.potencial_producto(
-                ventas=ventas, rating=f_["rating"], resenas=f_["resenas"],
-                precio=f_["precio"]),
+            # Un export suele traer rating y resenas, asi que el potencial sale
+            # con los 4 componentes (el camino de pegado a mano solo tiene 2).
+            # Igual se marca si esta fila quedo parcial: no todos los exports
+            # traen todas las columnas.
+            "potencial": _det_pot["potencial"],
+            "potencial_parcial": _det_pot["parcial"],
             "link": f"https://www.amazon.com/dp/{f_['asin']}",
         })
 

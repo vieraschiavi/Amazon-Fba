@@ -1042,6 +1042,29 @@ def test_vendedores_traen_potencial_para_ordenar():
     assert all(p["potencial"] is not None for p in r["productos"])
 
 
+def test_potencial_avisa_cuando_es_parcial(tmp_path):
+    """Pegando a mano el potencial sale con 2 de 4 componentes; con un export
+    completo, con 4. Los dos dan 0-100 pero NO son comparables, asi que el
+    parcial viene marcado para que la UI no los muestre como equivalentes."""
+    from data.mercado import vendedores_principales, potencial_producto
+    from data.helium_productos import vendedores_desde_csv
+
+    pegado = vendedores_principales("B08XYZ1234 #1,234 in Home & Kitchen $24.99")
+    assert pegado["productos"][0]["potencial_parcial"] is True
+
+    completo = vendedores_desde_csv(_csv_tmp(tmp_path, "full.csv", _XRAY_CSV))
+    assert all(p["potencial_parcial"] is False for p in completo["productos"])
+
+    # el detalle dice exactamente que componentes entraron
+    det = potencial_producto(ventas=500, precio=25, detalle=True)
+    assert det["componentes"] == ["demanda", "precio"] and det["parcial"] is True
+    det4 = potencial_producto(ventas=500, precio=25, rating=4.2, resenas=300,
+                              detalle=True)
+    assert det4["parcial"] is False and len(det4["componentes"]) == 4
+    # detalle=False sigue devolviendo el numero pelado (retrocompatible)
+    assert potencial_producto(ventas=500, precio=25) == det["potencial"]
+
+
 def test_orden_por_criterio_deja_los_sin_dato_al_final(tmp_path):
     """REGLA: una fila sin el dato del criterio va al final en LOS DOS sentidos.
     Si no, ordenar ascendente la pondria primera y pareceria la mejor."""

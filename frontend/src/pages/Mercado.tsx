@@ -248,7 +248,8 @@ export function Mercado() {
                 p.precio != null ? usd(p.precio) : "—",
                 p.rating != null ? `${p.rating}/5` : "—",
                 p.potencial != null
-                  ? <Badge key="pt" texto={String(p.potencial)}
+                  ? <Badge key="pt"
+                           texto={`${p.potencial}${p.potencial_parcial ? " *" : ""}`}
                            tono={p.potencial >= 65 ? "verde" : p.potencial >= 45 ? "amarillo" : "rojo"} />
                   : "—",
                 p.ingreso_estim_mes != null ? usd(p.ingreso_estim_mes, 0) : "—",
@@ -256,6 +257,9 @@ export function Mercado() {
             />
             <p className="text-[11.5px] text-muted mt-1">{vend.mensaje}</p>
             <p className="text-[11px] text-muted mt-1">{t("mk.vend_potencial_ayuda")}</p>
+            {productosOrdenados.some((p) => p.potencial_parcial) && (
+              <p className="text-[11px] text-muted">{t("mk.vend_potencial_parcial")}</p>
+            )}
           </div>
         ) : (
           <Alerta tipo="info">{vend.mensaje}</Alerta>

@@ -293,11 +293,18 @@ def _norm_log(valor, techo):
     return min(1.0, math.log10(1 + valor) / math.log10(1 + techo))
 
 
-def potencial_producto(ventas=None, rating=None, resenas=None, precio=None):
+def potencial_producto(ventas=None, rating=None, resenas=None, precio=None,
+                       detalle=False):
     """Potencial 0-100 de competirle a un producto. None si no hay con que.
 
     Cada componente que falta se excluye y los pesos se renormalizan, para no
-    castigar a un producto solo porque el export no traia esa columna."""
+    castigar a un producto solo porque el export no traia esa columna.
+
+    OJO CON COMPARAR ENTRE FUENTES: pegando a mano solo hay ventas y precio (2
+    de 4 componentes); un export trae ademas rating y resenas (4 de 4). Los dos
+    dan un numero 0-100, pero NO miden lo mismo. Por eso `detalle=True` devuelve
+    tambien que componentes se usaron, y quien muestra el numero avisa cuando es
+    parcial en vez de fingir que son equivalentes."""
     partes = {}
     if ventas:
         partes["demanda"] = _norm_log(ventas, 3000)
@@ -310,10 +317,15 @@ def potencial_producto(ventas=None, rating=None, resenas=None, precio=None):
     if precio:
         partes["precio"] = max(0.0, min(1.0, (float(precio) - 8.0) / 42.0))
     if not partes:
-        return None
+        return None if not detalle else {"potencial": None, "componentes": [],
+                                         "parcial": True}
     total_peso = sum(PESOS_POTENCIAL[k] for k in partes)
-    score = sum(PESOS_POTENCIAL[k] * v for k, v in partes.items()) / total_peso
-    return round(score * 100, 1)
+    score = round(sum(PESOS_POTENCIAL[k] * v for k, v in partes.items())
+                  / total_peso * 100, 1)
+    if not detalle:
+        return score
+    return {"potencial": score, "componentes": sorted(partes),
+            "parcial": len(partes) < len(PESOS_POTENCIAL)}
 
 
 # --------------------------------------------------------------------------- #
@@ -386,8 +398,13 @@ def vendedores_principales(texto):
             item["ventas_estim"] = None
             item["confianza"] = None
             sin_bsr += 1
-        item["potencial"] = potencial_producto(
-            ventas=item["ventas_estim"], precio=item["precio"])
+        # Pegando a mano no hay rating ni resenas: el potencial sale con 2 de 4
+        # componentes y se marca como parcial para no compararlo de igual a
+        # igual contra el de un export completo.
+        det = potencial_producto(ventas=item["ventas_estim"],
+                                 precio=item["precio"], detalle=True)
+        item["potencial"] = det["potencial"]
+        item["potencial_parcial"] = det["parcial"]
         productos.append(item)
 
     con_venta = [p for p in productos if p.get("ventas_estim")]

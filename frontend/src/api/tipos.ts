@@ -66,6 +66,10 @@ export interface VendedorPrincipal {
   cuota_pct: number | null;
   ingreso_estim_mes: number | null;
   potencial?: number | null;
+  // true = el potencial salio con menos de los 4 componentes (p.ej. pegando a
+  // mano no hay rating ni resenas). No es comparable de igual a igual con uno
+  // completo, por eso la UI lo marca con asterisco.
+  potencial_parcial?: boolean;
   link: string | null;
   // Solo vienen por el camino del export de productos.
   marca?: string | null;

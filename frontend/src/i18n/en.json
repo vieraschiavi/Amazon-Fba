@@ -217,6 +217,7 @@
  "mk.vend_potencial": "Potential",
  "mk.vend_orden_ayuda": "Click BSR, sales, price, rating or potential to sort. Click again to flip ascending/descending.",
  "mk.vend_potencial_ayuda": "Potential 0-100 = 40% demand + 25% quality gap + 20% review barrier + 15% price. It does NOT measure margin: pricing decides that with your real cost.",
+ "mk.vend_potencial_parcial": "* Potential computed with fewer inputs (pasting by hand has no rating or reviews): only compare it against others with an asterisk.",
  "mk.demanda_nicho_titulo": "Niche demand — free, no Keepa",
  "mk.demanda_relativa": "Relative demand",
  "mk.margen_calculado_0": "Target margin % (0 = none)",
