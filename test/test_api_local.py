@@ -745,6 +745,182 @@ def test_estimar_ventas_fallback_sin_apis_usa_ventas_propias():
         jungle_scout.ventas_asin, keepa.producto = ojs, okp
 
 
+def test_curva_bsr_no_cambio_al_moverla_a_su_modulo():
+    """La curva se movio de data/keepa.py a data/bsr.py. REGRESION: sin
+    categoria, el resultado tiene que ser IDENTICO al historico, porque
+    data/mercado.py y el recomendador ya dependian de esos numeros."""
+    from data.bsr import ventas_desde_bsr
+    # Valores anclados de la curva historica (Home & Kitchen, factor 1.0).
+    esperados = {100: 9000, 500: 3000, 1000: 1800, 5000: 500,
+                 10000: 230, 50000: 45, 100000: 18, 500000: 3}
+    for bsr, ventas in esperados.items():
+        assert ventas_desde_bsr(bsr) == ventas, f"la curva cambio en BSR={bsr}"
+    # fuera de rango y basura -> 0, nunca una invencion
+    for malo in (0, -1, None, "x", ""):
+        assert ventas_desde_bsr(malo) == 0
+    # el clamp de los extremos se mantiene
+    assert ventas_desde_bsr(1) == 9000 and ventas_desde_bsr(9_000_000) == 3
+
+
+def test_bsr_parsea_el_bloque_real_de_amazon():
+    """Pegar el bloque tal cual sale en Amazon tiene que dar el BSR de la
+    categoria PRINCIPAL, no el de la subcategoria."""
+    from data import bsr
+    bloque = ("Best Sellers Rank: #1,234 in Home & Kitchen "
+              "(See Top 100 in Home & Kitchen)\n    #5 in Cutting Boards")
+    r = bsr.estimar(bloque)
+    assert r["ok"] is True
+    # #5 daria una estimacion disparatada: tiene que quedarse con 1.234
+    assert r["bsr"] == 1234, "tomo el rank de subcategoria en vez del principal"
+    assert r["categoria"] == "Home & Kitchen"
+    assert r["ventas_estim"] > 0
+    # el precio pegado al lado no se cuela dentro de la categoria
+    r2 = bsr.estimar("#1,234 in Home & Kitchen   $24.99")
+    assert r2["categoria"] == "Home & Kitchen"
+    # numero suelto y formato español
+    assert bsr.estimar("4500")["bsr"] == 4500
+    assert bsr.estimar("nº1.234 en Hogar y cocina")["bsr"] == 1234
+
+
+def test_bsr_no_inventa_cuando_no_puede_leer():
+    """Sin BSR legible NO hay estimacion: ok=False, ventas=None."""
+    from data import bsr
+    for basura in ("", "   ", "hola que tal", "sin numeros aca"):
+        r = bsr.estimar(basura)
+        assert r["ok"] is False and r["ventas_estim"] is None
+
+
+def test_bsr_factor_por_categoria_ordena_bien():
+    """Mismo BSR en una categoria grande vende mas que en una chica."""
+    from data.bsr import ventas_desde_bsr
+    grande = ventas_desde_bsr(1000, "Clothing, Shoes & Jewelry")
+    base = ventas_desde_bsr(1000)
+    chica = ventas_desde_bsr(1000, "Musical Instruments")
+    assert grande > base > chica
+    # una categoria desconocida NO inventa un factor: cae en la curva base
+    assert ventas_desde_bsr(1000, "Categoria Que No Existe") == base
+
+
+def test_estimar_ventas_gratis_por_bsr_de_producto_que_no_vendo():
+    """EL CASO DE USO REAL: un ASIN que nunca vendi y sin ninguna clave de API.
+    Antes no habia numero. Ahora se estima pegando el BSR publico de Amazon."""
+    from agents import productos
+    from data import jungle_scout, keepa
+    alta = productos.guardar(nombre="Competidor ajeno", asin="B0AJENO001",
+                             costo=2.0, flete=0.5, arancel_pct=5, prep=0.3,
+                             techo_demanda=100)
+    pid = alta["id"]
+    ojs, okp = jungle_scout.ventas_asin, keepa.producto
+    try:
+        jungle_scout.ventas_asin = lambda a, timeout=25: {"ok": False, "mensaje": "sin JS"}
+        keepa.producto = lambda a, timeout=25: {"ok": False, "mensaje": "sin Keepa"}
+        # sin BSR todavia no hay nada que estimar, y NO se inventa
+        assert productos.estimar_ventas(pid)["ok"] is False
+        # con el BSR pegado, si
+        r = productos.estimar_ventas(
+            pid, bsr="Best Sellers Rank: #1,234 in Home & Kitchen")
+        assert r["ok"] is True
+        assert r["ventas_estim_mes"] > 0
+        assert r["ventas_estim_fuente"].startswith("BSR de Amazon")
+        assert r["ventas_estim_confianza"] == "alta"
+        # queda guardado en la ficha, con el BSR, para re-estimar y auditar
+        p = next(x for x in productos.listar() if x["id"] == pid)
+        assert p["ventas_estim_mes"] == r["ventas_estim_mes"]
+        assert p["bsr"] == 1234 and p["bsr_categoria"] == "Home & Kitchen"
+        # re-estimar sin volver a pegar nada reusa el BSR guardado
+        r2 = productos.estimar_ventas(pid)
+        assert r2["ok"] and r2["ventas_estim_mes"] == r["ventas_estim_mes"]
+    finally:
+        jungle_scout.ventas_asin, keepa.producto = ojs, okp
+
+
+def test_estimar_ventas_bsr_ilegible_no_pisa_lo_guardado():
+    """Si el BSR pegado no se entiende, se avisa y NO se toca la ficha."""
+    from agents import productos
+    from data import jungle_scout, keepa
+    alta = productos.guardar(nombre="BSR ilegible", asin="B0ILEGIB01", costo=2.0,
+                             flete=0.5, arancel_pct=5, prep=0.3, techo_demanda=100)
+    pid = alta["id"]
+    ojs, okp = jungle_scout.ventas_asin, keepa.producto
+    try:
+        jungle_scout.ventas_asin = lambda a, timeout=25: {"ok": False, "mensaje": "sin JS"}
+        keepa.producto = lambda a, timeout=25: {"ok": False, "mensaje": "sin Keepa"}
+        productos.estimar_ventas(pid, bsr="#900 in Home & Kitchen")
+        antes = next(x for x in productos.listar() if x["id"] == pid)["ventas_estim_mes"]
+        r = productos.estimar_ventas(pid, bsr="cualquier cosa")
+        assert r["ok"] is False
+        despues = next(x for x in productos.listar() if x["id"] == pid)["ventas_estim_mes"]
+        assert despues == antes, "un BSR ilegible piso la estimacion buena"
+    finally:
+        jungle_scout.ventas_asin, keepa.producto = ojs, okp
+
+
+def test_estimar_ventas_bsr_no_le_gana_a_jungle_scout():
+    """El orden de fuentes importa: ventas reales de JS mandan sobre la curva."""
+    from agents import productos
+    from data import jungle_scout
+    alta = productos.guardar(nombre="Orden fuentes", asin="B0ORDEN001", costo=2.0,
+                             flete=0.5, arancel_pct=5, prep=0.3, techo_demanda=100)
+    pid = alta["id"]
+    orig = jungle_scout.ventas_asin
+    try:
+        jungle_scout.ventas_asin = lambda a, timeout=25: {
+            "ok": True, "asin": a, "ventas_estim": 777}
+        r = productos.estimar_ventas(pid, bsr="#1,234 in Home & Kitchen")
+        assert r["ventas_estim_mes"] == 777
+        assert r["ventas_estim_fuente"] == "Jungle Scout"
+    finally:
+        jungle_scout.ventas_asin = orig
+
+
+def test_vendedores_principales_sin_api():
+    """Vendedores principales pegando lo que se ve en Amazon, sin API."""
+    from data.mercado import vendedores_principales
+    bloque = (
+        "B08XYZ1234  Bamboo cutting board  #1,234 in Home & Kitchen   $24.99\n"
+        "B07ABC5678  Cutting board pro     #5,600 in Home & Kitchen   $19.99\n"
+        "B09QWE1111  Eco board bundle      #18,900 in Home & Kitchen  $31.50\n"
+        "B01NOBSR99  Sin rank a la vista                              $22.00\n")
+    r = vendedores_principales(bloque)
+    assert r["ok"] is True
+    assert len(r["productos"]) == 4
+    lider = r["productos"][0]
+    assert lider["asin"] == "B08XYZ1234"          # ordenado por ventas desc
+    assert lider["bsr"] == 1234 and lider["ventas_estim"] > 0
+    assert lider["precio"] == 24.99
+    assert lider["ingreso_estim_mes"] == round(lider["ventas_estim"] * 24.99, 2)
+    # el ASIN no confunde al parser de BSR
+    assert r["productos"][1]["bsr"] == 5600
+    # la linea sin BSR se lista pero NO se le inventa un numero
+    sin = [p for p in r["productos"] if p["asin"] == "B01NOBSR99"][0]
+    assert sin["ventas_estim"] is None and sin["cuota_pct"] is None
+    # las cuotas de los estimados suman ~100
+    cuotas = [p["cuota_pct"] for p in r["productos"] if p["cuota_pct"]]
+    assert abs(sum(cuotas) - 100.0) < 0.5
+    assert r["ventas_estim_total"] == sum(
+        p["ventas_estim"] for p in r["productos"] if p["ventas_estim"])
+    # sin datos no inventa
+    assert vendedores_principales("")["ok"] is False
+
+
+def test_endpoints_bsr_y_vendedores():
+    """Los dos endpoints nuevos == la funcion Python equivalente."""
+    from data import bsr as bsr_mod
+    from data.mercado import vendedores_principales
+    bloque = "B08XYZ1234 #1,234 in Home & Kitchen $24.99\nB07ABC5678 #5,600 $19.99"
+    api = cliente.post("/api/mercado/vendedores", json={"texto": bloque}).json()
+    directo = vendedores_principales(bloque)
+    assert api["ok"] == directo["ok"]
+    assert api["ventas_estim_total"] == directo["ventas_estim_total"]
+    assert [p["asin"] for p in api["productos"]] == [p["asin"] for p in directo["productos"]]
+
+    api2 = cliente.post("/api/mercado/bsr",
+                        json={"bsr": "#1,234 in Home & Kitchen"}).json()
+    assert api2 == bsr_mod.estimar("#1,234 in Home & Kitchen")
+    # basura por la API tampoco inventa
+    assert cliente.post("/api/mercado/bsr", json={"bsr": "nada"}).json()["ok"] is False
+
+
 def test_estimar_ventas_endpoint_passthrough():
     """POST /api/productos/{pid}/estimar-ventas == productos.estimar_ventas(pid)."""
     from agents import productos

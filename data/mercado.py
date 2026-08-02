@@ -24,6 +24,7 @@ pegandolo en el Asistente IA.
 import argparse
 import json
 import os
+import re
 import statistics
 import sys
 import urllib.error
@@ -261,6 +262,109 @@ def resumen_competencia(productos):
         "precio_mediana": round(statistics.median(precios), 2),
         "ventas_estim_total": int(sum(ventas)),
         "ventas_estim_lider": max(ventas) if ventas else 0,
+    }
+
+
+# --------------------------------------------------------------------------- #
+# Vendedores principales SIN API (camino gratis)
+# --------------------------------------------------------------------------- #
+_RE_ASIN = re.compile(r"\b(B0[A-Z0-9]{8})\b")
+_RE_PRECIO = re.compile(r"(?:US\$|\$|USD\s*)\s*([\d]+(?:[.,]\d{1,2})?)")
+
+
+def _precio_de(linea):
+    m = _RE_PRECIO.search(linea)
+    if not m:
+        return None
+    try:
+        return round(float(m.group(1).replace(",", ".")), 2)
+    except ValueError:
+        return None
+
+
+def vendedores_principales(texto):
+    """Rankea a los vendedores principales de un nicho SIN ninguna API paga.
+
+    Le pegas un bloque con un competidor por linea, con lo que ya ves en la
+    pagina de Amazon. Cada linea puede traer ASIN, BSR y precio, en cualquier
+    orden y con texto alrededor:
+
+        B08XYZ1234  #1,234 in Home & Kitchen   $24.99
+        B07ABC5678  #5,600                     $19.99
+
+    Devuelve {ok, fuente, productos[], competencia, mensaje}: cada producto con
+    sus ventas/mes estimadas por la curva del BSR y su CUOTA sobre el total
+    pegado. Las lineas sin BSR se listan igual pero sin estimacion -- no se les
+    inventa un numero.
+
+    Limite honesto y explicito: la cuota es sobre los competidores QUE PEGASTE,
+    no sobre el nicho entero. Si pegas 5 de 300 vendedores, el 40% que muestre
+    el lider es 40% de esos 5. Sirve para comparar entre ellos, no para decir
+    "tengo el 40% del mercado".
+    """
+    from data import bsr as bsr_mod
+
+    lineas = [l.strip() for l in (texto or "").splitlines() if l.strip()]
+    if not lineas:
+        return {"ok": False, "fuente": "sin_datos", "productos": [],
+                "competencia": {"ok": False, "n_competidores": 0},
+                "mensaje": "Pegá un competidor por línea, con su ASIN y su BSR "
+                           "(el que figura en \"Best Sellers Rank\" de cada producto)."}
+
+    productos, sin_bsr = [], 0
+    for linea in lineas:
+        m_asin = _RE_ASIN.search(linea.upper())
+        asin = m_asin.group(1) if m_asin else None
+        # Se saca el ASIN antes de buscar el BSR: un ASIN como B08XYZ1234 tiene
+        # digitos y podria confundir al parser de ranking.
+        resto = linea.upper().replace(asin, " ") if asin else linea
+        lectura = bsr_mod.parsear_bloque(resto)
+        item = {
+            "asin": asin,
+            "titulo": re.sub(r"\s+", " ", linea)[:120],
+            "precio": _precio_de(linea),
+            "bsr": lectura.get("bsr") if lectura.get("ok") else None,
+            "categoria": lectura.get("categoria") if lectura.get("ok") else None,
+            "link": f"https://www.amazon.com/dp/{asin}" if asin else None,
+            "link_resenas": link_resenas(asin) if asin else None,
+        }
+        if item["bsr"]:
+            item["ventas_estim"] = bsr_mod.ventas_desde_bsr(item["bsr"], item["categoria"])
+            item["confianza"] = bsr_mod.confianza_de(item["bsr"], item["categoria"])
+        else:
+            item["ventas_estim"] = None
+            item["confianza"] = None
+            sin_bsr += 1
+        productos.append(item)
+
+    con_venta = [p for p in productos if p.get("ventas_estim")]
+    total = sum(p["ventas_estim"] for p in con_venta)
+    for p in productos:
+        v = p.get("ventas_estim")
+        p["cuota_pct"] = round(v * 100.0 / total, 1) if (v and total) else None
+        p["ingreso_estim_mes"] = (round(v * p["precio"], 2)
+                                  if v and p.get("precio") else None)
+
+    # Los que tienen estimacion primero, de mayor a menor.
+    productos.sort(key=lambda p: (p.get("ventas_estim") or -1), reverse=True)
+
+    avisos = []
+    if sin_bsr:
+        avisos.append(f"{sin_bsr} línea(s) sin BSR: se listan sin estimación "
+                      "(no se inventa el número).")
+    if con_venta:
+        avisos.append(f"{len(con_venta)} competidor(es) estimados por la curva del "
+                      f"BSR: {total:,} u/mes entre ellos.".replace(",", "."))
+    return {
+        "ok": bool(con_venta),
+        "fuente": "BSR de Amazon (curva)",
+        "productos": productos,
+        "competencia": resumen_competencia(productos),
+        "ventas_estim_total": total,
+        "ventas_estim_lider": max((p["ventas_estim"] for p in con_venta), default=0),
+        "mensaje": (" ".join(avisos) or
+                    "Ninguna línea traía un BSR legible, así que no hay estimación.") +
+                   " La cuota es sobre los competidores que pegaste, no sobre el nicho entero.",
     }
 
 

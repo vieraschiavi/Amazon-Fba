@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { api, qs } from "../api/cliente";
-import type { ProductoEstrella } from "../api/tipos";
+import type { ProductoEstrella, ResVendedores } from "../api/tipos";
 import { ComparadorNichos } from "../components/ComparadorNichos";
 import { Alerta, Badge, Boton, Campo, CampoNumero, Card, FilaKpis, Kpi, Seccion, Spinner, Tabla, usd, num, pct } from "../components/ui";
 import { useT } from "../i18n";
@@ -42,6 +42,20 @@ export function Mercado() {
   const [ocupado, setOcupado] = useState(false);
   const [midiendoDemanda, setMidiendoDemanda] = useState(false);
   const [evaluando, setEvaluando] = useState(false);
+  // Vendedores principales sin API: se pega lo que se ve en Amazon.
+  const [vendTexto, setVendTexto] = useState("");
+  const [vend, setVend] = useState<ResVendedores | null>(null);
+  const [rankeando, setRankeando] = useState(false);
+
+  const rankearVendedores = async () => {
+    setRankeando(true);
+    try {
+      const d = await api.post<ResVendedores>("/api/mercado/vendedores",
+                                              { texto: vendTexto });
+      setVend(d);
+    } catch { /* mantiene */ }
+    setRankeando(false);
+  };
 
   const explorar = async () => {
     setOcupado(true); setEv(null);
@@ -126,6 +140,53 @@ export function Mercado() {
           </h4>
           <ComparadorNichos />
         </div>
+      </Card>
+
+      {/* Vendedores principales GRATIS: el BSR es publico en cada ficha de
+          Amazon, asi que no hace falta clave de Keepa ni de Jungle Scout. */}
+      <Card className="mb-4">
+        <h3 className="font-bold text-[14px] text-navy-deep">{t("mk.vend_titulo")}</h3>
+        <p className="text-[12px] text-muted mb-2">{t("mk.vend_sub")}</p>
+        <textarea
+          value={vendTexto}
+          onChange={(e) => setVendTexto(e.target.value)}
+          rows={4}
+          placeholder={t("mk.vend_placeholder")}
+          className="w-full text-[12px] border border-line rounded-md px-2 py-1.5 font-mono"
+        />
+        <div className="flex gap-3 items-center mt-2">
+          <Boton tipo="fantasma" onClick={() => void rankearVendedores()} disabled={rankeando}>
+            {t("mk.vend_btn")}
+          </Boton>
+          <span className="text-[11px] text-muted">{t("mk.vend_ayuda")}</span>
+        </div>
+        {rankeando && <Spinner texto={t("comun.cargando")} />}
+        {vend && (vend.ok ? (
+          <div className="mt-3">
+            <FilaKpis>
+              <Kpi label={t("mk.vend_total")} valor={`${num(vend.ventas_estim_total)}/mes`}
+                   sub={t("mk.vend_total_sub")} hero />
+              <Kpi label={t("mk.vend_lider")} valor={`${num(vend.ventas_estim_lider)}/mes`}
+                   sub={t("mk.vend_lider_sub")} />
+            </FilaKpis>
+            <Tabla
+              cabeceras={["ASIN", "BSR", t("mk.ventas_mes"), t("mk.vend_cuota"),
+                          t("mk.precio"), t("mk.vend_ingreso"), t("pf.confianza")]}
+              filas={vend.productos.map((p) => [
+                p.asin ?? "—",
+                p.bsr != null ? num(p.bsr) : "—",
+                p.ventas_estim != null ? num(p.ventas_estim) : t("mk.vend_sin_bsr"),
+                p.cuota_pct != null ? pct(p.cuota_pct, 1) : "—",
+                p.precio != null ? usd(p.precio) : "—",
+                p.ingreso_estim_mes != null ? usd(p.ingreso_estim_mes, 0) : "—",
+                p.confianza ?? "—",
+              ])}
+            />
+            <p className="text-[11.5px] text-muted mt-1">{vend.mensaje}</p>
+          </div>
+        ) : (
+          <Alerta tipo="info">{vend.mensaje}</Alerta>
+        ))}
       </Card>
 
       {res && (res.ok ? (

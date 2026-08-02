@@ -129,70 +129,97 @@ def _run_rate_propio(asin, hoy=None):
             "dias": int(round(dias)), "unidades_total": total}
 
 
-def estimar_ventas(pid):
-    """Estima cuantas unidades/mes vende ESE producto en Amazon, por su ASIN, y
-    guarda el resultado dentro de la ficha (ventas_estim_mes/_fuente/_fecha).
+def estimar_ventas(pid, bsr=None, categoria=None):
+    """Estima cuantas unidades/mes vende ESE producto en Amazon y guarda el
+    resultado dentro de la ficha (ventas_estim_mes/_fuente/_fecha/_confianza).
 
     SIN DATOS INVENTADOS (regla del proyecto): el numero sale SOLO de una fuente
     real, en este orden de preferencia:
       1) Jungle Scout (ventas reales por ASIN, sales_estimates) — es lo mejor;
       2) Keepa (BSR real -> curva BSR/ventas, estimacion gruesa documentada);
-      3) TUS PROPIAS VENTAS registradas (run-rate de `orders`) — gratis, sin
-         ninguna API. Ojo con que significa: no es el mercado, es lo que VOS
-         vendiste; para tu propio ASIN de marca privada, eso es justamente lo
-         que vende ese ASIN. Necesita al menos MIN_DIAS_RUN_RATE dias de
-         historial, si no seria ruido multiplicado por 30.
+      3) BSR PUBLICO DE AMAZON -> curva. GRATIS, sin ninguna API. El BSR figura
+         en la pagina de cualquier producto ("Best Sellers Rank"): lo pegas o lo
+         escribis y la misma curva de (2) lo convierte a u/mes. Sirve para
+         CUALQUIER ASIN, incluido uno que todavia no vendes -- que es el caso de
+         uso real cuando estas investigando si entrar a un producto;
+      4) TUS PROPIAS VENTAS registradas (run-rate de `orders`). Ojo: esto NO es
+         una estimacion de mercado, es MEDICION de lo que vendiste vos. Va
+         ultimo justamente por eso: solo dice algo de un ASIN que ya vendes.
 
-    Por que no hay una cuarta fuente gratis que de unidades/mes de un ASIN
-    AJENO: no existe una legal. Lo explica data/demanda_nativa.py -- el
-    autocompletado publico de Amazon da senal de demanda RELATIVA (sirve para
-    comparar nichos), nunca unidades absolutas. Convertir eso a "u/mes" seria
-    inventar, que es exactamente lo que este sistema no hace."""
-    from data import jungle_scout, keepa      # conectores reales (import diferido)
+    `bsr` puede ser el numero o el bloque pegado de Amazon; si no se pasa, se usa
+    el que ya este guardado en la ficha. Se guarda para poder re-estimar."""
+    from data import jungle_scout, keepa, bsr as bsr_mod   # import diferido
 
     filas = db.rows("SELECT * FROM products WHERE id=?", (pid,))
     if not filas:
         return {"ok": False, "mensaje": f"No existe el producto id={pid}."}
-    asin = (filas[0].get("asin") or "").strip()
+    prod = filas[0]
+    asin = (prod.get("asin") or "").strip()
     if not asin:
         return {"ok": False, "mensaje": "Cargá el ASIN del producto para estimar sus "
                 "ventas: sin ASIN no hay forma real de saber cuánto vende en Amazon."}
 
+    # BSR: el que llega por parametro pisa al guardado; si no llega ninguno, se
+    # reusa el de la ficha para que re-estimar no obligue a pegarlo de nuevo.
+    lectura = None
+    if bsr is not None and str(bsr).strip() != "":
+        lectura = bsr_mod.estimar(bsr, categoria)
+        if not lectura.get("ok"):
+            return {"ok": False, "asin": asin, "mensaje": lectura["mensaje"]}
+    elif prod.get("bsr"):
+        lectura = bsr_mod.estimar(int(prod["bsr"]),
+                                  categoria or prod.get("bsr_categoria"))
+
+    confianza = None
     # 1) Jungle Scout: ventas reales por ASIN (lo preferido).
     js = jungle_scout.ventas_asin(asin)
     kp = {}
     propio = None
     if js.get("ok") and js.get("ventas_estim"):
-        est, fuente = int(js["ventas_estim"]), "Jungle Scout"
+        est, fuente, confianza = int(js["ventas_estim"]), "Jungle Scout", "alta"
     else:
         # 2) Keepa: BSR real convertido a ventas por la curva (mas grueso).
         kp = keepa.producto(asin)
         if kp.get("ok") and kp.get("ventas_estim"):
-            est, fuente = int(kp["ventas_estim"]), "Keepa (BSR)"
+            est, fuente, confianza = int(kp["ventas_estim"]), "Keepa (BSR)", "media"
+        elif lectura and lectura.get("ok"):
+            # 3) GRATIS: BSR publico que cargo el usuario -> misma curva.
+            est = int(lectura["ventas_estim"])
+            cat = lectura.get("categoria")
+            fuente = "BSR de Amazon" + (f" ({cat})" if cat else "")
+            confianza = lectura.get("confianza")
         else:
-            # 3) Fallback GRATIS: run-rate de tus propias ventas registradas.
+            # 4) Ultimo recurso: medicion de tus propias ventas registradas.
             propio = _run_rate_propio(asin)
             if propio:
                 est = propio["unidades_mes"]
                 fuente = f"Tus ventas ({propio['dias']} días)"
+                confianza = "alta"
             else:
                 # Nada real disponible: se avisa que falta, no se inventa.
                 motivo = js.get("mensaje") or kp.get("mensaje") or ""
                 return {"ok": False, "asin": asin, "mensaje":
-                        "Todavía no se puede estimar las ventas de este ASIN. Tres "
-                        "caminos: conectá tu clave de Jungle Scout (ventas reales por "
-                        "ASIN) o de Keepa (BSR) en Config, o registrá tus ventas — con "
-                        f"{MIN_DIAS_RUN_RATE} días de historial se calcula el ritmo real "
-                        "sin pagar ninguna API. " + motivo}
+                        "Todavía no se puede estimar las ventas de este ASIN. El "
+                        "camino GRATIS: abrí el producto en Amazon, copiá el bloque "
+                        "\"Best Sellers Rank\" (o sólo el número) y pegalo acá — con "
+                        "eso se estima sin pagar ninguna API. También sirve conectar "
+                        "Jungle Scout o Keepa en Config. " + motivo}
 
-    # Se guarda en la ficha con fuente y fecha, para que sea auditable.
+    # Se guarda en la ficha con fuente, confianza y fecha, para que sea auditable.
     db.execute("UPDATE products SET ventas_estim_mes=?, ventas_estim_fuente=?, "
-               "ventas_estim_fecha=datetime('now') WHERE id=?", (est, fuente, pid))
+               "ventas_estim_confianza=?, ventas_estim_fecha=datetime('now') "
+               "WHERE id=?", (est, fuente, confianza, pid))
+    if lectura and lectura.get("ok"):
+        db.execute("UPDATE products SET bsr=?, bsr_categoria=? WHERE id=?",
+                   (lectura["bsr"], lectura.get("categoria"), pid))
     fila = db.rows("SELECT ventas_estim_fecha FROM products WHERE id=?", (pid,))
     fecha = fila[0]["ventas_estim_fecha"] if fila else None
     return {"ok": True, "id": pid, "asin": asin, "ventas_estim_mes": est,
             "ventas_estim_fuente": fuente, "ventas_estim_fecha": fecha,
-            "mensaje": f"~{est} u/mes según {fuente} — guardado en la ficha del producto."}
+            "ventas_estim_confianza": confianza,
+            "bsr": lectura["bsr"] if lectura and lectura.get("ok") else prod.get("bsr"),
+            "mensaje": f"~{est} u/mes según {fuente} (confianza {confianza}) — "
+                       "guardado en la ficha del producto."}
 
 
 def _ventas_por_asin():
@@ -282,10 +309,16 @@ def main(argv=None):
     ap.add_argument("--analisis", type=int, metavar="ID")
     ap.add_argument("--estimar-ventas", type=int, metavar="ID",
                     help="estima ventas de mercado del ASIN y las guarda en la ficha")
+    ap.add_argument("--bsr", default=None,
+                    help="BSR publico de Amazon (numero o bloque 'Best Sellers "
+                         "Rank' pegado): estima GRATIS, sin API")
+    ap.add_argument("--categoria", default=None,
+                    help="categoria principal del ASIN (afina la curva del BSR)")
     args = ap.parse_args(argv)
     db.init()
     if args.estimar_ventas:
-        out = estimar_ventas(args.estimar_ventas)
+        out = estimar_ventas(args.estimar_ventas, bsr=args.bsr,
+                             categoria=args.categoria)
     elif args.analisis:
         out = analisis(args.analisis)
     elif args.resumen:

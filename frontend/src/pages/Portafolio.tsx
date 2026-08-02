@@ -22,19 +22,24 @@ export function Portafolio() {
   const [analisis, setAnalisis] = useState<Analisis | null>(null);
   const [estimando, setEstimando] = useState(false);
   const [estimMsg, setEstimMsg] = useState<string>("");
+  // BSR publico de Amazon: el camino GRATIS para estimar sin ninguna API.
+  const [bsrTexto, setBsrTexto] = useState("");
 
   const cargar = () => {
     api.get<ResumenPortafolio>("/portfolio").then(setResumen).catch(() => {});
   };
   useEffect(cargar, []);
 
-  // Estima las ventas de mercado del ASIN (Jungle Scout o Keepa) y las guarda
-  // en la ficha. El backend no inventa: si falta ASIN o clave, devuelve el
-  // aviso en `mensaje` y no persiste nada.
+  // Estima las ventas de mercado del ASIN y las guarda en la ficha. Fuentes:
+  // Jungle Scout, Keepa, o -- GRATIS, sin API -- el BSR publico que pegue el
+  // usuario. El backend no inventa: si no hay ninguna, devuelve el aviso en
+  // `mensaje` y no persiste nada.
   const estimarVentas = async (pid: number) => {
     setEstimando(true); setEstimMsg("");
     try {
-      const r = await api.post<EstimacionVentas>(`/api/productos/${pid}/estimar-ventas`);
+      const r = await api.post<EstimacionVentas>(
+        `/api/productos/${pid}/estimar-ventas`,
+        bsrTexto.trim() ? { bsr: bsrTexto } : undefined);
       setEstimMsg(r.mensaje);
       cargar();
       api.get<Analisis>(`/portfolio/producto/${pid}`).then(setAnalisis).catch(() => {});
@@ -120,6 +125,23 @@ export function Portafolio() {
               </Boton>
             )}
           </div>
+          {/* Camino GRATIS: el BSR es publico en la pagina del producto, asi que
+              no hace falta ninguna API paga para estimar cuanto vende. */}
+          {sel !== "" && (
+            <div className="mt-3">
+              <label className="block text-[12px] font-bold text-navy-deep mb-1">
+                {t("pf.bsr_label")}
+              </label>
+              <textarea
+                value={bsrTexto}
+                onChange={(e) => setBsrTexto(e.target.value)}
+                rows={2}
+                placeholder={t("pf.bsr_placeholder")}
+                className="w-full text-[12px] border border-line rounded-md px-2 py-1.5 font-mono"
+              />
+              <p className="text-[11px] text-muted mt-1">{t("pf.bsr_ayuda")}</p>
+            </div>
+          )}
           {estimMsg && <p className="text-[12px] text-muted mt-2">{estimMsg}</p>}
           {sel !== "" && !estimMsg && (
             <p className="text-[11px] text-muted mt-2">{t("pf.estim_ayuda")}</p>
@@ -145,7 +167,10 @@ export function Portafolio() {
                 <Badge texto={`Ventas reales: ${num(analisis.ventas_reales.unidades)} unid · ${usd(analisis.ventas_reales.ingreso, 0)}`} tono="navy" />
                 {analisis.producto.ventas_estim_mes != null && (
                   <Badge tono="verde"
-                         texto={`${t("pf.ventas_mercado")}: ${num(analisis.producto.ventas_estim_mes)} u/mes · ${analisis.producto.ventas_estim_fuente ?? ""}`} />
+                         texto={`${t("pf.ventas_mercado")}: ${num(analisis.producto.ventas_estim_mes)} u/mes · ${analisis.producto.ventas_estim_fuente ?? ""}`
+                                + (analisis.producto.ventas_estim_confianza
+                                   ? ` · ${t("pf.confianza")} ${analisis.producto.ventas_estim_confianza}`
+                                   : "")} />
                 )}
               </div>
             </div>

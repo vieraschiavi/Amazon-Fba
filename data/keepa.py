@@ -33,25 +33,12 @@ import config  # noqa: E402
 
 _BASE = "https://api.keepa.com/product"
 
-# Curva BSR -> ventas/mes (aprox, categoria Home & Kitchen US). GRUESA y editable.
-# Pares (bsr, ventas_mensuales) interpolados en escala log.
-_CURVA = [(100, 9000), (500, 3000), (1000, 1800), (5000, 500),
-          (10000, 230), (50000, 45), (100000, 18), (500000, 3)]
-
-
-def _estim_ventas(bsr):
-    if not bsr or bsr <= 0:
-        return 0
-    import math
-    if bsr <= _CURVA[0][0]:
-        return _CURVA[0][1]
-    if bsr >= _CURVA[-1][0]:
-        return _CURVA[-1][1]
-    for (b1, v1), (b2, v2) in zip(_CURVA, _CURVA[1:]):
-        if b1 <= bsr <= b2:
-            t = (math.log10(bsr) - math.log10(b1)) / (math.log10(b2) - math.log10(b1))
-            return int(round(v1 * (v2 / v1) ** t))
-    return 0
+# La curva BSR -> ventas/mes vive ahora en data/bsr.py, porque NO depende de
+# Keepa: el BSR es un dato publico de la pagina de Amazon y la conversion sirve
+# igual cuando el numero lo trae el usuario a mano (estimacion gratis, sin API).
+# Aca solo se delega. La curva es la misma, con los mismos valores de siempre.
+from data.bsr import CURVA_BASE as _CURVA          # noqa: E402  (retrocompat)
+from data.bsr import ventas_desde_bsr as _estim_ventas   # noqa: E402
 
 
 def tokens_left(timeout: int = 20) -> dict:

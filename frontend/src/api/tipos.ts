@@ -31,11 +31,15 @@ export interface Producto {
   ventas_ingreso: number; ventas_neto: number;
   ventas_unidades: number; ventas_ordenes: number;
   capital_pipeline: number; sueldo_meseta_teorico: number;
-  // Estimacion de ventas de mercado (cuanto vende el ASIN en Amazon), traida
-  // de Jungle Scout o Keepa y guardada en la ficha. null si aun no se estimo.
+  // Estimacion de ventas de mercado (cuanto vende el ASIN en Amazon). Sale de
+  // Jungle Scout, de Keepa, o -- GRATIS, sin API -- del BSR publico de la
+  // pagina de Amazon. null si aun no se estimo.
   ventas_estim_mes?: number | null;
   ventas_estim_fuente?: string | null;
   ventas_estim_fecha?: string | null;
+  ventas_estim_confianza?: string | null;
+  bsr?: number | null;
+  bsr_categoria?: string | null;
   notas?: string;
 }
 
@@ -45,6 +49,31 @@ export interface EstimacionVentas {
   ventas_estim_mes?: number;
   ventas_estim_fuente?: string;
   ventas_estim_fecha?: string;
+  ventas_estim_confianza?: string;
+  bsr?: number | null;
+}
+
+// Vendedores principales estimados desde el BSR publico (sin API paga).
+export interface VendedorPrincipal {
+  asin: string | null;
+  titulo: string;
+  precio: number | null;
+  bsr: number | null;
+  categoria: string | null;
+  ventas_estim: number | null;
+  confianza: string | null;
+  cuota_pct: number | null;
+  ingreso_estim_mes: number | null;
+  link: string | null;
+}
+
+export interface ResVendedores {
+  ok: boolean;
+  fuente: string;
+  productos: VendedorPrincipal[];
+  ventas_estim_total: number;
+  ventas_estim_lider: number;
+  mensaje: string;
 }
 
 export interface ResumenPortafolio {

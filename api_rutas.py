@@ -21,7 +21,7 @@ _AQUI = os.path.dirname(os.path.abspath(__file__))
 if _AQUI not in sys.path:
     sys.path.insert(0, _AQUI)
 
-from fastapi import APIRouter, Response, UploadFile
+from fastapi import APIRouter, Body, Response, UploadFile
 from pydantic import BaseModel
 
 import config
@@ -47,6 +47,7 @@ from agents.listing import generar as generar_listing
 from agents.market_intel import market_intel
 from data import demanda_nativa
 from data import jungle_scout
+from data import bsr as data_bsr
 from data import mercado as data_mercado
 from data import motor_propio
 
@@ -410,6 +411,24 @@ def recomendador_escanear(r: RecomendadorIn):
         demo=r.demo)
 
 
+@router.post("/mercado/vendedores")
+def mercado_vendedores(body: dict = Body(default=None)):
+    """Vendedores principales de un nicho SIN ninguna API paga.
+
+    El cliente manda {"texto": "<un competidor por linea, con ASIN y BSR>"} y
+    devuelve cada uno con sus ventas/mes estimadas por la curva del BSR, su
+    cuota entre los pegados y el ingreso/mes estimado. Las lineas sin BSR se
+    listan sin numero: no se inventa nada."""
+    return data_mercado.vendedores_principales((body or {}).get("texto"))
+
+
+@router.post("/mercado/bsr")
+def mercado_bsr(body: dict = Body(default=None)):
+    """Convierte un BSR publico de Amazon en ventas/mes estimadas (gratis)."""
+    datos = body or {}
+    return data_bsr.estimar(datos.get("bsr"), datos.get("categoria"))
+
+
 @router.get("/exito")
 def exito_get(keyword: str, precio: float | None = None,
               margen_pct: float | None = None, demo: bool = False,
@@ -519,11 +538,16 @@ def productos_baja(pid: int):
 
 
 @router.post("/productos/{pid}/estimar-ventas")
-def productos_estimar_ventas(pid: int):
-    """Estima las ventas/mes REALES de mercado del producto por su ASIN (Jungle
-    Scout o, si no, Keepa por BSR) y las guarda en su ficha. Sin ASIN o sin
-    clave conectada: avisa y no inventa un numero."""
-    return productos.estimar_ventas(pid)
+def productos_estimar_ventas(pid: int, body: dict = Body(default=None)):
+    """Estima las ventas/mes de mercado del producto y las guarda en su ficha.
+
+    Fuentes, en orden: Jungle Scout, Keepa, y -- GRATIS, sin ninguna API -- el
+    BSR publico de la pagina de Amazon que mande el cliente en el body
+    ({"bsr": "#1,234 in Home & Kitchen"} o {"bsr": 1234, "categoria": "..."}).
+    Sin ASIN, sin clave y sin BSR: avisa y no inventa un numero."""
+    datos = body or {}
+    return productos.estimar_ventas(pid, bsr=datos.get("bsr"),
+                                    categoria=datos.get("categoria"))
 
 
 @router.post("/ventas")
