@@ -518,6 +518,14 @@ def productos_baja(pid: int):
     return productos.desactivar(pid)
 
 
+@router.post("/productos/{pid}/estimar-ventas")
+def productos_estimar_ventas(pid: int):
+    """Estima las ventas/mes REALES de mercado del producto por su ASIN (Jungle
+    Scout o, si no, Keepa por BSR) y las guarda en su ficha. Sin ASIN o sin
+    clave conectada: avisa y no inventa un numero."""
+    return productos.estimar_ventas(pid)
+
+
 @router.post("/ventas")
 def ventas_registrar(v: VentaIn):
     from agents import analytics

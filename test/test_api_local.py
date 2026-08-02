@@ -609,6 +609,103 @@ def test_productos_crud():
     assert not any(p["id"] == pid for p in lst2)
 
 
+def test_estimar_ventas_sin_asin_no_inventa():
+    """Sin ASIN no hay forma real de estimar: avisa y NO guarda un numero."""
+    from agents import productos
+    alta = productos.guardar(nombre="Sin ASIN", asin="", costo=2.0, flete=0.5,
+                             arancel_pct=5, prep=0.3, techo_demanda=100)
+    pid = alta["id"]
+    r = productos.estimar_ventas(pid)
+    assert r["ok"] is False and "ASIN" in r["mensaje"]
+    fila = productos.listar(solo_activos=False)
+    p = next(x for x in fila if x["id"] == pid)
+    assert p.get("ventas_estim_mes") is None      # nada inventado, nada guardado
+
+
+def test_estimar_ventas_jungle_scout_se_guarda_en_ficha():
+    """Con Jungle Scout conectado, la ventas reales por ASIN se estiman Y se
+    guardan en la ficha, con fuente y fecha (auditable)."""
+    import config
+    from agents import productos
+    from data import jungle_scout
+    alta = productos.guardar(nombre="Con JS", asin="B0ESTIMJS1", costo=2.0,
+                             flete=0.5, arancel_pct=5, prep=0.3, techo_demanda=100)
+    pid = alta["id"]
+    orig = jungle_scout.ventas_asin
+    try:
+        jungle_scout.ventas_asin = lambda asin, timeout=25: {
+            "ok": True, "asin": asin, "ventas_estim": 480}
+        r = productos.estimar_ventas(pid)
+        assert r["ok"] and r["ventas_estim_mes"] == 480
+        assert r["ventas_estim_fuente"] == "Jungle Scout" and r["ventas_estim_fecha"]
+        # persistido en la ficha, lo lee listar()
+        p = next(x for x in productos.listar() if x["id"] == pid)
+        assert p["ventas_estim_mes"] == 480
+        assert p["ventas_estim_fuente"] == "Jungle Scout"
+        assert p["ventas_estim_fecha"] is not None
+    finally:
+        jungle_scout.ventas_asin = orig
+
+
+def test_estimar_ventas_cae_a_keepa_si_no_hay_jungle():
+    """Sin Jungle Scout pero con Keepa, usa el BSR real (curva) y lo etiqueta."""
+    from agents import productos
+    from data import jungle_scout, keepa
+    alta = productos.guardar(nombre="Solo Keepa", asin="B0ESTIMKP1", costo=2.0,
+                             flete=0.5, arancel_pct=5, prep=0.3, techo_demanda=100)
+    pid = alta["id"]
+    ojs, okp = jungle_scout.ventas_asin, keepa.producto
+    try:
+        jungle_scout.ventas_asin = lambda asin, timeout=25: {
+            "ok": False, "mensaje": "Falta clave Jungle Scout."}
+        keepa.producto = lambda asin, timeout=25: {
+            "ok": True, "asin": asin, "ventas_estim": 230, "fuente": "Keepa"}
+        r = productos.estimar_ventas(pid)
+        assert r["ok"] and r["ventas_estim_mes"] == 230
+        assert r["ventas_estim_fuente"] == "Keepa (BSR)"
+    finally:
+        jungle_scout.ventas_asin, keepa.producto = ojs, okp
+
+
+def test_estimar_ventas_sin_fuente_no_inventa():
+    """Con ASIN pero sin ninguna clave, no se inventa: ok=False y nada guardado."""
+    from agents import productos
+    from data import jungle_scout, keepa
+    alta = productos.guardar(nombre="Sin claves", asin="B0NOKEYS01", costo=2.0,
+                             flete=0.5, arancel_pct=5, prep=0.3, techo_demanda=100)
+    pid = alta["id"]
+    ojs, okp = jungle_scout.ventas_asin, keepa.producto
+    try:
+        jungle_scout.ventas_asin = lambda asin, timeout=25: {"ok": False, "mensaje": "sin clave JS"}
+        keepa.producto = lambda asin, timeout=25: {"ok": False, "mensaje": "sin clave Keepa"}
+        r = productos.estimar_ventas(pid)
+        assert r["ok"] is False and ("Jungle Scout" in r["mensaje"] or "Keepa" in r["mensaje"])
+        p = next(x for x in productos.listar() if x["id"] == pid)
+        assert p.get("ventas_estim_mes") is None
+    finally:
+        jungle_scout.ventas_asin, keepa.producto = ojs, okp
+
+
+def test_estimar_ventas_endpoint_passthrough():
+    """POST /api/productos/{pid}/estimar-ventas == productos.estimar_ventas(pid)."""
+    from agents import productos
+    from data import jungle_scout
+    alta = cliente.post("/portfolio/producto",
+                        json={"nombre": "Endpoint estim", "asin": "B0ESTIMEP1",
+                              "costo": 2.0, "flete": 0.5, "arancel_pct": 5,
+                              "prep": 0.3, "techo_demanda": 100}).json()
+    pid = alta["id"]
+    orig = jungle_scout.ventas_asin
+    try:
+        jungle_scout.ventas_asin = lambda asin, timeout=25: {
+            "ok": True, "asin": asin, "ventas_estim": 310}
+        api = cliente.post(f"/api/productos/{pid}/estimar-ventas").json()
+        assert api["ok"] and api["ventas_estim_mes"] == 310
+        assert api["ventas_estim_fuente"] == "Jungle Scout"
+    finally:
+        jungle_scout.ventas_asin = orig
+
+
 def test_ventas_y_alertas():
     r = cliente.post("/api/ventas",
                      json={"asin": "B0TESTAPI1", "unidades": 3, "precio": 24.0,

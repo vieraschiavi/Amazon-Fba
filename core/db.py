@@ -20,6 +20,7 @@ ESQUEMA = {
         precio REAL, neto REAL, margen REAL, roi REAL, semaforo TEXT,
         techo_demanda INTEGER, marketplace TEXT, notas TEXT,
         stock INTEGER, lead_time_dias INTEGER, stock_fecha TEXT,
+        ventas_estim_mes INTEGER, ventas_estim_fuente TEXT, ventas_estim_fecha TEXT,
         activo INTEGER DEFAULT 1, fecha TEXT DEFAULT (datetime('now')))""",
     "listings": """CREATE TABLE IF NOT EXISTS listings(
         id INTEGER PRIMARY KEY AUTOINCREMENT, product_id INTEGER, titulo TEXT,
@@ -63,7 +64,12 @@ _MIGRACIONES = {
     "products": {"asin": "TEXT", "fba_fee": "REAL", "neto": "REAL",
                  "techo_demanda": "INTEGER", "notas": "TEXT",
                  "stock": "INTEGER", "lead_time_dias": "INTEGER",
-                 "stock_fecha": "TEXT", "activo": "INTEGER DEFAULT 1"},
+                 "stock_fecha": "TEXT", "activo": "INTEGER DEFAULT 1",
+                 # Estimacion de ventas de mercado por ASIN (Jungle Scout o
+                 # Keepa): cuanto vende ESE producto en Amazon, guardado en la
+                 # ficha con su fuente y fecha para que sea auditable.
+                 "ventas_estim_mes": "INTEGER", "ventas_estim_fuente": "TEXT",
+                 "ventas_estim_fecha": "TEXT"},
     # orders viejas (creadas antes de estas columnas) rompian el registro de
     # ventas con "table orders has no column named neto_unitario".
     "orders": {"neto_unitario": "REAL", "ingreso": "REAL", "neto": "REAL",

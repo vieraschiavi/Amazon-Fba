@@ -31,7 +31,20 @@ export interface Producto {
   ventas_ingreso: number; ventas_neto: number;
   ventas_unidades: number; ventas_ordenes: number;
   capital_pipeline: number; sueldo_meseta_teorico: number;
+  // Estimacion de ventas de mercado (cuanto vende el ASIN en Amazon), traida
+  // de Jungle Scout o Keepa y guardada en la ficha. null si aun no se estimo.
+  ventas_estim_mes?: number | null;
+  ventas_estim_fuente?: string | null;
+  ventas_estim_fecha?: string | null;
   notas?: string;
+}
+
+export interface EstimacionVentas {
+  ok: boolean;
+  mensaje: string;
+  ventas_estim_mes?: number;
+  ventas_estim_fuente?: string;
+  ventas_estim_fecha?: string;
 }
 
 export interface ResumenPortafolio {

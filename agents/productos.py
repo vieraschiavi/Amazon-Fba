@@ -91,6 +91,53 @@ def desactivar(pid):
     return {"ok": n > 0, "mensaje": "Producto desactivado." if n else "No existe."}
 
 
+def estimar_ventas(pid):
+    """Estima cuantas unidades/mes vende ESE producto en Amazon, por su ASIN, y
+    guarda el resultado dentro de la ficha (ventas_estim_mes/_fuente/_fecha).
+
+    SIN DATOS INVENTADOS (regla del proyecto): la estimacion sale SOLO de una
+    fuente real, en este orden de preferencia:
+      1) Jungle Scout (ventas reales por ASIN, sales_estimates) — es lo mejor;
+      2) Keepa (BSR real -> curva BSR/ventas, estimacion gruesa documentada).
+    Si el producto no tiene ASIN, o no hay ninguna clave conectada, NO se
+    inventa un numero: se avisa que falta y no se guarda nada."""
+    from data import jungle_scout, keepa      # conectores reales (import diferido)
+
+    filas = db.rows("SELECT * FROM products WHERE id=?", (pid,))
+    if not filas:
+        return {"ok": False, "mensaje": f"No existe el producto id={pid}."}
+    asin = (filas[0].get("asin") or "").strip()
+    if not asin:
+        return {"ok": False, "mensaje": "Cargá el ASIN del producto para estimar sus "
+                "ventas: sin ASIN no hay forma real de saber cuánto vende en Amazon."}
+
+    # 1) Jungle Scout: ventas reales por ASIN (lo preferido).
+    js = jungle_scout.ventas_asin(asin)
+    if js.get("ok") and js.get("ventas_estim"):
+        est, fuente = int(js["ventas_estim"]), "Jungle Scout"
+    else:
+        # 2) Keepa: BSR real convertido a ventas por la curva (mas grueso).
+        kp = keepa.producto(asin)
+        if kp.get("ok") and kp.get("ventas_estim"):
+            est, fuente = int(kp["ventas_estim"]), "Keepa (BSR)"
+        else:
+            # Nada real disponible: se avisa que falta, no se inventa.
+            motivo = js.get("mensaje") or kp.get("mensaje") or ""
+            return {"ok": False, "asin": asin, "mensaje":
+                    "No se pudo estimar las ventas reales de este ASIN. Conectá tu "
+                    "clave de Jungle Scout (ventas reales por ASIN) o de Keepa (BSR) "
+                    "en Config. " + motivo}
+
+    # Se guarda en la ficha con fuente y fecha, para que sea auditable.
+    db.execute("UPDATE products SET ventas_estim_mes=?, ventas_estim_fuente=?, "
+               "ventas_estim_fecha=datetime('now') WHERE id=?", (est, fuente, pid))
+    fila = db.rows("SELECT ventas_estim_fecha FROM products WHERE id=?", (pid,))
+    fecha = fila[0]["ventas_estim_fecha"] if fila else None
+    return {"ok": True, "id": pid, "asin": asin, "ventas_estim_mes": est,
+            "ventas_estim_fuente": fuente, "ventas_estim_fecha": fecha,
+            "mensaje": f"~{est} u/mes según {fuente} — guardado en la ficha del producto."}
+
+
 def _ventas_por_asin():
     return {r["asin"]: r for r in db.rows(
         "SELECT asin, SUM(ingreso) AS ingreso, SUM(neto) AS neto, "
@@ -176,9 +223,13 @@ def main(argv=None):
     ap.add_argument("--listar", action="store_true")
     ap.add_argument("--resumen", action="store_true")
     ap.add_argument("--analisis", type=int, metavar="ID")
+    ap.add_argument("--estimar-ventas", type=int, metavar="ID",
+                    help="estima ventas de mercado del ASIN y las guarda en la ficha")
     args = ap.parse_args(argv)
     db.init()
-    if args.analisis:
+    if args.estimar_ventas:
+        out = estimar_ventas(args.estimar_ventas)
+    elif args.analisis:
         out = analisis(args.analisis)
     elif args.resumen:
         out = resumen_portafolio()

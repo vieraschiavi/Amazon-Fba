@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/cliente";
-import type { Producto, ResumenPortafolio, FilaProyeccion } from "../api/tipos";
+import type { Producto, ResumenPortafolio, FilaProyeccion, EstimacionVentas } from "../api/tipos";
 import { GraficoLineas } from "../components/Graficos";
 import { Badge, Boton, Card, FilaKpis, Kpi, Seccion, Selector, Semaforo, Tabla, usd, num, pct } from "../components/ui";
 import { useT } from "../i18n";
@@ -20,11 +20,30 @@ export function Portafolio() {
   const [resumen, setResumen] = useState<ResumenPortafolio | null>(null);
   const [sel, setSel] = useState<number | "">("");
   const [analisis, setAnalisis] = useState<Analisis | null>(null);
+  const [estimando, setEstimando] = useState(false);
+  const [estimMsg, setEstimMsg] = useState<string>("");
 
   const cargar = () => {
     api.get<ResumenPortafolio>("/portfolio").then(setResumen).catch(() => {});
   };
   useEffect(cargar, []);
+
+  // Estima las ventas de mercado del ASIN (Jungle Scout o Keepa) y las guarda
+  // en la ficha. El backend no inventa: si falta ASIN o clave, devuelve el
+  // aviso en `mensaje` y no persiste nada.
+  const estimarVentas = async (pid: number) => {
+    setEstimando(true); setEstimMsg("");
+    try {
+      const r = await api.post<EstimacionVentas>(`/api/productos/${pid}/estimar-ventas`);
+      setEstimMsg(r.mensaje);
+      cargar();
+      api.get<Analisis>(`/portfolio/producto/${pid}`).then(setAnalisis).catch(() => {});
+    } catch {
+      setEstimMsg("No se pudo consultar la estimación (revisá la conexión).");
+    } finally {
+      setEstimando(false);
+    }
+  };
 
   useEffect(() => {
     if (sel === "") { setAnalisis(null); return; }
@@ -65,11 +84,15 @@ export function Portafolio() {
           </p>
         ) : (
           <Tabla
-            cabeceras={[t("pf.producto"), "ASIN", t("pf.landed"), t("pf.precio"), t("pf.neto_u"), t("pf.margen"), "ROI", t("pf.semaforo"), t("pf.techo_u_mes"), t("pf.ventas")]}
+            cabeceras={[t("pf.producto"), "ASIN", t("pf.landed"), t("pf.precio"), t("pf.neto_u"), t("pf.margen"), "ROI", t("pf.semaforo"), t("pf.techo_u_mes"), t("pf.ventas_mercado"), t("pf.ventas")]}
             filas={resumen.productos.map((p) => [
               p.nombre, p.asin || "—", usd(p.landed), usd(p.precio), usd(p.neto),
               pct(p.margen), pct(p.roi), <Semaforo key="s" valor={p.semaforo} />,
-              num(p.techo_demanda), usd(p.ventas_ingreso, 0),
+              num(p.techo_demanda),
+              p.ventas_estim_mes != null
+                ? `${num(p.ventas_estim_mes)} u/mes · ${p.ventas_estim_fuente ?? ""}`
+                : t("pf.no_estimado"),
+              usd(p.ventas_ingreso, 0),
             ])}
           />
         )}
@@ -87,11 +110,20 @@ export function Portafolio() {
               ))}
             </Selector>
             {sel !== "" && (
+              <Boton onClick={() => void estimarVentas(sel as number)} disabled={estimando}>
+                {estimando ? "…" : t("pf.estimar_btn")}
+              </Boton>
+            )}
+            {sel !== "" && (
               <Boton tipo="peligro" onClick={() => void quitar(sel as number)}>
                 {t("pf_del_btn")}
               </Boton>
             )}
           </div>
+          {estimMsg && <p className="text-[12px] text-muted mt-2">{estimMsg}</p>}
+          {sel !== "" && !estimMsg && (
+            <p className="text-[11px] text-muted mt-2">{t("pf.estim_ayuda")}</p>
+          )}
 
           {analisis?.ok && (
             <div className="mt-4">
@@ -109,8 +141,12 @@ export function Portafolio() {
                   series={[{ campo: "caja", nombre: t("cj.caja") }, { campo: "sueldo", nombre: t("cj.sueldo") }]}
                 />
               )}
-              <div className="mt-3">
+              <div className="mt-3 flex gap-2 flex-wrap">
                 <Badge texto={`Ventas reales: ${num(analisis.ventas_reales.unidades)} unid · ${usd(analisis.ventas_reales.ingreso, 0)}`} tono="navy" />
+                {analisis.producto.ventas_estim_mes != null && (
+                  <Badge tono="verde"
+                         texto={`${t("pf.ventas_mercado")}: ${num(analisis.producto.ventas_estim_mes)} u/mes · ${analisis.producto.ventas_estim_fuente ?? ""}`} />
+                )}
               </div>
             </div>
           )}
