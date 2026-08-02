@@ -609,6 +609,509 @@ def test_productos_crud():
     assert not any(p["id"] == pid for p in lst2)
 
 
+def test_estimar_ventas_sin_asin_no_inventa():
+    """Sin ASIN no hay forma real de estimar: avisa y NO guarda un numero."""
+    from agents import productos
+    alta = productos.guardar(nombre="Sin ASIN", asin="", costo=2.0, flete=0.5,
+                             arancel_pct=5, prep=0.3, techo_demanda=100)
+    pid = alta["id"]
+    r = productos.estimar_ventas(pid)
+    assert r["ok"] is False and "ASIN" in r["mensaje"]
+    fila = productos.listar(solo_activos=False)
+    p = next(x for x in fila if x["id"] == pid)
+    assert p.get("ventas_estim_mes") is None      # nada inventado, nada guardado
+
+
+def test_estimar_ventas_jungle_scout_se_guarda_en_ficha():
+    """Con Jungle Scout conectado, la ventas reales por ASIN se estiman Y se
+    guardan en la ficha, con fuente y fecha (auditable)."""
+    import config
+    from agents import productos
+    from data import jungle_scout
+    alta = productos.guardar(nombre="Con JS", asin="B0ESTIMJS1", costo=2.0,
+                             flete=0.5, arancel_pct=5, prep=0.3, techo_demanda=100)
+    pid = alta["id"]
+    orig = jungle_scout.ventas_asin
+    try:
+        jungle_scout.ventas_asin = lambda asin, timeout=25: {
+            "ok": True, "asin": asin, "ventas_estim": 480}
+        r = productos.estimar_ventas(pid)
+        assert r["ok"] and r["ventas_estim_mes"] == 480
+        assert r["ventas_estim_fuente"] == "Jungle Scout" and r["ventas_estim_fecha"]
+        # persistido en la ficha, lo lee listar()
+        p = next(x for x in productos.listar() if x["id"] == pid)
+        assert p["ventas_estim_mes"] == 480
+        assert p["ventas_estim_fuente"] == "Jungle Scout"
+        assert p["ventas_estim_fecha"] is not None
+    finally:
+        jungle_scout.ventas_asin = orig
+
+
+def test_estimar_ventas_cae_a_keepa_si_no_hay_jungle():
+    """Sin Jungle Scout pero con Keepa, usa el BSR real (curva) y lo etiqueta."""
+    from agents import productos
+    from data import jungle_scout, keepa
+    alta = productos.guardar(nombre="Solo Keepa", asin="B0ESTIMKP1", costo=2.0,
+                             flete=0.5, arancel_pct=5, prep=0.3, techo_demanda=100)
+    pid = alta["id"]
+    ojs, okp = jungle_scout.ventas_asin, keepa.producto
+    try:
+        jungle_scout.ventas_asin = lambda asin, timeout=25: {
+            "ok": False, "mensaje": "Falta clave Jungle Scout."}
+        keepa.producto = lambda asin, timeout=25: {
+            "ok": True, "asin": asin, "ventas_estim": 230, "fuente": "Keepa"}
+        r = productos.estimar_ventas(pid)
+        assert r["ok"] and r["ventas_estim_mes"] == 230
+        assert r["ventas_estim_fuente"] == "Keepa (BSR)"
+    finally:
+        jungle_scout.ventas_asin, keepa.producto = ojs, okp
+
+
+def test_estimar_ventas_sin_fuente_no_inventa():
+    """Con ASIN pero sin ninguna clave, no se inventa: ok=False y nada guardado."""
+    from agents import productos
+    from data import jungle_scout, keepa
+    alta = productos.guardar(nombre="Sin claves", asin="B0NOKEYS01", costo=2.0,
+                             flete=0.5, arancel_pct=5, prep=0.3, techo_demanda=100)
+    pid = alta["id"]
+    ojs, okp = jungle_scout.ventas_asin, keepa.producto
+    try:
+        jungle_scout.ventas_asin = lambda asin, timeout=25: {"ok": False, "mensaje": "sin clave JS"}
+        keepa.producto = lambda asin, timeout=25: {"ok": False, "mensaje": "sin clave Keepa"}
+        r = productos.estimar_ventas(pid)
+        assert r["ok"] is False and ("Jungle Scout" in r["mensaje"] or "Keepa" in r["mensaje"])
+        p = next(x for x in productos.listar() if x["id"] == pid)
+        assert p.get("ventas_estim_mes") is None
+    finally:
+        jungle_scout.ventas_asin, keepa.producto = ojs, okp
+
+
+def test_run_rate_propio_necesita_historial_minimo():
+    """El fallback GRATIS no extrapola con poco historial: 2 ventas de hoy NO
+    son 60 u/mes. Sin dias suficientes devuelve None (no proyecta nada)."""
+    from agents import productos, analytics
+    asin = "B0RUNRATE1"
+    productos.guardar(nombre="Run rate corto", asin=asin, costo=2.0, flete=0.5,
+                      arancel_pct=5, prep=0.3, techo_demanda=100)
+    analytics.registrar_venta(asin, 2, 20.0, 6.0, alertar=False)   # venta de HOY
+    assert productos._run_rate_propio(asin) is None
+
+
+def test_run_rate_propio_calcula_ritmo_real():
+    """Con historial suficiente, el run-rate sale de las ventas REALES: 60
+    unidades en 30 dias -> ~60 u/mes. Sin ninguna API."""
+    from datetime import datetime, timedelta
+    from agents import productos, analytics
+    from core import db
+    asin = "B0RUNRATE2"
+    productos.guardar(nombre="Run rate largo", asin=asin, costo=2.0, flete=0.5,
+                      arancel_pct=5, prep=0.3, techo_demanda=100)
+    analytics.registrar_venta(asin, 60, 20.0, 6.0, alertar=False)
+    # se envejece la orden 30 dias para simular historial real
+    hace30 = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+    db.execute("UPDATE orders SET fecha=? WHERE asin=?", (hace30, asin))
+    r = productos._run_rate_propio(asin)
+    assert r is not None
+    assert r["unidades_total"] == 60 and 29 <= r["dias"] <= 31
+    assert 55 <= r["unidades_mes"] <= 65      # ~60 u/mes
+
+
+def test_estimar_ventas_fallback_sin_apis_usa_ventas_propias():
+    """Sin Jungle Scout ni Keepa, cae al run-rate de ventas propias (gratis) y
+    lo guarda en la ficha etiquetado como tal (no como dato de mercado)."""
+    from datetime import datetime, timedelta
+    from agents import productos, analytics
+    from core import db
+    from data import jungle_scout, keepa
+    asin = "B0FALLBACK1"
+    alta = productos.guardar(nombre="Fallback gratis", asin=asin, costo=2.0,
+                             flete=0.5, arancel_pct=5, prep=0.3, techo_demanda=100)
+    pid = alta["id"]
+    analytics.registrar_venta(asin, 90, 20.0, 6.0, alertar=False)
+    hace30 = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+    db.execute("UPDATE orders SET fecha=? WHERE asin=?", (hace30, asin))
+    ojs, okp = jungle_scout.ventas_asin, keepa.producto
+    try:
+        jungle_scout.ventas_asin = lambda a, timeout=25: {"ok": False, "mensaje": "sin JS"}
+        keepa.producto = lambda a, timeout=25: {"ok": False, "mensaje": "sin Keepa"}
+        r = productos.estimar_ventas(pid)
+        assert r["ok"] is True
+        assert 85 <= r["ventas_estim_mes"] <= 95          # ~90 u/mes reales
+        assert r["ventas_estim_fuente"].startswith("Tus ventas")
+        # persistido en la ficha
+        p = next(x for x in productos.listar() if x["id"] == pid)
+        assert p["ventas_estim_mes"] == r["ventas_estim_mes"]
+    finally:
+        jungle_scout.ventas_asin, keepa.producto = ojs, okp
+
+
+def test_curva_bsr_no_cambio_al_moverla_a_su_modulo():
+    """La curva se movio de data/keepa.py a data/bsr.py. REGRESION: sin
+    categoria, el resultado tiene que ser IDENTICO al historico, porque
+    data/mercado.py y el recomendador ya dependian de esos numeros."""
+    from data.bsr import ventas_desde_bsr
+    # Valores anclados de la curva historica (Home & Kitchen, factor 1.0).
+    esperados = {100: 9000, 500: 3000, 1000: 1800, 5000: 500,
+                 10000: 230, 50000: 45, 100000: 18, 500000: 3}
+    for bsr, ventas in esperados.items():
+        assert ventas_desde_bsr(bsr) == ventas, f"la curva cambio en BSR={bsr}"
+    # fuera de rango y basura -> 0, nunca una invencion
+    for malo in (0, -1, None, "x", ""):
+        assert ventas_desde_bsr(malo) == 0
+    # el clamp de los extremos se mantiene
+    assert ventas_desde_bsr(1) == 9000 and ventas_desde_bsr(9_000_000) == 3
+
+
+def test_bsr_parsea_el_bloque_real_de_amazon():
+    """Pegar el bloque tal cual sale en Amazon tiene que dar el BSR de la
+    categoria PRINCIPAL, no el de la subcategoria."""
+    from data import bsr
+    bloque = ("Best Sellers Rank: #1,234 in Home & Kitchen "
+              "(See Top 100 in Home & Kitchen)\n    #5 in Cutting Boards")
+    r = bsr.estimar(bloque)
+    assert r["ok"] is True
+    # #5 daria una estimacion disparatada: tiene que quedarse con 1.234
+    assert r["bsr"] == 1234, "tomo el rank de subcategoria en vez del principal"
+    assert r["categoria"] == "Home & Kitchen"
+    assert r["ventas_estim"] > 0
+    # el precio pegado al lado no se cuela dentro de la categoria
+    r2 = bsr.estimar("#1,234 in Home & Kitchen   $24.99")
+    assert r2["categoria"] == "Home & Kitchen"
+    # numero suelto y formato español
+    assert bsr.estimar("4500")["bsr"] == 4500
+    assert bsr.estimar("nº1.234 en Hogar y cocina")["bsr"] == 1234
+
+
+def test_bsr_no_inventa_cuando_no_puede_leer():
+    """Sin BSR legible NO hay estimacion: ok=False, ventas=None."""
+    from data import bsr
+    for basura in ("", "   ", "hola que tal", "sin numeros aca"):
+        r = bsr.estimar(basura)
+        assert r["ok"] is False and r["ventas_estim"] is None
+
+
+def test_bsr_factor_por_categoria_ordena_bien():
+    """Mismo BSR en una categoria grande vende mas que en una chica."""
+    from data.bsr import ventas_desde_bsr
+    grande = ventas_desde_bsr(1000, "Clothing, Shoes & Jewelry")
+    base = ventas_desde_bsr(1000)
+    chica = ventas_desde_bsr(1000, "Musical Instruments")
+    assert grande > base > chica
+    # una categoria desconocida NO inventa un factor: cae en la curva base
+    assert ventas_desde_bsr(1000, "Categoria Que No Existe") == base
+
+
+def test_estimar_ventas_gratis_por_bsr_de_producto_que_no_vendo():
+    """EL CASO DE USO REAL: un ASIN que nunca vendi y sin ninguna clave de API.
+    Antes no habia numero. Ahora se estima pegando el BSR publico de Amazon."""
+    from agents import productos
+    from data import jungle_scout, keepa
+    alta = productos.guardar(nombre="Competidor ajeno", asin="B0AJENO001",
+                             costo=2.0, flete=0.5, arancel_pct=5, prep=0.3,
+                             techo_demanda=100)
+    pid = alta["id"]
+    ojs, okp = jungle_scout.ventas_asin, keepa.producto
+    try:
+        jungle_scout.ventas_asin = lambda a, timeout=25: {"ok": False, "mensaje": "sin JS"}
+        keepa.producto = lambda a, timeout=25: {"ok": False, "mensaje": "sin Keepa"}
+        # sin BSR todavia no hay nada que estimar, y NO se inventa
+        assert productos.estimar_ventas(pid)["ok"] is False
+        # con el BSR pegado, si
+        r = productos.estimar_ventas(
+            pid, bsr="Best Sellers Rank: #1,234 in Home & Kitchen")
+        assert r["ok"] is True
+        assert r["ventas_estim_mes"] > 0
+        assert r["ventas_estim_fuente"].startswith("BSR de Amazon")
+        assert r["ventas_estim_confianza"] == "alta"
+        # queda guardado en la ficha, con el BSR, para re-estimar y auditar
+        p = next(x for x in productos.listar() if x["id"] == pid)
+        assert p["ventas_estim_mes"] == r["ventas_estim_mes"]
+        assert p["bsr"] == 1234 and p["bsr_categoria"] == "Home & Kitchen"
+        # re-estimar sin volver a pegar nada reusa el BSR guardado
+        r2 = productos.estimar_ventas(pid)
+        assert r2["ok"] and r2["ventas_estim_mes"] == r["ventas_estim_mes"]
+    finally:
+        jungle_scout.ventas_asin, keepa.producto = ojs, okp
+
+
+def test_estimar_ventas_bsr_ilegible_no_pisa_lo_guardado():
+    """Si el BSR pegado no se entiende, se avisa y NO se toca la ficha."""
+    from agents import productos
+    from data import jungle_scout, keepa
+    alta = productos.guardar(nombre="BSR ilegible", asin="B0ILEGIB01", costo=2.0,
+                             flete=0.5, arancel_pct=5, prep=0.3, techo_demanda=100)
+    pid = alta["id"]
+    ojs, okp = jungle_scout.ventas_asin, keepa.producto
+    try:
+        jungle_scout.ventas_asin = lambda a, timeout=25: {"ok": False, "mensaje": "sin JS"}
+        keepa.producto = lambda a, timeout=25: {"ok": False, "mensaje": "sin Keepa"}
+        productos.estimar_ventas(pid, bsr="#900 in Home & Kitchen")
+        antes = next(x for x in productos.listar() if x["id"] == pid)["ventas_estim_mes"]
+        r = productos.estimar_ventas(pid, bsr="cualquier cosa")
+        assert r["ok"] is False
+        despues = next(x for x in productos.listar() if x["id"] == pid)["ventas_estim_mes"]
+        assert despues == antes, "un BSR ilegible piso la estimacion buena"
+    finally:
+        jungle_scout.ventas_asin, keepa.producto = ojs, okp
+
+
+def test_estimar_ventas_bsr_no_le_gana_a_jungle_scout():
+    """El orden de fuentes importa: ventas reales de JS mandan sobre la curva."""
+    from agents import productos
+    from data import jungle_scout
+    alta = productos.guardar(nombre="Orden fuentes", asin="B0ORDEN001", costo=2.0,
+                             flete=0.5, arancel_pct=5, prep=0.3, techo_demanda=100)
+    pid = alta["id"]
+    orig = jungle_scout.ventas_asin
+    try:
+        jungle_scout.ventas_asin = lambda a, timeout=25: {
+            "ok": True, "asin": a, "ventas_estim": 777}
+        r = productos.estimar_ventas(pid, bsr="#1,234 in Home & Kitchen")
+        assert r["ventas_estim_mes"] == 777
+        assert r["ventas_estim_fuente"] == "Jungle Scout"
+    finally:
+        jungle_scout.ventas_asin = orig
+
+
+def test_vendedores_principales_sin_api():
+    """Vendedores principales pegando lo que se ve en Amazon, sin API."""
+    from data.mercado import vendedores_principales
+    bloque = (
+        "B08XYZ1234  Bamboo cutting board  #1,234 in Home & Kitchen   $24.99\n"
+        "B07ABC5678  Cutting board pro     #5,600 in Home & Kitchen   $19.99\n"
+        "B09QWE1111  Eco board bundle      #18,900 in Home & Kitchen  $31.50\n"
+        "B01NOBSR99  Sin rank a la vista                              $22.00\n")
+    r = vendedores_principales(bloque)
+    assert r["ok"] is True
+    assert len(r["productos"]) == 4
+    lider = r["productos"][0]
+    assert lider["asin"] == "B08XYZ1234"          # ordenado por ventas desc
+    assert lider["bsr"] == 1234 and lider["ventas_estim"] > 0
+    assert lider["precio"] == 24.99
+    assert lider["ingreso_estim_mes"] == round(lider["ventas_estim"] * 24.99, 2)
+    # el ASIN no confunde al parser de BSR
+    assert r["productos"][1]["bsr"] == 5600
+    # la linea sin BSR se lista pero NO se le inventa un numero
+    sin = [p for p in r["productos"] if p["asin"] == "B01NOBSR99"][0]
+    assert sin["ventas_estim"] is None and sin["cuota_pct"] is None
+    # las cuotas de los estimados suman ~100
+    cuotas = [p["cuota_pct"] for p in r["productos"] if p["cuota_pct"]]
+    assert abs(sum(cuotas) - 100.0) < 0.5
+    assert r["ventas_estim_total"] == sum(
+        p["ventas_estim"] for p in r["productos"] if p["ventas_estim"])
+    # sin datos no inventa
+    assert vendedores_principales("")["ok"] is False
+
+
+def test_endpoints_bsr_y_vendedores():
+    """Los dos endpoints nuevos == la funcion Python equivalente."""
+    from data import bsr as bsr_mod
+    from data.mercado import vendedores_principales
+    bloque = "B08XYZ1234 #1,234 in Home & Kitchen $24.99\nB07ABC5678 #5,600 $19.99"
+    api = cliente.post("/api/mercado/vendedores", json={"texto": bloque}).json()
+    directo = vendedores_principales(bloque)
+    assert api["ok"] == directo["ok"]
+    assert api["ventas_estim_total"] == directo["ventas_estim_total"]
+    assert [p["asin"] for p in api["productos"]] == [p["asin"] for p in directo["productos"]]
+
+    api2 = cliente.post("/api/mercado/bsr",
+                        json={"bsr": "#1,234 in Home & Kitchen"}).json()
+    assert api2 == bsr_mod.estimar("#1,234 in Home & Kitchen")
+    # basura por la API tampoco inventa
+    assert cliente.post("/api/mercado/bsr", json={"bsr": "nada"}).json()["ok"] is False
+
+
+_XRAY_CSV = (
+    "ASIN,Product Details,Brand,Price $,Sales,Revenue,BSR,Category,Review Count,Rating\n"
+    "B08XYZ1234,Bamboo Cutting Board Set,EcoChef,24.99,1420,35485.80,1234,Home & Kitchen,2840,4.6\n"
+    "B07ABC5678,Cutting Board Pro,KitchenPro,19.99,860,17191.40,5600,Home & Kitchen,1520,4.4\n"
+    "B09QWE1111,Eco Board Bundle,GreenHome,31.50,240,7560.00,18900,Home & Kitchen,410,4.2\n")
+
+_BLACKBOX_SIN_VENTAS = (
+    "ASIN,Title,Price,BSR,Category,Reviews\n"
+    "B01AAA1111,Board classic,22.00,3200,Home & Kitchen,700\n"
+    "B01BBB2222,Board mini,12.50,45000,Home & Kitchen,90\n"
+    "B01CCC3333,Board sin datos,15.00,,Home & Kitchen,10\n")
+
+
+def _csv_tmp(tmp_path, nombre, contenido):
+    p = tmp_path / nombre
+    p.write_text(contenido, encoding="utf-8")
+    return str(p)
+
+
+def test_csv_productos_usa_las_ventas_del_export(tmp_path):
+    """Si el export trae ventas propias (Helium 10 / Jungle Scout), esas mandan:
+    estan calibradas con datos que nosotros no tenemos."""
+    from data.helium_productos import vendedores_desde_csv
+    r = vendedores_desde_csv(_csv_tmp(tmp_path, "xray.csv", _XRAY_CSV))
+    assert r["ok"] is True and len(r["productos"]) == 3
+    lider = r["productos"][0]
+    assert lider["asin"] == "B08XYZ1234"          # ordenado por ventas desc
+    assert lider["ventas_estim"] == 1420          # el numero del CSV, tal cual
+    assert lider["fuente_ventas"].startswith("CSV")
+    assert lider["marca"] == "EcoChef"
+    assert lider["ingreso_estim_mes"] == 35485.80  # tambien del CSV
+    assert r["ventas_estim_total"] == 1420 + 860 + 240
+    cuotas = [p["cuota_pct"] for p in r["productos"] if p["cuota_pct"]]
+    assert abs(sum(cuotas) - 100.0) < 0.5
+
+
+def test_csv_productos_sin_ventas_cae_a_la_curva_del_bsr(tmp_path):
+    """Sin columna de ventas pero con BSR, se estima con la curva y se ETIQUETA
+    distinto. Sin ninguna de las dos, la fila va sin numero (no se inventa)."""
+    from data.helium_productos import vendedores_desde_csv
+    from data.bsr import ventas_desde_bsr
+    r = vendedores_desde_csv(_csv_tmp(tmp_path, "bb.csv", _BLACKBOX_SIN_VENTAS))
+    assert r["ok"] is True
+    por_asin = {p["asin"]: p for p in r["productos"]}
+    assert por_asin["B01AAA1111"]["ventas_estim"] == ventas_desde_bsr(3200, "Home & Kitchen")
+    assert por_asin["B01AAA1111"]["fuente_ventas"] == "BSR del CSV (curva)"
+    # el que no tiene ni ventas ni BSR queda SIN numero
+    sin = por_asin["B01CCC3333"]
+    assert sin["ventas_estim"] is None and sin["cuota_pct"] is None
+    assert "no se inventa" in r["mensaje"]
+
+
+def test_csv_productos_rechaza_el_csv_de_keywords(tmp_path):
+    """Subir el CSV de keywords de Cerebro por esta puerta avisa, no rompe ni
+    devuelve un ranking vacio y silencioso."""
+    from data.helium_productos import vendedores_desde_csv
+    kw = "Keyword Phrase,Search Volume,Competing Products\nbamboo board,42000,1200\n"
+    r = vendedores_desde_csv(_csv_tmp(tmp_path, "cerebro.csv", kw))
+    assert r["ok"] is False
+    assert "ASIN" in r["mensaje"] and "Cerebro" in r["mensaje"]
+    # y uno con ASIN pero sin nada con que estimar tampoco pasa en silencio
+    solo_asin = "ASIN,Title\nB01AAA1111,Board\n"
+    r2 = vendedores_desde_csv(_csv_tmp(tmp_path, "flaco.csv", solo_asin))
+    assert r2["ok"] is False and "BSR" in r2["mensaje"]
+
+
+def test_csv_productos_dedupe_por_asin(tmp_path):
+    """Los exports repiten el ASIN por variante: se queda con el de mas ventas."""
+    from data.helium_productos import vendedores_desde_csv
+    dup = ("ASIN,Title,Price,Sales,BSR\n"
+           "B01AAA1111,Board rojo,22.00,100,3200\n"
+           "B01AAA1111,Board azul,22.00,450,3200\n")
+    r = vendedores_desde_csv(_csv_tmp(tmp_path, "dup.csv", dup))
+    assert len(r["productos"]) == 1
+    assert r["productos"][0]["ventas_estim"] == 450
+
+
+def test_endpoint_vendedores_csv(tmp_path):
+    """POST /api/mercado/vendedores-csv == vendedores_desde_csv, y rechaza no-CSV."""
+    from data.helium_productos import vendedores_desde_csv
+    api = cliente.post("/api/mercado/vendedores-csv",
+                       files={"file": ("xray.csv", _XRAY_CSV, "text/csv")}).json()
+    directo = vendedores_desde_csv(_csv_tmp(tmp_path, "x.csv", _XRAY_CSV))
+    assert api["ok"] == directo["ok"]
+    assert api["ventas_estim_total"] == directo["ventas_estim_total"]
+    assert [p["asin"] for p in api["productos"]] == [p["asin"] for p in directo["productos"]]
+    malo = cliente.post("/api/mercado/vendedores-csv",
+                        files={"file": ("x.pdf", b"%PDF-", "application/pdf")}).json()
+    assert malo["ok"] is False and ".csv" in malo["mensaje"]
+
+
+def test_potencial_producto_ordena_como_corresponde():
+    """El potencial NO mide margen: mide que tan atractivo es competirle a ese
+    producto. Mas demanda, peor rating ajeno, menos resenas y mas precio -> mas
+    potencial. Cada componente que falta se excluye y los pesos se renormalizan."""
+    from data.mercado import potencial_producto
+    base = potencial_producto(ventas=500, rating=4.5, resenas=800, precio=25)
+    assert base is not None and 0 <= base <= 100
+    # mas demanda sube
+    assert potencial_producto(ventas=2500, rating=4.5, resenas=800, precio=25) > base
+    # rating ajeno peor = mas hueco = sube
+    assert potencial_producto(ventas=500, rating=3.4, resenas=800, precio=25) > base
+    # muchas resenas = barrera alta = baja
+    assert potencial_producto(ventas=500, rating=4.5, resenas=5000, precio=25) < base
+    # precio mas alto = mas aire = sube
+    assert potencial_producto(ventas=500, rating=4.5, resenas=800, precio=45) > base
+    # sin ningun dato NO inventa un score
+    assert potencial_producto() is None
+    # con un solo componente igual devuelve algo (pesos renormalizados)
+    assert potencial_producto(ventas=500) is not None
+
+
+def test_vendedores_traen_potencial_para_ordenar():
+    """Los dos caminos (pegado y export) devuelven `potencial` para que el panel
+    pueda ordenar por ese criterio."""
+    from data.mercado import vendedores_principales
+    r = vendedores_principales(
+        "B08XYZ1234 #1,234 in Home & Kitchen $24.99\nB07ABC5678 #5,600 $19.99")
+    assert all(p["potencial"] is not None for p in r["productos"])
+
+
+def test_potencial_avisa_cuando_es_parcial(tmp_path):
+    """Pegando a mano el potencial sale con 2 de 4 componentes; con un export
+    completo, con 4. Los dos dan 0-100 pero NO son comparables, asi que el
+    parcial viene marcado para que la UI no los muestre como equivalentes."""
+    from data.mercado import vendedores_principales, potencial_producto
+    from data.helium_productos import vendedores_desde_csv
+
+    pegado = vendedores_principales("B08XYZ1234 #1,234 in Home & Kitchen $24.99")
+    assert pegado["productos"][0]["potencial_parcial"] is True
+
+    completo = vendedores_desde_csv(_csv_tmp(tmp_path, "full.csv", _XRAY_CSV))
+    assert all(p["potencial_parcial"] is False for p in completo["productos"])
+
+    # el detalle dice exactamente que componentes entraron
+    det = potencial_producto(ventas=500, precio=25, detalle=True)
+    assert det["componentes"] == ["demanda", "precio"] and det["parcial"] is True
+    det4 = potencial_producto(ventas=500, precio=25, rating=4.2, resenas=300,
+                              detalle=True)
+    assert det4["parcial"] is False and len(det4["componentes"]) == 4
+    # detalle=False sigue devolviendo el numero pelado (retrocompatible)
+    assert potencial_producto(ventas=500, precio=25) == det["potencial"]
+
+
+def test_orden_por_criterio_deja_los_sin_dato_al_final(tmp_path):
+    """REGLA: una fila sin el dato del criterio va al final en LOS DOS sentidos.
+    Si no, ordenar ascendente la pondria primera y pareceria la mejor."""
+    from data.helium_productos import vendedores_desde_csv
+    csv_txt = ("ASIN,Title,Price,Sales,BSR,Rating,Reviews\n"
+               "B01AAA1111,Caro,45.00,300,3200,4.1,200\n"
+               "B01BBB2222,Barato,12.00,900,1500,4.8,3000\n"
+               "B01CCC3333,Sin precio,,150,9000,4.0,50\n")
+    r = vendedores_desde_csv(_csv_tmp(tmp_path, "orden.csv", csv_txt))
+    prods = r["productos"]
+    sin_precio = [p for p in prods if p["precio"] is None]
+    assert len(sin_precio) == 1, "el fixture deberia tener exactamente uno sin precio"
+
+    def ordenar(campo, desc):
+        con = [p for p in prods if p.get(campo) is not None]
+        sin = [p for p in prods if p.get(campo) is None]
+        return sorted(con, key=lambda p: p[campo], reverse=desc) + sin
+
+    for desc in (True, False):
+        salida = ordenar("precio", desc)
+        assert salida[-1]["asin"] == "B01CCC3333", (
+            f"el que no tiene precio quedo primero con desc={desc}")
+    # y el orden real funciona en los dos sentidos
+    assert ordenar("precio", True)[0]["asin"] == "B01AAA1111"    # 45.00
+    assert ordenar("precio", False)[0]["asin"] == "B01BBB2222"   # 12.00
+
+
+def test_estimar_ventas_endpoint_passthrough():
+    """POST /api/productos/{pid}/estimar-ventas == productos.estimar_ventas(pid)."""
+    from agents import productos
+    from data import jungle_scout
+    alta = cliente.post("/portfolio/producto",
+                        json={"nombre": "Endpoint estim", "asin": "B0ESTIMEP1",
+                              "costo": 2.0, "flete": 0.5, "arancel_pct": 5,
+                              "prep": 0.3, "techo_demanda": 100}).json()
+    pid = alta["id"]
+    orig = jungle_scout.ventas_asin
+    try:
+        jungle_scout.ventas_asin = lambda asin, timeout=25: {
+            "ok": True, "asin": asin, "ventas_estim": 310}
+        api = cliente.post(f"/api/productos/{pid}/estimar-ventas").json()
+        assert api["ok"] and api["ventas_estim_mes"] == 310
+        assert api["ventas_estim_fuente"] == "Jungle Scout"
+    finally:
+        jungle_scout.ventas_asin = orig
+
+
 def test_ventas_y_alertas():
     r = cliente.post("/api/ventas",
                      json={"asin": "B0TESTAPI1", "unidades": 3, "precio": 24.0,

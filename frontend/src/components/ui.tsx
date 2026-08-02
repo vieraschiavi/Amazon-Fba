@@ -162,7 +162,9 @@ export function Spinner({ texto }: { texto?: string }) {
   );
 }
 
-export function Tabla({ cabeceras, filas }: { cabeceras: string[]; filas: ReactNode[][] }) {
+// `cabeceras` acepta ReactNode (no solo string) para poder poner encabezados
+// clickeables de ordenamiento. Retrocompatible: string ya es un ReactNode.
+export function Tabla({ cabeceras, filas }: { cabeceras: ReactNode[]; filas: ReactNode[][] }) {
   return (
     <div className="overflow-x-auto border border-line rounded-xl">
       <table className="w-full text-[13px]">

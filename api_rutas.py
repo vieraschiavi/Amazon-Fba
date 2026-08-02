@@ -21,7 +21,7 @@ _AQUI = os.path.dirname(os.path.abspath(__file__))
 if _AQUI not in sys.path:
     sys.path.insert(0, _AQUI)
 
-from fastapi import APIRouter, Response, UploadFile
+from fastapi import APIRouter, Body, Response, UploadFile
 from pydantic import BaseModel
 
 import config
@@ -47,6 +47,8 @@ from agents.listing import generar as generar_listing
 from agents.market_intel import market_intel
 from data import demanda_nativa
 from data import jungle_scout
+from data import bsr as data_bsr
+from data import helium_productos
 from data import mercado as data_mercado
 from data import motor_propio
 
@@ -310,6 +312,27 @@ async def subir_cerebro(file: UploadFile):
     return {"ok": True, "csv_path": destino, "nombre": nombre}
 
 
+@router.post("/mercado/vendedores-csv")
+async def subir_vendedores_csv(file: UploadFile):
+    """Vendedores principales desde un export de PRODUCTOS que ya pagas.
+
+    Acepta Helium 10 Xray/Black Box y Jungle Scout Product Database. Resuelve el
+    hueco que el BSR pegado a mano no cubre: DESCUBRIR que ASINs compiten en el
+    nicho, sin ninguna API. Si el export trae ventas propias se usan esas
+    (calibradas); si solo trae BSR, se convierte con la curva."""
+    nombre = re.sub(r"[^A-Za-z0-9._-]", "_", file.filename or "productos.csv")
+    if not nombre.lower().endswith(".csv"):
+        return {"ok": False, "productos": [], "ventas_estim_total": 0,
+                "ventas_estim_lider": 0,
+                "mensaje": "Solo se aceptan archivos .csv exportados de Helium 10 "
+                           "(Xray/Black Box) o de Jungle Scout."}
+    os.makedirs(config.CEREBRO_CSV_DIR, exist_ok=True)
+    destino = os.path.join(config.CEREBRO_CSV_DIR, nombre)
+    with open(destino, "wb") as f:
+        f.write(await file.read())
+    return helium_productos.vendedores_desde_csv(destino)
+
+
 @router.post("/investigacion")
 def investigacion(i: InvestigacionIn):
     mi = market_intel(i.keyword, i.marketplace, csv_path=i.csv_path, demo=i.demo)
@@ -408,6 +431,24 @@ def recomendador_escanear(r: RecomendadorIn):
         marketplace=r.marketplace, seeds=r.seeds, max_seeds=r.max_seeds,
         shortlist=r.shortlist, top_n=r.top_n, usar_keepa=r.usar_keepa,
         demo=r.demo)
+
+
+@router.post("/mercado/vendedores")
+def mercado_vendedores(body: dict = Body(default=None)):
+    """Vendedores principales de un nicho SIN ninguna API paga.
+
+    El cliente manda {"texto": "<un competidor por linea, con ASIN y BSR>"} y
+    devuelve cada uno con sus ventas/mes estimadas por la curva del BSR, su
+    cuota entre los pegados y el ingreso/mes estimado. Las lineas sin BSR se
+    listan sin numero: no se inventa nada."""
+    return data_mercado.vendedores_principales((body or {}).get("texto"))
+
+
+@router.post("/mercado/bsr")
+def mercado_bsr(body: dict = Body(default=None)):
+    """Convierte un BSR publico de Amazon en ventas/mes estimadas (gratis)."""
+    datos = body or {}
+    return data_bsr.estimar(datos.get("bsr"), datos.get("categoria"))
 
 
 @router.get("/exito")
@@ -516,6 +557,19 @@ def productos_actualizar(pid: int, p: ProductoUpdateIn):
 @router.delete("/productos/{pid}")
 def productos_baja(pid: int):
     return productos.desactivar(pid)
+
+
+@router.post("/productos/{pid}/estimar-ventas")
+def productos_estimar_ventas(pid: int, body: dict = Body(default=None)):
+    """Estima las ventas/mes de mercado del producto y las guarda en su ficha.
+
+    Fuentes, en orden: Jungle Scout, Keepa, y -- GRATIS, sin ninguna API -- el
+    BSR publico de la pagina de Amazon que mande el cliente en el body
+    ({"bsr": "#1,234 in Home & Kitchen"} o {"bsr": 1234, "categoria": "..."}).
+    Sin ASIN, sin clave y sin BSR: avisa y no inventa un numero."""
+    datos = body or {}
+    return productos.estimar_ventas(pid, bsr=datos.get("bsr"),
+                                    categoria=datos.get("categoria"))
 
 
 @router.post("/ventas")

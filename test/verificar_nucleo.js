@@ -37,6 +37,30 @@ got.caja = MV.proyeccionRealista(IN.caja.budget, landed, IN.caja.precio, netUnit
   { techo_demanda: IN.caja.techo_demanda });
 
 // --- comparacion profunda (tolerancia 0.011 para floats) ---
+// --- estimacion por BSR: la app movil la hace OFFLINE, asi que tiene que dar
+// EXACTAMENTE el mismo numero que la PC (si no, el mismo producto mostraria
+// ventas distintas segun donde lo mires) ---
+got.bsr_curva = IN.bsr_curva.map((b) => MV.ventasDesdeBsr(b));
+got.bsr_categorias = IN.bsr_categorias.map(([b, c]) => MV.ventasDesdeBsr(b, c));
+got.bsr_confianza = IN.bsr_categorias.map(([b, c]) => MV.confianzaBsr(b, c));
+got.bsr_textos = IN.bsr_textos.map((t) => {
+  const r = MV.estimarPorBsr(t);
+  return { ok: r.ok, bsr: r.bsr, categoria: r.categoria,
+           ventas_estim: r.ventas_estim, confianza: r.confianza };
+});
+got.potencial = IN.potencial.map((caso) => MV.potencialProducto(caso));
+const vend = MV.vendedoresPrincipales(IN.vendedores);
+got.vendedores = {
+  ok: vend.ok, ventas_estim_total: vend.ventas_estim_total,
+  ventas_estim_lider: vend.ventas_estim_lider,
+  productos: vend.productos.map((p) => ({
+    asin: p.asin, bsr: p.bsr, categoria: p.categoria, precio: p.precio,
+    ventas_estim: p.ventas_estim, confianza: p.confianza, cuota_pct: p.cuota_pct,
+    ingreso_estim_mes: p.ingreso_estim_mes, potencial: p.potencial,
+    potencial_parcial: p.potencial_parcial,
+  })),
+};
+
 const diffs = [];
 function walk(a, b, p) {
   if (a && b && typeof a === "object" && typeof b === "object" && !Array.isArray(a)) {
@@ -62,4 +86,5 @@ if (diffs.length) {
   diffs.slice(0, 40).forEach((d) => console.error("  " + d));
   process.exit(1);
 }
-console.log("OK: motor JS identico al motor Python en pricing, ganancias, exito, dedicacion y caja.");
+console.log("OK: motor JS identico al motor Python en pricing, ganancias, exito, "
+  + "dedicacion, caja, curva BSR, parseo de BSR, potencial y vendedores.");

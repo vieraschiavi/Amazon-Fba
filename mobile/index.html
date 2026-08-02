@@ -185,6 +185,32 @@
         <button type="submit" class="btn-primario">Explorar mercado</button>
       </form>
       <div id="mercado-resultado"></div>
+
+      <!-- Estimacion por BSR: es calculo puro, corre OFFLINE en el telefono y
+           da el MISMO numero que la PC (lo verifica test/verificar_nucleo.js). -->
+      <h2 class="titulo-seccion">Ventas de un producto (gratis, sin internet)</h2>
+      <p class="sub-vista">Abrí el producto en Amazon, buscá "Best Sellers Rank" y
+        pegá el bloque acá. Se calcula en el teléfono: no hace falta clave ni conexión.</p>
+      <form id="form-bsr" class="formulario">
+        <label>BSR de Amazon
+          <textarea id="bsr-texto" rows="2"
+                    placeholder="Best Sellers Rank: #1,234 in Home &amp; Kitchen"></textarea>
+        </label>
+        <button type="submit" class="btn-primario">Estimar ventas</button>
+      </form>
+      <div id="bsr-resultado"></div>
+
+      <h2 class="titulo-seccion">Vendedores principales</h2>
+      <p class="sub-vista">Un competidor por línea, con su ASIN y su BSR.
+        Se ordenan por ventas estimadas.</p>
+      <form id="form-vendedores" class="formulario">
+        <label>Competidores
+          <textarea id="vend-texto" rows="4"
+                    placeholder="B08XYZ1234  #1,234 in Home &amp; Kitchen  $24.99&#10;B07ABC5678  #5,600  $19.99"></textarea>
+        </label>
+        <button type="submit" class="btn-primario">Rankear vendedores</button>
+      </form>
+      <div id="vendedores-resultado"></div>
     </section>
 
     <!-- ================= ASISTENTE ================= -->

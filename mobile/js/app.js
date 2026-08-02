@@ -602,6 +602,61 @@ $("#form-mercado").addEventListener("submit", async (ev) => {
   }
 });
 
+// ==================== VENTAS POR BSR (offline, igual que la PC) ====================
+// El calculo lo hace MV (mobile/js/nucleo.js), que es el puerto verificado del
+// motor Python: test/verificar_nucleo.js prueba que da el MISMO numero. Por eso
+// esto anda sin internet, sin clave y sin servidor.
+$("#form-bsr").addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  const cont = $("#bsr-resultado");
+  const r = MV.estimarPorBsr($("#bsr-texto").value);
+  if (!r.ok) {
+    cont.innerHTML = `<div class="card lista-vacia">${escapar(r.mensaje)}</div>`;
+    return;
+  }
+  cont.innerHTML = `
+    <div class="card">
+      <div class="kpi-grande">${fmtNum(r.ventas_estim)} <small>u/mes</small></div>
+      <div class="fila-datos">
+        <span>BSR <b>${escapar(String(r.bsr))}</b></span>
+        <span>Categoría <b>${escapar(r.categoria || "—")}</b></span>
+        <span>Confianza <b>${escapar(r.confianza)}</b></span>
+      </div>
+      <p class="ayuda-config">${escapar(r.mensaje)}</p>
+    </div>`;
+});
+
+$("#form-vendedores").addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  const cont = $("#vendedores-resultado");
+  const r = MV.vendedoresPrincipales($("#vend-texto").value);
+  if (!r.ok) {
+    cont.innerHTML = `<div class="card lista-vacia">${escapar(r.mensaje)}</div>`;
+    return;
+  }
+  const filas = r.productos.map((p) => `
+    <div class="item-lista">
+      <div class="fila-top">
+        <div class="nombre">${escapar(p.asin || "sin ASIN")}</div>
+        <div class="valor">${p.ventas_estim ? fmtNum(p.ventas_estim) + " u/mes" : "sin BSR"}</div>
+      </div>
+      <div class="fila-datos">
+        <span>BSR <b>${escapar(p.bsr != null ? String(p.bsr) : "—")}</b></span>
+        <span>Precio <b>${p.precio != null ? fmtMoney2(p.precio) : "—"}</b></span>
+        <span>Cuota <b>${p.cuota_pct != null ? p.cuota_pct + "%" : "—"}</b></span>
+        <span>Potencial <b>${p.potencial != null ? p.potencial + (p.potencial_parcial ? " *" : "") : "—"}</b></span>
+      </div>
+    </div>`).join("");
+  cont.innerHTML = `
+    <div class="card">
+      <div class="kpi-grande">${fmtNum(r.ventas_estim_total)} <small>u/mes entre los pegados</small></div>
+      ${filas}
+      <p class="ayuda-config">${escapar(r.mensaje)}</p>
+      <p class="ayuda-config">* Potencial con menos datos (pegando a mano no hay
+        calificación ni reseñas): comparalo sólo contra otros con asterisco.</p>
+    </div>`;
+});
+
 // ============================ ASISTENTE ============================
 let chatHistorial = [];
 // Render de markdown liviano (negrita, código, listas con viñeta y numeradas,

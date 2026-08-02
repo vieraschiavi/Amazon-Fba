@@ -39,7 +39,83 @@
       "budget": 3000,
       "precio": 24,
       "techo_demanda": 290
-    }
+    },
+    "bsr_curva": [
+      1,
+      100,
+      500,
+      999,
+      1000,
+      1234,
+      5000,
+      12486,
+      50000,
+      100000,
+      500000,
+      900000
+    ],
+    "bsr_categorias": [
+      [
+        1000,
+        null
+      ],
+      [
+        1000,
+        "Home & Kitchen"
+      ],
+      [
+        1000,
+        "Clothing, Shoes & Jewelry"
+      ],
+      [
+        1000,
+        "Musical Instruments"
+      ],
+      [
+        1000,
+        "Hogar y cocina"
+      ],
+      [
+        1000,
+        "Categoria Que No Existe"
+      ],
+      [
+        3200,
+        "Toys & Games"
+      ]
+    ],
+    "bsr_textos": [
+      "Best Sellers Rank: #1,234 in Home & Kitchen (See Top 100 in Home & Kitchen)\n#5 in Cutting Boards",
+      "#12,486 in Sports & Outdoors",
+      "nº1.234 en Hogar y cocina",
+      "#1,234 in Home & Kitchen   $24.99",
+      "4500",
+      "hola que tal",
+      ""
+    ],
+    "potencial": [
+      {
+        "ventas": 500,
+        "rating": 4.5,
+        "resenas": 800,
+        "precio": 25
+      },
+      {
+        "ventas": 2500,
+        "rating": 3.4,
+        "resenas": 50,
+        "precio": 45
+      },
+      {
+        "ventas": 500,
+        "precio": 25
+      },
+      {
+        "ventas": 500
+      },
+      {}
+    ],
+    "vendedores": "B08XYZ1234  Bamboo board  #1,234 in Home & Kitchen   $24.99\nB07ABC5678  Board pro     #5,600 in Home & Kitchen   $19.99\nB09QWE1111  Eco bundle    #18,900 in Home & Kitchen  $31.50\nB01NOBSR99  Sin rank                                 $22.00"
   },
   "esperado": {
     "pricing": {
@@ -527,6 +603,186 @@
         "techo_demanda": 290,
         "alerta": "ok"
       }
+    },
+    "bsr_curva": [
+      9000,
+      9000,
+      3000,
+      1801,
+      1800,
+      1523,
+      500,
+      184,
+      45,
+      18,
+      3,
+      3
+    ],
+    "bsr_categorias": [
+      1800,
+      1800,
+      2160,
+      360,
+      1800,
+      1800,
+      499
+    ],
+    "bsr_confianza": [
+      "media",
+      "alta",
+      "alta",
+      "alta",
+      "alta",
+      "media",
+      "alta"
+    ],
+    "bsr_textos": [
+      {
+        "ok": true,
+        "bsr": 1234,
+        "categoria": "Home & Kitchen",
+        "ventas_estim": 1523,
+        "confianza": "alta"
+      },
+      {
+        "ok": true,
+        "bsr": 12486,
+        "categoria": "Sports & Outdoors",
+        "ventas_estim": 129,
+        "confianza": "alta"
+      },
+      {
+        "ok": true,
+        "bsr": 1234,
+        "categoria": "Hogar y cocina",
+        "ventas_estim": 1523,
+        "confianza": "alta"
+      },
+      {
+        "ok": true,
+        "bsr": 1234,
+        "categoria": "Home & Kitchen",
+        "ventas_estim": 1523,
+        "confianza": "alta"
+      },
+      {
+        "ok": true,
+        "bsr": 4500,
+        "categoria": null,
+        "ventas_estim": 544,
+        "confianza": "media"
+      },
+      {
+        "ok": false,
+        "bsr": null,
+        "categoria": null,
+        "ventas_estim": null,
+        "confianza": null
+      },
+      {
+        "ok": false,
+        "bsr": null,
+        "categoria": null,
+        "ventas_estim": null,
+        "confianza": null
+      }
+    ],
+    "potencial": [
+      {
+        "potencial": 48.8,
+        "componentes": [
+          "barrera",
+          "calidad",
+          "demanda",
+          "precio"
+        ],
+        "parcial": false
+      },
+      {
+        "potencial": 87.5,
+        "componentes": [
+          "barrera",
+          "calidad",
+          "demanda",
+          "precio"
+        ],
+        "parcial": false
+      },
+      {
+        "potencial": 67.5,
+        "componentes": [
+          "demanda",
+          "precio"
+        ],
+        "parcial": true
+      },
+      {
+        "potencial": 77.6,
+        "componentes": [
+          "demanda"
+        ],
+        "parcial": true
+      },
+      {
+        "potencial": null,
+        "componentes": [],
+        "parcial": true
+      }
+    ],
+    "vendedores": {
+      "ok": true,
+      "ventas_estim_total": 2084,
+      "ventas_estim_lider": 1523,
+      "productos": [
+        {
+          "asin": "B08XYZ1234",
+          "bsr": 1234,
+          "categoria": "HOME & KITCHEN",
+          "precio": 24.99,
+          "ventas_estim": 1523,
+          "confianza": "alta",
+          "cuota_pct": 73.1,
+          "ingreso_estim_mes": 38059.77,
+          "potencial": 77.6,
+          "potencial_parcial": true
+        },
+        {
+          "asin": "B07ABC5678",
+          "bsr": 5600,
+          "categoria": "HOME & KITCHEN",
+          "precio": 19.99,
+          "ventas_estim": 440,
+          "confianza": "alta",
+          "cuota_pct": 21.1,
+          "ingreso_estim_mes": 8795.6,
+          "potencial": 63.1,
+          "potencial_parcial": true
+        },
+        {
+          "asin": "B09QWE1111",
+          "bsr": 18900,
+          "categoria": "HOME & KITCHEN",
+          "precio": 31.5,
+          "ventas_estim": 121,
+          "confianza": "alta",
+          "cuota_pct": 5.8,
+          "ingreso_estim_mes": 3811.5,
+          "potencial": 58.9,
+          "potencial_parcial": true
+        },
+        {
+          "asin": "B01NOBSR99",
+          "bsr": null,
+          "categoria": null,
+          "precio": 22.0,
+          "ventas_estim": null,
+          "confianza": null,
+          "cuota_pct": null,
+          "ingreso_estim_mes": null,
+          "potencial": 33.3,
+          "potencial_parcial": true
+        }
+      ]
     }
   }
 }

@@ -24,6 +24,7 @@ pegandolo en el Asistente IA.
 import argparse
 import json
 import os
+import re
 import statistics
 import sys
 import urllib.error
@@ -261,6 +262,179 @@ def resumen_competencia(productos):
         "precio_mediana": round(statistics.median(precios), 2),
         "ventas_estim_total": int(sum(ventas)),
         "ventas_estim_lider": max(ventas) if ventas else 0,
+    }
+
+
+# --------------------------------------------------------------------------- #
+# Potencial de un PRODUCTO dentro de su nicho
+# --------------------------------------------------------------------------- #
+# OJO: esto es un score NUEVO y distinto del score de NICHO de
+# agents/market_intel.py (que mide ganabilidad del nicho con la formula
+# 0.35/0.30/0.35 y NO se toca). Este mide otra cosa: dado un nicho, que tan
+# atractivo es meterse contra ESE competidor puntual.
+#
+# Formula, explicita para que se pueda discutir y ajustar:
+#   40%  demanda      -> cuanto vende (log, porque 2000 u/mes no es "el doble
+#                        de bueno" que 1000: ya es mercado grande en los dos casos)
+#   25%  hueco de calidad -> rating bajo del competidor = clientes insatisfechos
+#   20%  barrera baja  -> pocas resenas = se le puede alcanzar
+#   15%  precio        -> precio alto = mas aire para margen
+#
+# NO mide margen: eso lo decide el pricing con tu costo real. Un potencial alto
+# con un landed cost malo sigue siendo un mal negocio.
+PESOS_POTENCIAL = {"demanda": 0.40, "calidad": 0.25, "barrera": 0.20, "precio": 0.15}
+
+
+def _norm_log(valor, techo):
+    """Normaliza 0-1 en escala log (rendimientos decrecientes)."""
+    import math
+    if not valor or valor <= 0:
+        return 0.0
+    return min(1.0, math.log10(1 + valor) / math.log10(1 + techo))
+
+
+def potencial_producto(ventas=None, rating=None, resenas=None, precio=None,
+                       detalle=False):
+    """Potencial 0-100 de competirle a un producto. None si no hay con que.
+
+    Cada componente que falta se excluye y los pesos se renormalizan, para no
+    castigar a un producto solo porque el export no traia esa columna.
+
+    OJO CON COMPARAR ENTRE FUENTES: pegando a mano solo hay ventas y precio (2
+    de 4 componentes); un export trae ademas rating y resenas (4 de 4). Los dos
+    dan un numero 0-100, pero NO miden lo mismo. Por eso `detalle=True` devuelve
+    tambien que componentes se usaron, y quien muestra el numero avisa cuando es
+    parcial en vez de fingir que son equivalentes."""
+    partes = {}
+    if ventas:
+        partes["demanda"] = _norm_log(ventas, 3000)
+    if rating:
+        # 5.0 = no hay hueco; 3.5 o menos = hueco grande.
+        partes["calidad"] = max(0.0, min(1.0, (5.0 - float(rating)) / 1.5))
+    if resenas is not None:
+        # 0 resenas = barrera nula; 3000+ = barrera total.
+        partes["barrera"] = 1.0 - _norm_log(resenas, 3000)
+    if precio:
+        partes["precio"] = max(0.0, min(1.0, (float(precio) - 8.0) / 42.0))
+    if not partes:
+        return None if not detalle else {"potencial": None, "componentes": [],
+                                         "parcial": True}
+    total_peso = sum(PESOS_POTENCIAL[k] for k in partes)
+    score = round(sum(PESOS_POTENCIAL[k] * v for k, v in partes.items())
+                  / total_peso * 100, 1)
+    if not detalle:
+        return score
+    return {"potencial": score, "componentes": sorted(partes),
+            "parcial": len(partes) < len(PESOS_POTENCIAL)}
+
+
+# --------------------------------------------------------------------------- #
+# Vendedores principales SIN API (camino gratis)
+# --------------------------------------------------------------------------- #
+_RE_ASIN = re.compile(r"\b(B0[A-Z0-9]{8})\b")
+_RE_PRECIO = re.compile(r"(?:US\$|\$|USD\s*)\s*([\d]+(?:[.,]\d{1,2})?)")
+
+
+def _precio_de(linea):
+    m = _RE_PRECIO.search(linea)
+    if not m:
+        return None
+    try:
+        return round(float(m.group(1).replace(",", ".")), 2)
+    except ValueError:
+        return None
+
+
+def vendedores_principales(texto):
+    """Rankea a los vendedores principales de un nicho SIN ninguna API paga.
+
+    Le pegas un bloque con un competidor por linea, con lo que ya ves en la
+    pagina de Amazon. Cada linea puede traer ASIN, BSR y precio, en cualquier
+    orden y con texto alrededor:
+
+        B08XYZ1234  #1,234 in Home & Kitchen   $24.99
+        B07ABC5678  #5,600                     $19.99
+
+    Devuelve {ok, fuente, productos[], competencia, mensaje}: cada producto con
+    sus ventas/mes estimadas por la curva del BSR y su CUOTA sobre el total
+    pegado. Las lineas sin BSR se listan igual pero sin estimacion -- no se les
+    inventa un numero.
+
+    Limite honesto y explicito: la cuota es sobre los competidores QUE PEGASTE,
+    no sobre el nicho entero. Si pegas 5 de 300 vendedores, el 40% que muestre
+    el lider es 40% de esos 5. Sirve para comparar entre ellos, no para decir
+    "tengo el 40% del mercado".
+    """
+    from data import bsr as bsr_mod
+
+    lineas = [l.strip() for l in (texto or "").splitlines() if l.strip()]
+    if not lineas:
+        return {"ok": False, "fuente": "sin_datos", "productos": [],
+                "competencia": {"ok": False, "n_competidores": 0},
+                "mensaje": "Pegá un competidor por línea, con su ASIN y su BSR "
+                           "(el que figura en \"Best Sellers Rank\" de cada producto)."}
+
+    productos, sin_bsr = [], 0
+    for linea in lineas:
+        m_asin = _RE_ASIN.search(linea.upper())
+        asin = m_asin.group(1) if m_asin else None
+        # Se saca el ASIN antes de buscar el BSR: un ASIN como B08XYZ1234 tiene
+        # digitos y podria confundir al parser de ranking.
+        resto = linea.upper().replace(asin, " ") if asin else linea
+        lectura = bsr_mod.parsear_bloque(resto)
+        item = {
+            "asin": asin,
+            "titulo": re.sub(r"\s+", " ", linea)[:120],
+            "precio": _precio_de(linea),
+            "bsr": lectura.get("bsr") if lectura.get("ok") else None,
+            "categoria": lectura.get("categoria") if lectura.get("ok") else None,
+            "link": f"https://www.amazon.com/dp/{asin}" if asin else None,
+            "link_resenas": link_resenas(asin) if asin else None,
+        }
+        if item["bsr"]:
+            item["ventas_estim"] = bsr_mod.ventas_desde_bsr(item["bsr"], item["categoria"])
+            item["confianza"] = bsr_mod.confianza_de(item["bsr"], item["categoria"])
+        else:
+            item["ventas_estim"] = None
+            item["confianza"] = None
+            sin_bsr += 1
+        # Pegando a mano no hay rating ni resenas: el potencial sale con 2 de 4
+        # componentes y se marca como parcial para no compararlo de igual a
+        # igual contra el de un export completo.
+        det = potencial_producto(ventas=item["ventas_estim"],
+                                 precio=item["precio"], detalle=True)
+        item["potencial"] = det["potencial"]
+        item["potencial_parcial"] = det["parcial"]
+        productos.append(item)
+
+    con_venta = [p for p in productos if p.get("ventas_estim")]
+    total = sum(p["ventas_estim"] for p in con_venta)
+    for p in productos:
+        v = p.get("ventas_estim")
+        p["cuota_pct"] = round(v * 100.0 / total, 1) if (v and total) else None
+        p["ingreso_estim_mes"] = (round(v * p["precio"], 2)
+                                  if v and p.get("precio") else None)
+
+    # Los que tienen estimacion primero, de mayor a menor.
+    productos.sort(key=lambda p: (p.get("ventas_estim") or -1), reverse=True)
+
+    avisos = []
+    if sin_bsr:
+        avisos.append(f"{sin_bsr} línea(s) sin BSR: se listan sin estimación "
+                      "(no se inventa el número).")
+    if con_venta:
+        avisos.append(f"{len(con_venta)} competidor(es) estimados por la curva del "
+                      f"BSR: {total:,} u/mes entre ellos.".replace(",", "."))
+    return {
+        "ok": bool(con_venta),
+        "fuente": "BSR de Amazon (curva)",
+        "productos": productos,
+        "competencia": resumen_competencia(productos),
+        "ventas_estim_total": total,
+        "ventas_estim_lider": max((p["ventas_estim"] for p in con_venta), default=0),
+        "mensaje": (" ".join(avisos) or
+                    "Ninguna línea traía un BSR legible, así que no hay estimación.") +
+                   " La cuota es sobre los competidores que pegaste, no sobre el nicho entero.",
     }
 
 
