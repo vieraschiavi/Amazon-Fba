@@ -305,8 +305,13 @@ def potencial_producto(ventas=None, rating=None, resenas=None, precio=None,
     dan un numero 0-100, pero NO miden lo mismo. Por eso `detalle=True` devuelve
     tambien que componentes se usaron, y quien muestra el numero avisa cuando es
     parcial en vez de fingir que son equivalentes."""
+    # "is not None" en ventas/precio (no truthy): un 0 real -- 0 ventas de un
+    # lanzamiento nuevo, o un precio $0 -- es un dato conocido, no "ausente".
+    # `rating` sigue con chequeo de verdad a proposito: no existe un producto
+    # con 0 estrellas en Amazon (el minimo con reseñas es 1), asi que ahi un 0
+    # es siempre "no vino el dato", nunca un valor real.
     partes = {}
-    if ventas:
+    if ventas is not None:
         partes["demanda"] = _norm_log(ventas, 3000)
     if rating:
         # 5.0 = no hay hueco; 3.5 o menos = hueco grande.
@@ -314,7 +319,7 @@ def potencial_producto(ventas=None, rating=None, resenas=None, precio=None,
     if resenas is not None:
         # 0 resenas = barrera nula; 3000+ = barrera total.
         partes["barrera"] = 1.0 - _norm_log(resenas, 3000)
-    if precio:
+    if precio is not None:
         partes["precio"] = max(0.0, min(1.0, (float(precio) - 8.0) / 42.0))
     if not partes:
         return None if not detalle else {"potencial": None, "componentes": [],
@@ -379,8 +384,14 @@ def vendedores_principales(texto):
         m_asin = _RE_ASIN.search(linea.upper())
         asin = m_asin.group(1) if m_asin else None
         # Se saca el ASIN antes de buscar el BSR: un ASIN como B08XYZ1234 tiene
-        # digitos y podria confundir al parser de ranking.
-        resto = linea.upper().replace(asin, " ") if asin else linea
+        # digitos y podria confundir al parser de ranking. Se recorta por los
+        # INDICES del match (no con .upper().replace(...)): eso forzaba TODA
+        # la linea a mayusculas cuando habia ASIN, asi que "categoria" volvia
+        # "HOME & KITCHEN" en vez de "Home & Kitchen" solo por tener ASIN al
+        # lado -- una inconsistencia de la que dependeria cualquier UI futura
+        # que muestre ese campo. Recortando por indices se conserva el casing
+        # original del texto que pego el usuario en los dos casos.
+        resto = linea[:m_asin.start()] + " " + linea[m_asin.end():] if m_asin else linea
         lectura = bsr_mod.parsear_bloque(resto)
         item = {
             "asin": asin,

@@ -888,6 +888,10 @@ def test_vendedores_principales_sin_api():
     assert lider["asin"] == "B08XYZ1234"          # ordenado por ventas desc
     assert lider["bsr"] == 1234 and lider["ventas_estim"] > 0
     assert lider["precio"] == 24.99
+    # REGRESION: con ASIN en la linea, la categoria NO tiene que salir en
+    # mayusculas por haberse recortado el ASIN uppercaseando toda la linea.
+    assert lider["categoria"] == "Home & Kitchen", (
+        f"la categoria salio distinta al texto pegado: {lider['categoria']!r}")
     assert lider["ingreso_estim_mes"] == round(lider["ventas_estim"] * 24.99, 2)
     # el ASIN no confunde al parser de BSR
     assert r["productos"][1]["bsr"] == 5600
@@ -996,6 +1000,71 @@ def test_csv_productos_dedupe_por_asin(tmp_path):
     r = vendedores_desde_csv(_csv_tmp(tmp_path, "dup.csv", dup))
     assert len(r["productos"]) == 1
     assert r["productos"][0]["ventas_estim"] == 450
+
+
+def test_csv_productos_cero_real_no_es_dato_ausente(tmp_path):
+    """REGRESION: un 0 REAL del export (0 ventas, 0 resenas -- el caso mas
+    interesante: un lanzamiento nuevo) tiene que respetarse como 0, no
+    confundirse con "la columna no vino". Antes `int(n(clave)) or None`
+    colapsaba las dos cosas: 0 ventas del export (dato calibrado, real) se
+    tiraba y se reemplazaba por una estimacion de la curva del BSR -- un
+    numero INVENTADO pisando el dato real, justo lo que el proyecto prohibe."""
+    from data.helium_productos import parse_productos_csv, vendedores_desde_csv
+    csv_txt = ("ASIN,Title,Brand,Price,Sales,Revenue,BSR,Category,Reviews,Rating\n"
+               "B0NEWLAUNCH,New gadget,Acme,15.00,0,0.00,8500,Home & Kitchen,0,4.0\n")
+    ruta = _csv_tmp(tmp_path, "cero_real.csv", csv_txt)
+
+    fila = parse_productos_csv(ruta)[0]
+    assert fila["ventas_csv"] == 0, "0 ventas del export se convirtio en None"
+    assert fila["resenas"] == 0, "0 resenas del export se convirtio en None"
+    assert fila["bsr"] == 8500 and fila["precio"] == 15.0
+
+    r = vendedores_desde_csv(ruta)
+    p = r["productos"][0]
+    # la fuente tiene que ser el export (dato real), NO la curva del BSR
+    assert p["ventas_estim"] == 0
+    assert p["fuente_ventas"] == "CSV (Helium 10 / Jungle Scout)", (
+        f"se uso '{p['fuente_ventas']}' en vez del 0 real del export")
+    assert p["confianza"] == "alta"
+    # con las 4 columnas presentes (aunque en 0), el potencial NO es parcial
+    assert p["potencial_parcial"] is False
+    # 0 resenas = barrera de entrada NULA (maxima oportunidad), no "sin dato"
+    assert p["potencial"] is not None
+
+
+def test_csv_productos_columna_ausente_sigue_dando_none(tmp_path):
+    """Que un 0 real ya no se pierda no debe hacer que una columna que
+    directamente NO VINO empiece a inventarse un 0."""
+    from data.helium_productos import parse_productos_csv
+    csv_txt = "ASIN,Title,Sales\nB0SINRESE1,Sin columna de resenas,50\n"
+    fila = parse_productos_csv(_csv_tmp(tmp_path, "sin_col.csv", csv_txt))[0]
+    assert fila["ventas_csv"] == 50
+    assert fila["resenas"] is None, "una columna ausente no puede devolver 0"
+    assert fila["rating"] is None
+    assert fila["precio"] is None
+
+
+def test_potencial_producto_ventas_cero_no_es_ausente():
+    """Mismo bug, a nivel de la funcion de potencial: ventas=0 y precio=0 son
+    datos reales (demanda nula, producto gratis) -- no tienen que excluirse
+    del calculo como si faltaran."""
+    from data.mercado import potencial_producto
+    det = potencial_producto(ventas=0, rating=4.0, resenas=500, precio=25,
+                             detalle=True)
+    assert det["parcial"] is False, "ventas=0 se trato como componente ausente"
+    assert "demanda" in det["componentes"]
+    assert det["potencial"] is not None
+    # el 0 real castiga el score (demanda nula), no lo deja indefinido
+    con_ventas = potencial_producto(ventas=500, rating=4.0, resenas=500, precio=25)
+    assert det["potencial"] < con_ventas
+
+    det2 = potencial_producto(ventas=500, rating=4.0, resenas=500, precio=0,
+                              detalle=True)
+    assert det2["parcial"] is False and "precio" in det2["componentes"]
+    # rating=0 SI sigue siendo "sin dato": no existe un producto 0 estrellas
+    det3 = potencial_producto(ventas=500, resenas=500, precio=25, rating=0,
+                              detalle=True)
+    assert "calidad" not in det3["componentes"]
 
 
 def test_endpoint_vendedores_csv(tmp_path):

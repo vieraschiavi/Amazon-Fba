@@ -556,11 +556,16 @@ const MV = (function () {
 
   function potencialProducto(o) {
     const { ventas, rating, resenas, precio } = o || {};
+    // ventas/precio: "!= null" (no truthy) -- un 0 real (0 ventas, precio $0)
+    // es un dato conocido, no "ausente". rating sigue con chequeo de verdad:
+    // no existe un producto con 0 estrellas en Amazon, asi que ahi un 0 SIEMPRE
+    // es "no vino el dato". Tiene que dar IDENTICO a potencial_producto() de
+    // data/mercado.py -- lo verifica test/verificar_nucleo.js.
     const partes = {};
-    if (ventas) partes.demanda = normLog(ventas, 3000);
+    if (ventas !== null && ventas !== undefined) partes.demanda = normLog(ventas, 3000);
     if (rating) partes.calidad = Math.max(0, Math.min(1, (5.0 - Number(rating)) / 1.5));
     if (resenas !== null && resenas !== undefined) partes.barrera = 1 - normLog(resenas, 3000);
-    if (precio) partes.precio = Math.max(0, Math.min(1, (Number(precio) - 8.0) / 42.0));
+    if (precio !== null && precio !== undefined) partes.precio = Math.max(0, Math.min(1, (Number(precio) - 8.0) / 42.0));
     const claves = Object.keys(partes);
     if (!claves.length) return { potencial: null, componentes: [], parcial: true };
     const pesoTotal = claves.reduce((s, k) => s + PESOS_POTENCIAL[k], 0);
@@ -587,7 +592,10 @@ const MV = (function () {
     const productos = lineas.map((linea) => {
       const mA = RE_ASIN.exec(linea.toUpperCase());
       const asin = mA ? mA[1] : null;
-      const resto = asin ? linea.toUpperCase().replace(asin, " ") : linea;
+      // Se recorta por los INDICES del match, no con .toUpperCase().replace(),
+      // que forzaba toda la linea a mayusculas apenas habia ASIN. Debe dar
+      // IDENTICO a vendedores_principales() de data/mercado.py.
+      const resto = mA ? linea.slice(0, mA.index) + " " + linea.slice(mA.index + mA[0].length) : linea;
       const lect = parsearBloqueBsr(resto);
       const mP = RE_PRECIO.exec(linea);
       const precio = mP ? Math.round(parseFloat(mP[1].replace(",", ".")) * 100) / 100 : null;
