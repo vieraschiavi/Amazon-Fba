@@ -113,7 +113,31 @@
       {
         "ventas": 500
       },
-      {}
+      {},
+      {
+        "ventas": 0,
+        "rating": 4.0,
+        "resenas": 500,
+        "precio": 25
+      },
+      {
+        "ventas": 500,
+        "rating": 4.0,
+        "resenas": 0,
+        "precio": 25
+      },
+      {
+        "ventas": 500,
+        "rating": 4.0,
+        "resenas": 500,
+        "precio": 0
+      },
+      {
+        "ventas": 500,
+        "rating": 0,
+        "resenas": 500,
+        "precio": 25
+      }
     ],
     "vendedores": "B08XYZ1234  Bamboo board  #1,234 in Home & Kitchen   $24.99\nB07ABC5678  Board pro     #5,600 in Home & Kitchen   $19.99\nB09QWE1111  Eco bundle    #18,900 in Home & Kitchen  $31.50\nB01NOBSR99  Sin rank                                 $22.00"
   },
@@ -727,6 +751,45 @@
         "potencial": null,
         "componentes": [],
         "parcial": true
+      },
+      {
+        "potencial": 27.2,
+        "componentes": [
+          "barrera",
+          "calidad",
+          "demanda",
+          "precio"
+        ],
+        "parcial": false
+      },
+      {
+        "potencial": 73.8,
+        "componentes": [
+          "barrera",
+          "calidad",
+          "demanda",
+          "precio"
+        ],
+        "parcial": false
+      },
+      {
+        "potencial": 52.2,
+        "componentes": [
+          "barrera",
+          "calidad",
+          "demanda",
+          "precio"
+        ],
+        "parcial": false
+      },
+      {
+        "potencial": 55.5,
+        "componentes": [
+          "barrera",
+          "demanda",
+          "precio"
+        ],
+        "parcial": true
       }
     ],
     "vendedores": {
@@ -737,7 +800,7 @@
         {
           "asin": "B08XYZ1234",
           "bsr": 1234,
-          "categoria": "HOME & KITCHEN",
+          "categoria": "Home & Kitchen",
           "precio": 24.99,
           "ventas_estim": 1523,
           "confianza": "alta",
@@ -749,7 +812,7 @@
         {
           "asin": "B07ABC5678",
           "bsr": 5600,
-          "categoria": "HOME & KITCHEN",
+          "categoria": "Home & Kitchen",
           "precio": 19.99,
           "ventas_estim": 440,
           "confianza": "alta",
@@ -761,7 +824,7 @@
         {
           "asin": "B09QWE1111",
           "bsr": 18900,
-          "categoria": "HOME & KITCHEN",
+          "categoria": "Home & Kitchen",
           "precio": 31.5,
           "ventas_estim": 121,
           "confianza": "alta",

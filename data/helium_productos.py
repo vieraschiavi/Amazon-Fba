@@ -126,8 +126,22 @@ def parse_productos_csv(path):
             def txt(clave):
                 return str(row.get(m.get(clave), "") or "").strip()
 
-            def n(clave):
-                return _num(row.get(m.get(clave)), eu=eu) if clave in m else 0.0
+            def n_opt(clave):
+                """None SOLO si la columna no vino o vino vacia -- un valor
+                real 0 (0 ventas, 0 resenas: el caso mas interesante, un
+                lanzamiento nuevo) se respeta como 0, nunca se confunde con
+                "sin dato". El `int(n(clave)) or None` anterior colapsaba las
+                dos cosas y tiraba a la basura un 0 real que vino del export."""
+                if clave not in m:
+                    return None
+                crudo = row.get(m[clave])
+                if crudo is None or str(crudo).strip() == "":
+                    return None
+                return _num(crudo, eu=eu)
+
+            precio, ventas = n_opt("precio"), n_opt("ventas")
+            ingresos, bsr = n_opt("ingresos"), n_opt("bsr")
+            resenas, rating = n_opt("resenas"), n_opt("rating")
 
             filas.append({
                 "asin": asin,
@@ -135,12 +149,12 @@ def parse_productos_csv(path):
                 "marca": txt("marca") or None,
                 "vendedor": txt("vendedor") or None,
                 "categoria": txt("categoria") or None,
-                "precio": round(n("precio"), 2) or None,
-                "ventas_csv": int(n("ventas")) or None,
-                "ingresos_csv": round(n("ingresos"), 2) or None,
-                "bsr": int(n("bsr")) or None,
-                "resenas": int(n("resenas")) or None,
-                "rating": round(n("rating"), 1) or None,
+                "precio": round(precio, 2) if precio is not None else None,
+                "ventas_csv": int(ventas) if ventas is not None else None,
+                "ingresos_csv": round(ingresos, 2) if ingresos is not None else None,
+                "bsr": int(bsr) if bsr is not None else None,
+                "resenas": int(resenas) if resenas is not None else None,
+                "rating": round(rating, 1) if rating is not None else None,
             })
     # Dedupe por ASIN: se queda con la fila de mas ventas (los exports repiten
     # el mismo ASIN cuando hay variantes).
@@ -169,12 +183,17 @@ def vendedores_desde_csv(path, max_n=25):
 
     productos, n_csv, n_curva, n_sin = [], 0, 0, 0
     for f_ in filas:
-        if f_["ventas_csv"]:
+        if f_["ventas_csv"] is not None:
             # 1) La estimacion propia de la herramienta manda: esta calibrada.
+            # "is not None" (no truthy): un 0 real del export (0 ventas, un
+            # lanzamiento nuevo) tiene que quedar como 0, no caer al branch de
+            # la curva ni al de "sin dato" -- el export YA daba la respuesta.
             ventas, conf, fuente = f_["ventas_csv"], "alta", "CSV (Helium 10 / Jungle Scout)"
             n_csv += 1
         elif f_["bsr"]:
             # 2) Sin ventas pero con BSR: se convierte con la curva (mas grueso).
+            # Truthy esta bien aca: un BSR real nunca es 0 (el ranking arranca
+            # en 1), asi que no hay un "0 real" que confundir con "sin dato".
             ventas = bsr_mod.ventas_desde_bsr(f_["bsr"], f_["categoria"])
             conf = bsr_mod.confianza_de(f_["bsr"], f_["categoria"])
             fuente = "BSR del CSV (curva)"
@@ -185,7 +204,7 @@ def vendedores_desde_csv(path, max_n=25):
             n_sin += 1
 
         ingreso = f_["ingresos_csv"]
-        if ingreso is None and ventas and f_["precio"]:
+        if ingreso is None and ventas is not None and f_["precio"] is not None:
             ingreso = round(ventas * f_["precio"], 2)
 
         _det_pot = mercado.potencial_producto(
@@ -208,11 +227,13 @@ def vendedores_desde_csv(path, max_n=25):
             "link": f"https://www.amazon.com/dp/{f_['asin']}",
         })
 
-    con_venta = [p for p in productos if p.get("ventas_estim")]
+    # "is not None": un 0 real (fila con ventas_estim=0, ya cubierta arriba) es
+    # una estimacion valida -- no es lo mismo que la fila sin ninguna fuente.
+    con_venta = [p for p in productos if p.get("ventas_estim") is not None]
     total = sum(p["ventas_estim"] for p in con_venta)
     for p in productos:
         v = p.get("ventas_estim")
-        p["cuota_pct"] = round(v * 100.0 / total, 1) if (v and total) else None
+        p["cuota_pct"] = round(v * 100.0 / total, 1) if (v is not None and total) else None
 
     productos.sort(key=lambda p: (p.get("ventas_estim") or -1), reverse=True)
     recortado = len(productos) > max_n

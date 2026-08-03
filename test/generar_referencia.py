@@ -57,6 +57,13 @@ IN = {
         {"ventas": 500, "precio": 25},
         {"ventas": 500},
         {},
+        # 0 real (no ausente): lanzamiento nuevo, 0 ventas y 0 resenas, precio
+        # gratis. El puerto JS tiene que tratar estos 0 igual que Python.
+        {"ventas": 0, "rating": 4.0, "resenas": 500, "precio": 25},
+        {"ventas": 500, "rating": 4.0, "resenas": 0, "precio": 25},
+        {"ventas": 500, "rating": 4.0, "resenas": 500, "precio": 0},
+        # rating=0 SI sigue siendo "sin dato" (no existe 0 estrellas en Amazon).
+        {"ventas": 500, "rating": 0, "resenas": 500, "precio": 25},
     ],
     "vendedores": ("B08XYZ1234  Bamboo board  #1,234 in Home & Kitchen   $24.99\n"
                    "B07ABC5678  Board pro     #5,600 in Home & Kitchen   $19.99\n"

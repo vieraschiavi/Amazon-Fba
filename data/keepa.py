@@ -37,7 +37,6 @@ _BASE = "https://api.keepa.com/product"
 # Keepa: el BSR es un dato publico de la pagina de Amazon y la conversion sirve
 # igual cuando el numero lo trae el usuario a mano (estimacion gratis, sin API).
 # Aca solo se delega. La curva es la misma, con los mismos valores de siempre.
-from data.bsr import CURVA_BASE as _CURVA          # noqa: E402  (retrocompat)
 from data.bsr import ventas_desde_bsr as _estim_ventas   # noqa: E402
 
 
