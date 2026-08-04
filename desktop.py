@@ -91,6 +91,40 @@ def _esperar(puerto, timeout=60):
     return False
 
 
+def _avisar(texto):
+    """Aviso VISIBLE al usuario.
+
+    Se lanza con pythonw (sin consola) desde el acceso directo, asi que un
+    print() no lo lee nadie: la app caia al navegador en silencio y parecia
+    "un programa que abre una web". Con esto el usuario se entera de por que.
+    """
+    print(texto, file=sys.stderr)
+    if os.name != "nt":
+        return
+    try:
+        import ctypes
+        # 0x40 = MB_ICONINFORMATION. Modal, pero es un solo clic y evita que
+        # el usuario quede sin explicacion.
+        ctypes.windll.user32.MessageBoxW(0, texto, TITULO, 0x40)
+    except Exception:
+        pass
+
+
+def _icono():
+    """Ruta del icono de la ventana, entre las que SI empaqueta el instalador.
+
+    Antes apuntaba a mobile/icons/icon-512.png, pero el instalador no
+    distribuye mobile/ (ver [Files] del .iss): instalado, la ventana quedaba
+    siempre sin icono."""
+    for rel in (("frontend", "dist", "icon.png"),
+                ("assets", "icon.ico"),
+                ("mobile", "icons", "icon-512.png")):
+        p = os.path.join(_RAIZ, *rel)
+        if os.path.isfile(p):
+            return p
+    return None
+
+
 def _abrir_navegador(url, proc):
     import webbrowser
     webbrowser.open(url)
@@ -120,12 +154,17 @@ def main():
     try:
         import webview  # pywebview
     except Exception:
-        print("pywebview no esta instalado (pip install pywebview); "
-              "abro en el navegador.")
+        _avisar("MV FBA IA se va a abrir en el navegador porque falta la "
+                "librería pywebview.\n\n"
+                "Si INSTALASTE el programa, reinstalalo: el runtime incluido "
+                "está incompleto.\n"
+                "Si estás corriendo el código del repositorio, instalá las "
+                "dependencias:\n\n"
+                "    pip install -r requirements.txt")
         _abrir_navegador(url, proc)
         return
 
-    icono = os.path.join(_RAIZ, "mobile", "icons", "icon-512.png")
+    icono = _icono()
     webview.create_window(
         TITULO, url, width=1360, height=880, min_size=(1024, 680),
         confirm_close=False)
@@ -134,13 +173,21 @@ def main():
         # fallback MSHTML (IE11) de pywebview — si no hay WebView2, preferimos
         # el navegador del usuario antes que una pantalla blanca.
         if os.name == "nt":
-            webview.start(gui="edgechromium",
-                          icon=icono if os.path.isfile(icono) else None)
+            webview.start(gui="edgechromium", icon=icono)
         else:
-            webview.start(icon=icono if os.path.isfile(icono) else None)
-    except Exception:
-        print("No se pudo abrir la ventana nativa (¿falta el runtime WebView2?); "
-              "abro en el navegador.")
+            webview.start(icon=icono)
+    except Exception as e:
+        # Causa casi siempre: falta el runtime WebView2 de Microsoft Edge. Es un
+        # componente del SISTEMA, no viaja dentro de runtime\; el instalador lo
+        # pone solo, pero si se corre desde el codigo hay que instalarlo a mano.
+        _avisar("MV FBA IA no pudo abrir su ventana propia, así que se abre en "
+                "el navegador.\n\n"
+                "Falta el runtime WebView2 de Microsoft Edge, que es el que "
+                "dibuja la ventana.\n\n"
+                "Solución: instalalo gratis desde\n"
+                "https://developer.microsoft.com/microsoft-edge/webview2/\n"
+                "(opción \"Evergreen Bootstrapper\") y volvé a abrir el programa.\n\n"
+                f"Detalle técnico: {e}")
         _abrir_navegador(url, proc)
         return
     finally:

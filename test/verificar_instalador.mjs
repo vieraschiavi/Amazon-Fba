@@ -18,8 +18,12 @@ import fs from "node:fs";
 import path from "node:path";
 
 const RAIZ = path.join(import.meta.dirname, "..");
+// Inno permite cortar una entrada en varias lineas terminandolas en "\". Se
+// re-unen ANTES de analizar: si no, una entrada partida se lee como dos lineas
+// sueltas y los chequeos sobre ella (p.ej. su "Check:") dan falso negativo.
 const ISS = fs.readFileSync(
-  path.join(RAIZ, "installer/MV_Amazon_FBA_IA.iss"), "utf8");
+  path.join(RAIZ, "installer/MV_Amazon_FBA_IA.iss"), "utf8")
+  .replace(/\\[ \t]*\r?\n[ \t]*/g, " ");
 const WF = fs.readFileSync(
   path.join(RAIZ, ".github/workflows/windows-installer.yml"), "utf8");
 
@@ -106,6 +110,44 @@ if (!pubOwner) falla("el workflow ya no publica el Release owner-latest");
 else if (/inputs\.owner == 'true'/.test(pubOwner)) {
   ok("owner-latest solo se publica en un build owner");
 } else falla("owner-latest se publicaria en un build normal");
+
+// --- 7) la app tiene que abrir como PROGRAMA, no como pagina web ---
+// pywebview (la libreria) viaja en runtime\, pero la ventana la dibuja el
+// runtime WebView2 de Edge, que es un componente del SISTEMA. Sin el,
+// desktop.py cae a abrir el navegador y el cliente ve "una web".
+if (/MicrosoftEdgeWebview2Setup\.exe/.test(WF)) {
+  ok("el CI descarga el bootstrapper de WebView2");
+} else falla("el CI no descarga el bootstrapper de WebView2: el instalador no podria ponerlo");
+
+const bundleaWv2 = lineasFiles.some((l) => /MicrosoftEdgeWebview2Setup\.exe/.test(l));
+if (bundleaWv2) ok("el instalador empaqueta el bootstrapper de WebView2");
+else falla("[Files] no incluye MicrosoftEdgeWebview2Setup.exe");
+
+if (/function FaltaWebView2/.test(ISS) && /EdgeUpdate\\Clients/.test(ISS)) {
+  ok("detecta por registro si WebView2 ya esta instalado (no reinstala al pedo)");
+} else falla("falta la deteccion de WebView2 en [Code]");
+
+const lineasRun = ISS.split("\n").filter((l) => /^\s*Filename:/i.test(l));
+const iWv2 = lineasRun.findIndex((l) => /MicrosoftEdgeWebview2Setup/.test(l));
+const iApp = lineasRun.findIndex((l) => /App_Escritorio\.vbs/.test(l));
+if (iWv2 < 0) falla("[Run] no ejecuta el bootstrapper de WebView2");
+else if (!/Check:\s*FaltaWebView2/.test(lineasRun[iWv2])) {
+  falla("[Run] corre WebView2 sin Check: FaltaWebView2 (lo instalaria siempre)");
+} else if (iApp >= 0 && iWv2 > iApp) {
+  falla("[Run] abre la app ANTES de instalar WebView2: la primera apertura " +
+        "caeria igual al navegador");
+} else ok("[Run] instala WebView2 (solo si falta) ANTES de abrir la app");
+
+// desktop.py: el icono tiene que salir de una carpeta que el instalador copie.
+const DESK = fs.readFileSync(path.join(RAIZ, "desktop.py"), "utf8");
+if (/mobile["'],\s*["']icons/.test(DESK) && !/def _icono/.test(DESK)) {
+  falla("desktop.py apunta el icono a mobile\\, que el instalador NO distribuye");
+} else ok("desktop.py resuelve el icono entre carpetas que si se distribuyen");
+// y el fallback al navegador tiene que ser VISIBLE (corre con pythonw, sin consola)
+if (/def _avisar/.test(DESK) && /MessageBoxW/.test(DESK)) {
+  ok("si cae al navegador, avisa al usuario (no falla en silencio)");
+} else falla("desktop.py cae al navegador sin aviso visible: corre con pythonw " +
+             "(sin consola), asi que un print() no lo lee nadie");
 
 console.log("");
 if (fallos.length) {
