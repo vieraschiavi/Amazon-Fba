@@ -12,16 +12,34 @@
 ; programa: van a %LOCALAPPDATA%\MV FBA IA (ver _dir_datos() en config.py).
 
 #define MyAppName "MV FBA IA"
-#define MyAppVersion "1.2.0"
+#define MyAppVersion "1.3.0"
 #define MyAppPublisher "MV FBA IA"
+#define MyAppUrl "https://mvfbaia.com"
 #define MyAppExeDescription "Cockpit inteligente para tu negocio Amazon FBA"
 
 [Setup]
 AppId={{8F2C1A6E-7B4D-4E1A-9C3F-2D8E5A6B7C90}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
+AppVerName={#MyAppName} {#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppComments={#MyAppExeDescription}
+; Estos tres salen en "Aplicaciones instaladas" de Windows, al lado del
+; programa. Sin ellos la entrada queda sin soporte ni sitio: se ve amateur.
+AppPublisherURL={#MyAppUrl}
+AppSupportURL={#MyAppUrl}
+AppUpdatesURL={#MyAppUrl}
+UninstallDisplayName={#MyAppName} {#MyAppVersion}
+; Metadatos del PROPIO .exe del instalador (pestaña Detalles de Propiedades).
+; Sin esto el archivo que descarga el cliente aparece sin version, sin empresa
+; y sin descripcion -- ademas de verse improvisado, los filtros de reputacion
+; de Windows y de los antivirus tratan peor a un .exe sin metadatos.
+VersionInfoVersion={#MyAppVersion}
+VersionInfoProductName={#MyAppName}
+VersionInfoProductVersion={#MyAppVersion}
+VersionInfoCompany={#MyAppPublisher}
+VersionInfoDescription=Instalador de {#MyAppName}
+VersionInfoCopyright=© {#MyAppPublisher}
 ; La carpeta por defecto se resuelve en [Code]: "Archivos de programa" si
 ; instala como admin, o la carpeta del usuario si elige "solo para mi".
 ; NO se usa {autopf}: depende de SHGetKnownFolderPath(FOLDERID_UserProgramFiles),
@@ -70,7 +88,13 @@ Name: "desktopicon"; Description: "Crear un acceso directo en el Escritorio"; Gr
 ; terminar dentro del instalador por accidente.
 Source: "..\*.py"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\*.bat"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\*.md"; DestDir: "{app}"; Flags: ignoreversion
+; Documentacion: SOLO la que es para el cliente. Antes se empaquetaba "..\*.md"
+; en bloque, lo que metia en el instalador CLAUDE.md (instrucciones internas de
+; desarrollo) y PENDIENTES.md (bloqueadores internos, nombres de secrets, mapa
+; de la infraestructura y el endpoint de licencia de dueño). Nada de eso tiene
+; por que viajar a una maquina que compro el producto.
+Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\CONEXIONES.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\requirements.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\.env.example"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\pitch_inversor_fba.html"; DestDir: "{app}"; Flags: ignoreversion
@@ -141,12 +165,30 @@ begin
   if CurUninstallStep = usPostUninstall then
   begin
     AppDir := ExpandConstant('{app}');
-    // Los .pyc se generan al usar el programa: el desinstalador de Inno no los
-    // conoce y dejarian la carpeta sin borrar.
+    // Los .pyc se generan al USAR el programa: el desinstalador de Inno solo
+    // conoce los archivos que instalo, asi que sin esto la carpeta queda viva.
+    //
+    // El caso grave era runtime\: Python escribe __pycache__ adentro de
+    // Lib\site-packages\ (pandas, fastapi, uvicorn, pillow...) en cuanto se
+    // abre el programa una vez. Nada de eso figura en [Files], asi que
+    // quedaban CIENTOS DE MB huerfanos y la carpeta "MV FBA IA" sobrevivia a
+    // la desinstalacion. Igual pasaba con frontend\dist.
+    //
+    // Se borran por subcarpeta EXPLICITA, todas creadas por el instalador --
+    // nunca un DelTree total de {app}: el usuario puede elegir cualquier
+    // destino, y si eligio una carpeta compartida un borrado en bloque se
+    // llevaria puesto lo que no es nuestro.
+    DelTree(AppDir + '\runtime', True, True, True);
+    DelTree(AppDir + '\frontend', True, True, True);
+    DelTree(AppDir + '\agents', True, True, True);
+    DelTree(AppDir + '\core', True, True, True);
+    DelTree(AppDir + '\data', True, True, True);
+    DelTree(AppDir + '\n8n', True, True, True);
+    DelTree(AppDir + '\.streamlit', True, True, True);
+    DelTree(AppDir + '\assets', True, True, True);
     DelTree(AppDir + '\__pycache__', True, True, True);
-    DelTree(AppDir + '\agents\__pycache__', True, True, True);
-    DelTree(AppDir + '\core\__pycache__', True, True, True);
-    DelTree(AppDir + '\data\__pycache__', True, True, True);
+    // Recien ahora la carpeta deberia estar vacia: se saca si lo esta (los
+    // dos False finales son a proposito -- no borra archivos ajenos).
     DelTree(AppDir, True, False, False);
 
     if BorrarDatosDelUsuario then
