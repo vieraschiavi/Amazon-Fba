@@ -117,6 +117,11 @@ Source: "assets\icon.ico"; DestDir: "{app}\assets"; Flags: ignoreversion
 Source: "..\owner_licencia.json"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "Iniciar_Silencioso.vbs"; DestDir: "{app}"; Flags: ignoreversion
 Source: "App_Escritorio.vbs"; DestDir: "{app}"; Flags: ignoreversion
+; Bootstrapper oficial de Microsoft para el runtime WebView2 (lo baja el CI).
+; Va a {tmp} y se borra al terminar: no queda en la carpeta del programa.
+; skipifsourcedoesntexist -> compilar a mano sin el paso de CI sigue andando.
+Source: "..\webview2\MicrosoftEdgeWebview2Setup.exe"; DestDir: "{tmp}"; \
+    Flags: deleteafterinstall skipifsourcedoesntexist
 
 [Icons]
 ; Acceso principal: la app de ESCRITORIO (ventana nativa propia, sin navegador).
@@ -128,11 +133,49 @@ Name: "{group}\Desinstalar {#MyAppName}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\App_Escritorio.vbs"; WorkingDir: "{app}"; IconFilename: "{app}\assets\icon.ico"; Tasks: desktopicon; Comment: "{#MyAppExeDescription}"
 
 [Run]
+; PRIMERO el runtime WebView2, si falta: es lo que dibuja la ventana nativa.
+; Sin el, desktop.py no puede abrir la ventana y cae a mostrar la app en el
+; navegador -- el cliente ve "una web" en vez de un programa. No lleva
+; "Flags: postinstall": corre siempre durante la instalacion, no es opcional.
+; Tampoco corta la instalacion si falla (el bootstrapper necesita internet):
+; en el peor caso queda el comportamiento viejo, no uno peor.
+Filename: "{tmp}\MicrosoftEdgeWebview2Setup.exe"; Parameters: "/silent /install"; \
+    StatusMsg: "Instalando el componente de Windows que necesita la ventana de la app..."; \
+    Check: FaltaWebView2; Flags: waituntilterminated skipifdoesntexist runascurrentuser
 Filename: "{app}\App_Escritorio.vbs"; Description: "Abrir {#MyAppName} ahora"; Flags: postinstall skipifsilent nowait shellexec runasoriginaluser
 
 [Code]
 var
   BorrarDatosDelUsuario: Boolean;
+
+// GUID del "Microsoft Edge WebView2 Runtime (Evergreen)". Es el componente que
+// dibuja la ventana nativa de la app (pywebview -> edgechromium). Windows 11 lo
+// trae de fabrica; muchos Windows 10 no.
+const
+  GUID_WEBVIEW2 = '{{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}';
+
+function WebView2Instalado(): Boolean;
+var
+  v: String;
+begin
+  // Se prueban las tres ubicaciones porque el runtime puede estar instalado
+  // para toda la maquina (HKLM, en la vista de 32 bits WOW6432Node en un
+  // Windows x64) o solo para el usuario (HKCU).
+  Result := False;
+  if RegQueryStringValue(HKLM, 'SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\' + GUID_WEBVIEW2, 'pv', v) then
+    Result := (v <> '') and (v <> '0.0.0.0');
+  if not Result then
+    if RegQueryStringValue(HKLM, 'SOFTWARE\Microsoft\EdgeUpdate\Clients\' + GUID_WEBVIEW2, 'pv', v) then
+      Result := (v <> '') and (v <> '0.0.0.0');
+  if not Result then
+    if RegQueryStringValue(HKCU, 'Software\Microsoft\EdgeUpdate\Clients\' + GUID_WEBVIEW2, 'pv', v) then
+      Result := (v <> '') and (v <> '0.0.0.0');
+end;
+
+function FaltaWebView2(): Boolean;
+begin
+  Result := not WebView2Instalado();
+end;
 
 // Carpeta propuesta al abrir la pagina de destino. Se calcula aca en vez de
 // usar la constante autopf, que puede fallar y abortar la instalacion.

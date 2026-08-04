@@ -114,6 +114,27 @@ jobs:
           $ErrorActionPreference = "Stop"
           runtime\python.exe -m pip install --no-warn-script-location -r requirements-desktop.txt
 
+      # pywebview (la libreria de Python) SI viaja en runtime\, pero la ventana
+      # nativa la dibuja el runtime WebView2 de Microsoft Edge, que es un
+      # componente del SISTEMA y no se puede meter dentro de runtime\. Sin el,
+      # webview.start(gui="edgechromium") tira excepcion y desktop.py cae a
+      # abrir el navegador: el cliente ve "una web" en vez de un programa.
+      #
+      # Windows 11 lo trae de fabrica; muchos Windows 10 NO. Por eso se bundlea
+      # el bootstrapper oficial (~2 MB, redistribuible por Microsoft) y el
+      # instalador lo corre solo si falta. En CI no se notaba porque los
+      # runners de GitHub ya lo tienen instalado.
+      - name: Descargar el bootstrapper de WebView2 (para bundlear)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          New-Item -ItemType Directory -Force -Path webview2 | Out-Null
+          Invoke-WebRequest -Uri "https://go.microsoft.com/fwlink/p/?LinkId=2124703" `
+                            -OutFile "webview2\MicrosoftEdgeWebview2Setup.exe"
+          $f = Get-Item "webview2\MicrosoftEdgeWebview2Setup.exe"
+          if ($f.Length -lt 100KB) { throw "El bootstrapper de WebView2 bajo incompleto ($($f.Length) bytes)." }
+          Write-Host "WebView2 bootstrapper: $([math]::Round($f.Length/1KB)) KB"
+
       # webview.platforms.edgechromium fuerza la carga real de pythonnet/
       # clr_loader (la dependencia mas fragil del bundle) -- un "import
       # webview" solo no la ejercita, pywebview la carga recien al crear la
