@@ -19,9 +19,14 @@ on:
   workflow_dispatch:
     inputs:
       owner:
-        description: "Build OWNER (interno, arranca pre-activado). Requiere secrets OWNER_LICENSE_EMAIL/OWNER_LICENSE_KEY. Se publica en el Release owner-latest, NUNCA en pc-latest."
+        description: "Build OWNER (interno, arranca pre-activado). Se publica en el Release owner-latest, NUNCA en pc-latest."
         type: boolean
         default: false
+      owner_email:
+        description: "Email de dueño para el build OWNER. Con esto alcanza: la clave se pide sola al servidor. Si se deja vacio, se usan los secrets OWNER_LICENSE_EMAIL/OWNER_LICENSE_KEY."
+        type: string
+        required: false
+        default: ""
 
 # Pushes seguidos: se cancela el build del commit ya superado (ahorra cuota).
 concurrency:
@@ -143,22 +148,58 @@ jobs:
           Write-Host "functional-smoke-ok"
 
       # Build OWNER (solo con workflow_dispatch + owner=true): escribe la
-      # licencia del dueño desde secrets. El .iss la incluye con
-      # skipifsourcedoesntexist, asi que el build normal la ignora. Con este
-      # archivo presente, el programa se auto-activa como Pro en el primer
-      # arranque (validando contra el servidor, no es un bypass).
+      # licencia del dueño. El .iss la incluye con skipifsourcedoesntexist, asi
+      # que el build normal la ignora. Con este archivo presente, el programa se
+      # auto-activa como Pro en el primer arranque (validando contra el
+      # servidor, no es un bypass).
+      #
+      # Dos caminos, en este orden:
+      #   1. owner_email cargado a mano al lanzar el workflow -> la clave se
+      #      pide sola a /api/licencia?dueno=1. Con poner el mail alcanza: no
+      #      hay que configurar ningun secret. El servidor solo la entrega si
+      #      ese email es exactamente el OWNER_EMAIL configurado en Vercel.
+      #   2. Sin owner_email -> se usan los secrets de siempre (compatibilidad).
       - name: Escribir licencia owner (build interno)
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.owner == 'true'
         shell: pwsh
         env:
+          OWNER_EMAIL_INPUT: ${{ github.event.inputs.owner_email }}
           OWNER_LICENSE_EMAIL: ${{ secrets.OWNER_LICENSE_EMAIL }}
           OWNER_LICENSE_KEY: ${{ secrets.OWNER_LICENSE_KEY }}
         run: |
           $ErrorActionPreference = "Stop"
-          if (-not $env:OWNER_LICENSE_EMAIL -or -not $env:OWNER_LICENSE_KEY) {
-            throw "Faltan los secrets OWNER_LICENSE_EMAIL / OWNER_LICENSE_KEY."
+          # Interpolado a string: si la variable no viene, queda "" en vez de
+          # $null -- llamar .Trim() sobre $null tira "You cannot call a method
+          # on a null-valued expression" y el paso moriria en vez de caer al
+          # camino de los secrets.
+          $email = "$($env:OWNER_EMAIL_INPUT)".Trim()
+          if ($email) {
+            Write-Host "Pidiendo la licencia de dueño al servidor para $email"
+            $url = "https://mvfbaia.com/api/licencia?dueno=1&email=" + [uri]::EscapeDataString($email)
+            try {
+              $r = Invoke-RestMethod -Uri $url -Headers @{ "x-mv-app" = "mvfba-web-1" } -TimeoutSec 30
+            } catch {
+              throw ("El servidor rechazo la licencia de dueño para '$email'. " +
+                     "Tiene que ser EXACTAMENTE el mismo email que OWNER_EMAIL en Vercel. " +
+                     "Detalle: " + $_.Exception.Message)
+            }
+            if (-not $r.licencia) { throw "El servidor no devolvio ninguna licencia para '$email'." }
+            $clave = $r.licencia
+            # La clave nunca se imprime: se enmascara el log por las dudas.
+            Write-Host "::add-mask::$clave"
+            Write-Host "Licencia de dueño obtenida (plan: $($r.plan))"
           }
-          $obj = @{ email = $env:OWNER_LICENSE_EMAIL; clave = $env:OWNER_LICENSE_KEY }
+          elseif ($env:OWNER_LICENSE_EMAIL -and $env:OWNER_LICENSE_KEY) {
+            $email = $env:OWNER_LICENSE_EMAIL
+            $clave = $env:OWNER_LICENSE_KEY
+            Write-Host "Usando los secrets OWNER_LICENSE_EMAIL / OWNER_LICENSE_KEY"
+          }
+          else {
+            throw ("Para el build owner: cargá tu email en el campo 'owner_email' al " +
+                   "lanzar el workflow (con eso alcanza), o configura los secrets " +
+                   "OWNER_LICENSE_EMAIL / OWNER_LICENSE_KEY.")
+          }
+          $obj = @{ email = $email; clave = $clave }
           $obj | ConvertTo-Json | Set-Content -Path owner_licencia.json -Encoding UTF8
 
       - name: Compilar instalador
