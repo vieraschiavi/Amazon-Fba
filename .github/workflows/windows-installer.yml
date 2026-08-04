@@ -15,6 +15,7 @@ on:
       - "requirements.txt"
       - "requirements-desktop.txt"
       - "frontend/**"
+      - "electron/**"
       - ".github/workflows/windows-installer.yml"
   workflow_dispatch:
     inputs:
@@ -23,10 +24,10 @@ on:
         type: boolean
         default: false
       owner_email:
-        description: "Email de dueño para el build OWNER. Con esto alcanza: la clave se pide sola al servidor. Si se deja vacio, se usan los secrets OWNER_LICENSE_EMAIL/OWNER_LICENSE_KEY."
+        description: "Email de dueño para el build OWNER (ya viene cargado). La clave se pide sola al servidor: no hace falta ningun secret."
         type: string
         required: false
-        default: ""
+        default: "vieraschiavi@gmail.com"
 
 # Pushes seguidos: se cancela el build del commit ya superado (ahorra cuota).
 concurrency:
@@ -57,6 +58,32 @@ jobs:
         run: |
           npm ci
           npm run build
+
+      # La app de escritorio es Electron: trae su propio Chromium adentro, asi
+      # que la ventana abre igual en cualquier Windows. Antes se usaba pywebview
+      # sobre WebView2 (componente del SISTEMA): si la maquina no lo tenia, la
+      # app no podia abrir ventana y se mostraba en el navegador.
+      - name: Compilar la app de escritorio (Electron)
+        working-directory: electron
+        run: |
+          npm install --no-audit --no-fund
+          npx --yes @electron/packager . "MV FBA IA" --platform=win32 --arch=x64 `
+              --out=../electron-dist --overwrite --icon=../installer/assets/icon.ico `
+              --app-version=1.3.0
+        shell: pwsh
+
+      - name: Verificar que el empaquetado de Electron salio entero
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $exe = "electron-dist\MV FBA IA-win32-x64\MV FBA IA.exe"
+          if (-not (Test-Path $exe)) { throw "No se genero $exe" }
+          $mb = [math]::Round((Get-ChildItem "electron-dist\MV FBA IA-win32-x64" -Recurse |
+                Measure-Object -Property Length -Sum).Sum / 1MB)
+          Write-Host "App Electron: $mb MB"
+          # Si bajara de ~100 MB es que falto el runtime de Chromium: mejor
+          # cortar aca que publicar un instalador que no abre.
+          if ($mb -lt 100) { throw "El empaquetado de Electron quedo incompleto ($mb MB)" }
 
       - name: Instalar Inno Setup
         run: choco install innosetup --no-progress -y
@@ -114,26 +141,6 @@ jobs:
           $ErrorActionPreference = "Stop"
           runtime\python.exe -m pip install --no-warn-script-location -r requirements-desktop.txt
 
-      # pywebview (la libreria de Python) SI viaja en runtime\, pero la ventana
-      # nativa la dibuja el runtime WebView2 de Microsoft Edge, que es un
-      # componente del SISTEMA y no se puede meter dentro de runtime\. Sin el,
-      # webview.start(gui="edgechromium") tira excepcion y desktop.py cae a
-      # abrir el navegador: el cliente ve "una web" en vez de un programa.
-      #
-      # Windows 11 lo trae de fabrica; muchos Windows 10 NO. Por eso se bundlea
-      # el bootstrapper oficial (~2 MB, redistribuible por Microsoft) y el
-      # instalador lo corre solo si falta. En CI no se notaba porque los
-      # runners de GitHub ya lo tienen instalado.
-      - name: Descargar el bootstrapper de WebView2 (para bundlear)
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-          New-Item -ItemType Directory -Force -Path webview2 | Out-Null
-          Invoke-WebRequest -Uri "https://go.microsoft.com/fwlink/p/?LinkId=2124703" `
-                            -OutFile "webview2\MicrosoftEdgeWebview2Setup.exe"
-          $f = Get-Item "webview2\MicrosoftEdgeWebview2Setup.exe"
-          if ($f.Length -lt 100KB) { throw "El bootstrapper de WebView2 bajo incompleto ($($f.Length) bytes)." }
-          Write-Host "WebView2 bootstrapper: $([math]::Round($f.Length/1KB)) KB"
 
       # webview.platforms.edgechromium fuerza la carga real de pythonnet/
       # clr_loader (la dependencia mas fragil del bundle) -- un "import
@@ -195,7 +202,11 @@ jobs:
           # camino de los secrets.
           $email = "$($env:OWNER_EMAIL_INPUT)".Trim()
           if ($email) {
-            Write-Host "Pidiendo la licencia de dueño al servidor para $email"
+            # Ni el email ni la clave se imprimen: quedarian en el log del
+            # workflow, y con ese email cualquiera puede pedirle una licencia
+            # Pro al servidor.
+            Write-Host "::add-mask::$email"
+            Write-Host "Pidiendo la licencia de dueño al servidor"
             $url = "https://mvfbaia.com/api/licencia?dueno=1&email=" + [uri]::EscapeDataString($email)
             try {
               $r = Invoke-RestMethod -Uri $url -Headers @{ "x-mv-app" = "mvfba-web-1" } -TimeoutSec 30
