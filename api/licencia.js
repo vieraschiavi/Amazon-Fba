@@ -35,11 +35,28 @@ export default async function handler(req, res) {
 
   const q = req.query || {};
 
-  // Auto-servicio para el dueño del producto: probar el programa 100% sin
-  // pasar por un pago real. Gateado por email exacto (OWNER_EMAIL en Vercel,
-  // no es un valor sensible) -- nadie mas puede pedir esto sin conocer ese
-  // email exacto configurado por el propio dueño.
+  // Licencia de dueño: la usa el BUILD de GitHub para hornear owner_licencia.json
+  // dentro del instalador interno. NO es un endpoint de la web.
+  //
+  // Antes la unica barrera era acertar el email (OWNER_EMAIL). Eso no alcanza:
+  // el header x-mv-app esta hardcodeado en landing/index.html -- o sea a la
+  // vista con F12 -- y el usuario de GitHub del dueño es publico, asi que su
+  // gmail es una conjetura obvia. Con esas dos cosas, cualquiera se emitia una
+  // licencia Pro gratis y dejaba de pagar el producto.
+  //
+  // Ahora hace falta ademas OWNER_BUILD_TOKEN, que solo conocen Vercel y el
+  // workflow de GitHub. FALLA CERRADO a proposito: si la variable no esta
+  // configurada en Vercel, este camino queda DESHABILITADO en vez de quedar
+  // abierto -- un deploy sin configurar no puede reabrir el agujero.
+  //
+  // Es un token aparte, NO el LICENCIA_SECRETO: se puede rotar cuando quieras
+  // sin invalidar ni una sola licencia ya vendida.
   if (String(q.dueno || "") === "1") {
+    const buildToken = String(process.env.OWNER_BUILD_TOKEN || "").trim();
+    const enviado = String(req.headers["x-mv-owner-build"] || q.build_token || "").trim();
+    if (!buildToken || !enviado || enviado !== buildToken) {
+      return res.status(403).json({ error: "no_autorizado" });
+    }
     const ownerEmail = String(process.env.OWNER_EMAIL || "").trim().toLowerCase();
     const email = String(q.email || "").trim().toLowerCase();
     if (!ownerEmail || !email || email !== ownerEmail) return res.status(403).json({ error: "no_autorizado" });

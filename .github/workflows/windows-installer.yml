@@ -192,6 +192,7 @@ jobs:
         shell: pwsh
         env:
           OWNER_EMAIL_INPUT: ${{ github.event.inputs.owner_email }}
+          OWNER_BUILD_TOKEN: ${{ secrets.OWNER_BUILD_TOKEN }}
           OWNER_LICENSE_EMAIL: ${{ secrets.OWNER_LICENSE_EMAIL }}
           OWNER_LICENSE_KEY: ${{ secrets.OWNER_LICENSE_KEY }}
         run: |
@@ -206,10 +207,20 @@ jobs:
             # workflow, y con ese email cualquiera puede pedirle una licencia
             # Pro al servidor.
             Write-Host "::add-mask::$email"
+            if (-not $env:OWNER_BUILD_TOKEN) {
+              throw ("Falta el secret OWNER_BUILD_TOKEN. Es el que autoriza a este " +
+                     "build a pedir la licencia de dueño; sin el, el endpoint queda " +
+                     "cerrado tambien para la web (falla cerrado, a proposito). " +
+                     "Cargá el MISMO valor en Vercel (Environment Variables) y en " +
+                     "GitHub (Settings > Secrets and variables > Actions).")
+            }
             Write-Host "Pidiendo la licencia de dueño al servidor"
             $url = "https://mvfbaia.com/api/licencia?dueno=1&email=" + [uri]::EscapeDataString($email)
             try {
-              $r = Invoke-RestMethod -Uri $url -Headers @{ "x-mv-app" = "mvfba-web-1" } -TimeoutSec 30
+              $r = Invoke-RestMethod -Uri $url -TimeoutSec 30 -Headers @{
+                "x-mv-app" = "mvfba-web-1"
+                "x-mv-owner-build" = $env:OWNER_BUILD_TOKEN
+              }
             } catch {
               throw ("El servidor rechazo la licencia de dueño para '$email'. " +
                      "Tiene que ser EXACTAMENTE el mismo email que OWNER_EMAIL en Vercel. " +
