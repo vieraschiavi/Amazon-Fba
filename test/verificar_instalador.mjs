@@ -198,6 +198,31 @@ const INICIAR = fs.readFileSync(path.join(RAIZ, "INICIAR.bat"), "utf8");
 if (/buscar_puerto/.test(INICIAR)) ok("INICIAR.bat busca un puerto libre antes de arrancar");
 else falla("INICIAR.bat no busca puerto libre: moriria si 8000 esta tomado");
 
+// --- 10) el instalador OWNER es inalcanzable para un cliente ---
+// Es el que arranca pre-activado como Pro: si un cliente pudiera bajarlo,
+// tendria el producto completo gratis. Se publica en un Release aparte
+// (owner-latest) que api/descarga.js NO conoce, y el repo es privado.
+const DESCARGA = fs.readFileSync(path.join(RAIZ, "api/descarga.js"), "utf8");
+if (/owner-latest|Owner_Setup/i.test(DESCARGA)) {
+  falla("api/descarga.js menciona el release OWNER: un cliente podria bajarlo");
+} else ok("api/descarga.js no conoce owner-latest (el cliente no puede pedirlo)");
+// Los tags servibles tienen que ser constantes del propio archivo, no algo que
+// el cliente pueda elegir por querystring.
+const tags = [...DESCARGA.matchAll(/tag:\s*"([^"]+)"/g)].map((m) => m[1]);
+if (!tags.length) falla("no encontre los tags de release en api/descarga.js");
+else if (tags.some((t) => !["pc-latest", "android-latest"].includes(t))) {
+  falla(`api/descarga.js puede servir tags inesperados: ${tags.join(", ")}`);
+} else ok(`api/descarga.js solo sirve ${tags.join(" y ")} (tags fijos, no elegibles)`);
+
+// El build owner no puede publicar un instalador SIN la licencia adentro:
+// el .iss la incluye con skipifsourcedoesntexist, o sea que compilaria igual.
+if (/Verificar que el build owner lleva la licencia adentro/.test(WF)) {
+  ok("el CI corta si el build owner no lleva owner_licencia.json adentro");
+} else {
+  falla("sin esa verificacion, un build owner podria publicar en owner-latest " +
+        "un instalador NO pre-activado, con cara de owner");
+}
+
 console.log("");
 if (fallos.length) {
   console.error(`FALLO: ${fallos.length} problema(s) en el instalador.`);

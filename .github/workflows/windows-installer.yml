@@ -245,6 +245,27 @@ jobs:
           $obj = @{ email = $email; clave = $clave }
           $obj | ConvertTo-Json | Set-Content -Path owner_licencia.json -Encoding UTF8
 
+      # Guarda contra el peor final silencioso del build owner: el .iss incluye
+      # owner_licencia.json con skipifsourcedoesntexist, asi que si el archivo
+      # no estuviera, compilaria igual -- y se publicaria en owner-latest un
+      # instalador que NO viene pre-activado, con cara de owner. Se corta antes.
+      - name: Verificar que el build owner lleva la licencia adentro
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.owner == 'true'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          if (-not (Test-Path owner_licencia.json)) {
+            throw "Build owner sin owner_licencia.json: el instalador saldria SIN pre-activar."
+          }
+          $d = Get-Content owner_licencia.json -Raw | ConvertFrom-Json
+          if (-not $d.email -or -not $d.clave) {
+            throw "owner_licencia.json existe pero le falta email o clave."
+          }
+          if ($d.clave -notmatch '^MVFBA(-[A-F0-9]{4}){4}$') {
+            throw "La clave de owner no tiene el formato MVFBA-XXXX-XXXX-XXXX-XXXX."
+          }
+          Write-Host "owner_licencia.json OK (formato de clave valido)"
+
       - name: Compilar instalador
         run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\MV_Amazon_FBA_IA.iss
