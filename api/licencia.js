@@ -13,6 +13,7 @@ import { avisarCreditosPorEmail } from "./_email_creditos.js";
 import { obtenerOrden, leerOrden, paypalConfigurado } from "./_paypal.js";
 import { limpiarRevocacion } from "./_revocacion.js";
 import { registrarVenta } from "./_atribucion.js";
+import { accesoAlRepoValido } from "./_owner_github.js";
 
 export default async function handler(req, res) {
   aplicarCors(req, res, "GET, OPTIONS");
@@ -44,17 +45,27 @@ export default async function handler(req, res) {
   // gmail es una conjetura obvia. Con esas dos cosas, cualquiera se emitia una
   // licencia Pro gratis y dejaba de pagar el producto.
   //
-  // Ahora hace falta ademas OWNER_BUILD_TOKEN, que solo conocen Vercel y el
-  // workflow de GitHub. FALLA CERRADO a proposito: si la variable no esta
-  // configurada en Vercel, este camino queda DESHABILITADO en vez de quedar
-  // abierto -- un deploy sin configurar no puede reabrir el agujero.
+  // Ahora hay que PROBAR que quien pide es el build, no un navegador. Dos
+  // formas, cualquiera alcanza:
   //
-  // Es un token aparte, NO el LICENCIA_SECRETO: se puede rotar cuando quieras
-  // sin invalidar ni una sola licencia ya vendida.
+  //   1. Acceso al repo PRIVADO (lo normal, y sin configurar nada). El workflow
+  //      manda el GITHUB_TOKEN que Actions le da solo; aca se verifica contra
+  //      la API de GitHub. Quien puede correr el workflow ya tiene acceso total
+  //      al repo, asi que ese acceso ES la autorizacion. Desde la web nadie
+  //      tiene un token asi.
+  //   2. OWNER_BUILD_TOKEN, si algun dia se prefiere un secreto compartido.
+  //      Opcional: si no esta configurado, simplemente no se usa esta via.
+  //
+  // FALLA CERRADO: si no se prueba ninguna de las dos, 403. Un deploy sin
+  // configurar nada no puede reabrir el agujero -- solo deja el camino 1.
   if (String(q.dueno || "") === "1") {
     const buildToken = String(process.env.OWNER_BUILD_TOKEN || "").trim();
     const enviado = String(req.headers["x-mv-owner-build"] || q.build_token || "").trim();
-    if (!buildToken || !enviado || enviado !== buildToken) {
+    const porTokenCompartido = Boolean(buildToken) && Boolean(enviado) && enviado === buildToken;
+    const porAccesoAlRepo = porTokenCompartido
+      ? false
+      : await accesoAlRepoValido(req.headers["x-mv-github-token"]);
+    if (!porTokenCompartido && !porAccesoAlRepo) {
       return res.status(403).json({ error: "no_autorizado" });
     }
     const ownerEmail = String(process.env.OWNER_EMAIL || "").trim().toLowerCase();

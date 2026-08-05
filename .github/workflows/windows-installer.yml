@@ -192,6 +192,9 @@ jobs:
         shell: pwsh
         env:
           OWNER_EMAIL_INPUT: ${{ github.event.inputs.owner_email }}
+          # Token efimero que Actions genera para este job: prueba acceso al
+          # repo privado. Es lo unico que hace falta -- sin configurar secrets.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OWNER_BUILD_TOKEN: ${{ secrets.OWNER_BUILD_TOKEN }}
           OWNER_LICENSE_EMAIL: ${{ secrets.OWNER_LICENSE_EMAIL }}
           OWNER_LICENSE_KEY: ${{ secrets.OWNER_LICENSE_KEY }}
@@ -207,20 +210,17 @@ jobs:
             # workflow, y con ese email cualquiera puede pedirle una licencia
             # Pro al servidor.
             Write-Host "::add-mask::$email"
-            if (-not $env:OWNER_BUILD_TOKEN) {
-              throw ("Falta el secret OWNER_BUILD_TOKEN. Es el que autoriza a este " +
-                     "build a pedir la licencia de dueño; sin el, el endpoint queda " +
-                     "cerrado tambien para la web (falla cerrado, a proposito). " +
-                     "Cargá el MISMO valor en Vercel (Environment Variables) y en " +
-                     "GitHub (Settings > Secrets and variables > Actions).")
-            }
+            # No hace falta configurar NADA: la autorizacion es el acceso al
+            # repo privado. Se manda el GITHUB_TOKEN que Actions da solo y el
+            # servidor verifica contra la API de GitHub que ese token pueda
+            # leer este repo. Quien corre el workflow ya es el dueño.
+            # OWNER_BUILD_TOKEN queda como via alternativa opcional.
             Write-Host "Pidiendo la licencia de dueño al servidor"
             $url = "https://mvfbaia.com/api/licencia?dueno=1&email=" + [uri]::EscapeDataString($email)
+            $cabeceras = @{ "x-mv-app" = "mvfba-web-1"; "x-mv-github-token" = $env:GITHUB_TOKEN }
+            if ($env:OWNER_BUILD_TOKEN) { $cabeceras["x-mv-owner-build"] = $env:OWNER_BUILD_TOKEN }
             try {
-              $r = Invoke-RestMethod -Uri $url -TimeoutSec 30 -Headers @{
-                "x-mv-app" = "mvfba-web-1"
-                "x-mv-owner-build" = $env:OWNER_BUILD_TOKEN
-              }
+              $r = Invoke-RestMethod -Uri $url -TimeoutSec 30 -Headers $cabeceras
             } catch {
               throw ("El servidor rechazo la licencia de dueño para '$email'. " +
                      "Tiene que ser EXACTAMENTE el mismo email que OWNER_EMAIL en Vercel. " +
