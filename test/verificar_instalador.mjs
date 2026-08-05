@@ -163,6 +163,41 @@ if (/nodeIntegration:\s*false/.test(MAIN) && /contextIsolation:\s*true/.test(MAI
   ok("  la ventana no expone Node al contenido web");
 } else falla("main.js deberia usar nodeIntegration:false + contextIsolation:true");
 
+// --- 8) el cliente NO recibe el panel legacy de Streamlit ---
+// streamlit no se instala en el runtime del cliente (requirements-desktop.txt),
+// asi que estos archivos eran peso muerto que ademas FALLABA si los tocaba.
+// core\i18n.py es el peor: tiene "import streamlit as st" duro.
+const pyLine = lineasFiles.find((l) => /\.\.\\\*\.py/.test(l));
+const batLine = lineasFiles.find((l) => /\.\.\\\*\.bat/.test(l));
+const coreLine = lineasFiles.find((l) => /\.\.\\core\\\*/.test(l));
+const chequeos = [
+  [pyLine, "dashboard_app.py", "el panel Streamlit viejo"],
+  [pyLine, "styles.py", "el sistema de diseño de ese panel"],
+  [batLine, "LEGACY_STREAMLIT.bat", "el lanzador de algo que no esta instalado"],
+  [coreLine, "i18n.py", "tiene 'import streamlit' duro"],
+];
+for (const [linea, archivo, porque] of chequeos) {
+  if (!linea) { falla(`no encontre la linea Source de ${archivo}`); continue; }
+  const m = /Excludes:\s*"([^"]*)"/i.exec(linea);
+  const excl = m ? m[1].split(",").map((x) => x.trim()) : [];
+  if (excl.includes(archivo)) ok(`  ${archivo} NO se distribuye (${porque})`);
+  else falla(`${archivo} se le entrega al cliente y ${porque}`);
+}
+if (lineasFiles.some((l) => /\.streamlit/.test(l))) {
+  falla("[Files] todavia copia la carpeta .streamlit al cliente");
+} else ok("  la carpeta .streamlit no se distribuye");
+
+// --- 9) el puerto no puede chocar con otra app ---
+// Electron pide el puerto 0: el sistema operativo devuelve uno LIBRE. Un puerto
+// fijo chocaria con cualquier otra cosa que ya lo tenga tomado.
+if (/listen\(0,/.test(MAIN)) {
+  ok("Electron pide un puerto libre al sistema (listen(0)), no uno fijo");
+} else falla("Electron usa un puerto fijo: chocaria con otra app que lo tenga abierto");
+// y los lanzadores .bat lo resuelven con core/puerto.py, que hace bind real
+const INICIAR = fs.readFileSync(path.join(RAIZ, "INICIAR.bat"), "utf8");
+if (/buscar_puerto/.test(INICIAR)) ok("INICIAR.bat busca un puerto libre antes de arrancar");
+else falla("INICIAR.bat no busca puerto libre: moriria si 8000 esta tomado");
+
 console.log("");
 if (fallos.length) {
   console.error(`FALLO: ${fallos.length} problema(s) en el instalador.`);
