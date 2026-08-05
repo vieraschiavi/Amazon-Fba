@@ -112,42 +112,56 @@ else if (/inputs\.owner == 'true'/.test(pubOwner)) {
 } else falla("owner-latest se publicaria en un build normal");
 
 // --- 7) la app tiene que abrir como PROGRAMA, no como pagina web ---
-// pywebview (la libreria) viaja en runtime\, pero la ventana la dibuja el
-// runtime WebView2 de Edge, que es un componente del SISTEMA. Sin el,
-// desktop.py cae a abrir el navegador y el cliente ve "una web".
-if (/MicrosoftEdgeWebview2Setup\.exe/.test(WF)) {
-  ok("el CI descarga el bootstrapper de WebView2");
-} else falla("el CI no descarga el bootstrapper de WebView2: el instalador no podria ponerlo");
+// Se abre con Electron, que trae su propio Chromium adentro. Antes se usaba
+// pywebview sobre el runtime WebView2 de Edge, que es un componente del
+// SISTEMA: si la maquina no lo tenia, la ventana no podia abrir y la app caia
+// a mostrarse en el navegador -- el cliente veia "una web" en vez de un
+// programa. Electron no depende de nada instalado.
+if (/@electron\/packager/.test(WF)) ok("el CI empaqueta la app de Electron");
+else falla("el CI no empaqueta Electron: el instalador no tendria la app de escritorio");
 
-const bundleaWv2 = lineasFiles.some((l) => /MicrosoftEdgeWebview2Setup\.exe/.test(l));
-if (bundleaWv2) ok("el instalador empaqueta el bootstrapper de WebView2");
-else falla("[Files] no incluye MicrosoftEdgeWebview2Setup.exe");
+if (/electron-dist.*MV FBA IA-win32-x64/.test(WF)) {
+  ok("el CI verifica que el empaquetado de Electron salga entero");
+} else falla("el CI no verifica el resultado del empaquetado de Electron");
 
-if (/function FaltaWebView2/.test(ISS) && /EdgeUpdate\\Clients/.test(ISS)) {
-  ok("detecta por registro si WebView2 ya esta instalado (no reinstala al pedo)");
-} else falla("falta la deteccion de WebView2 en [Code]");
+const bundleaElectron = lineasFiles.some((l) => /electron-dist/.test(l));
+if (bundleaElectron) ok("el instalador empaqueta la app de Electron");
+else falla("[Files] no incluye la app de Electron (electron-dist)");
 
-const lineasRun = ISS.split("\n").filter((l) => /^\s*Filename:/i.test(l));
-const iWv2 = lineasRun.findIndex((l) => /MicrosoftEdgeWebview2Setup/.test(l));
-const iApp = lineasRun.findIndex((l) => /App_Escritorio\.vbs/.test(l));
-if (iWv2 < 0) falla("[Run] no ejecuta el bootstrapper de WebView2");
-else if (!/Check:\s*FaltaWebView2/.test(lineasRun[iWv2])) {
-  falla("[Run] corre WebView2 sin Check: FaltaWebView2 (lo instalaria siempre)");
-} else if (iApp >= 0 && iWv2 > iApp) {
-  falla("[Run] abre la app ANTES de instalar WebView2: la primera apertura " +
-        "caeria igual al navegador");
-} else ok("[Run] instala WebView2 (solo si falta) ANTES de abrir la app");
+// Todos los accesos directos y el "abrir ahora" tienen que ir al .exe de
+// Electron, no al .vbs viejo que lanzaba un .bat oculto.
+const lineasIcon = ISS.split("\n").filter((l) => /^\s*Name:\s*"\{(group|autodesktop)\}/i.test(l));
+const principales = lineasIcon.filter((l) => !/modo navegador|Diagnostico|Verificar conexiones|Desinstalar/i.test(l));
+if (!principales.length) falla("no encontre los accesos directos principales");
+else {
+  const malos = principales.filter((l) => !/desktop\\MV FBA IA\.exe/.test(l));
+  if (malos.length) falla(`${malos.length} acceso(s) directo(s) principal(es) no apuntan al .exe de Electron`);
+  else ok(`los ${principales.length} accesos directos principales abren el .exe de Electron`);
+}
+const runApp = ISS.split("\n").filter((l) => /^\s*Filename:/i.test(l))
+  .find((l) => /postinstall/.test(l));
+if (!runApp) falla("[Run] no tiene la opcion 'Abrir ahora' al terminar");
+else if (!/desktop\\MV FBA IA\.exe/.test(runApp)) {
+  falla("el 'Abrir ahora' del final no lanza el .exe de Electron");
+} else ok("el 'Abrir ahora' del final lanza el .exe de Electron");
 
-// desktop.py: el icono tiene que salir de una carpeta que el instalador copie.
-const DESK = fs.readFileSync(path.join(RAIZ, "desktop.py"), "utf8");
-if (/mobile["'],\s*["']icons/.test(DESK) && !/def _icono/.test(DESK)) {
-  falla("desktop.py apunta el icono a mobile\\, que el instalador NO distribuye");
-} else ok("desktop.py resuelve el icono entre carpetas que si se distribuyen");
-// y el fallback al navegador tiene que ser VISIBLE (corre con pythonw, sin consola)
-if (/def _avisar/.test(DESK) && /MessageBoxW/.test(DESK)) {
-  ok("si cae al navegador, avisa al usuario (no falla en silencio)");
-} else falla("desktop.py cae al navegador sin aviso visible: corre con pythonw " +
-             "(sin consola), asi que un print() no lo lee nadie");
+// La desinstalacion tiene que llevarse tambien desktop\ (Electron pesa ~200 MB)
+if (/DelTree\(AppDir \+ '\\desktop', True, True, True\)/.test(ISS)) {
+  ok("  la desinstalacion borra desktop\\ (la app de Electron)");
+} else falla("la desinstalacion no borra desktop\\: quedarian ~200 MB de Electron");
+
+// main.js: el motor Python tiene que apagarse SIEMPRE con la app.
+const MAIN = fs.readFileSync(path.join(RAIZ, "electron/main.js"), "utf8");
+for (const ev of ["window-all-closed", "before-quit"]) {
+  if (new RegExp(`"${ev}"`).test(MAIN)) ok(`  main.js apaga el motor en ${ev}`);
+  else falla(`main.js no apaga el motor en ${ev}: quedaria un uvicorn huerfano`);
+}
+if (/requestSingleInstanceLock/.test(MAIN)) {
+  ok("  una sola instancia: dos clics no levantan dos motores sobre la misma base");
+} else falla("main.js sin requestSingleInstanceLock");
+if (/nodeIntegration:\s*false/.test(MAIN) && /contextIsolation:\s*true/.test(MAIN)) {
+  ok("  la ventana no expone Node al contenido web");
+} else falla("main.js deberia usar nodeIntegration:false + contextIsolation:true");
 
 console.log("");
 if (fallos.length) {
@@ -155,4 +169,5 @@ if (fallos.length) {
   process.exit(1);
 }
 console.log("OK: el instalador no filtra documentacion interna, tiene metadatos, "
-  + "deja elegir carpeta, desinstala sin residuos y separa owner de clientes.");
+  + "deja elegir carpeta, abre la app de Electron, desinstala sin residuos y "
+  + "separa owner de clientes.");

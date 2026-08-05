@@ -35,3 +35,8 @@ owner_licencia.json
 # Assets de la app Android que se copian en cada build desde mobile/
 android/app/src/main/assets/
 landing/app/
+
+# Electron: dependencias y salida del empaquetado (los arma el CI)
+electron/node_modules/
+electron-dist/
+webview2/

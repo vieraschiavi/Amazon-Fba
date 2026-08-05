@@ -1,0 +1,18 @@
+{
+  "name": "mv-fba-ia-desktop",
+  "productName": "MV FBA IA",
+  "version": "1.3.0",
+  "description": "Cockpit inteligente para tu negocio Amazon FBA",
+  "author": "MV FBA IA",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "empaquetar": "electron-packager . \"MV FBA IA\" --platform=win32 --arch=x64 --out=../electron-dist --overwrite --icon=../installer/assets/icon.ico --app-version=1.3.0"
+  },
+  "devDependencies": {
+    "@electron/packager": "^18.3.6",
+    "electron": "^33.4.11"
+  }
+}

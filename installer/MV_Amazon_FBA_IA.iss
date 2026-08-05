@@ -117,65 +117,29 @@ Source: "assets\icon.ico"; DestDir: "{app}\assets"; Flags: ignoreversion
 Source: "..\owner_licencia.json"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "Iniciar_Silencioso.vbs"; DestDir: "{app}"; Flags: ignoreversion
 Source: "App_Escritorio.vbs"; DestDir: "{app}"; Flags: ignoreversion
-; Bootstrapper oficial de Microsoft para el runtime WebView2 (lo baja el CI).
-; Va a {tmp} y se borra al terminar: no queda en la carpeta del programa.
-; skipifsourcedoesntexist -> compilar a mano sin el paso de CI sigue andando.
-Source: "..\webview2\MicrosoftEdgeWebview2Setup.exe"; DestDir: "{tmp}"; \
-    Flags: deleteafterinstall skipifsourcedoesntexist
+; App de escritorio (Electron). Trae su propio Chromium, asi que la ventana
+; abre en cualquier Windows sin depender de WebView2. Va a {app}\desktop y
+; main.js resuelve la raiz del programa subiendo dos niveles desde el .exe.
+Source: "..\electron-dist\MV FBA IA-win32-x64\*"; DestDir: "{app}\desktop"; \
+    Flags: recursesubdirs ignoreversion
 
 [Icons]
-; Acceso principal: la app de ESCRITORIO (ventana nativa propia, sin navegador).
-Name: "{group}\{#MyAppName}"; Filename: "{app}\App_Escritorio.vbs"; WorkingDir: "{app}"; IconFilename: "{app}\assets\icon.ico"; Comment: "{#MyAppExeDescription}"
+; Acceso principal: la app de ESCRITORIO (Electron, ventana propia). Apunta al
+; .exe directo -- antes iba a un .vbs que lanzaba un .bat oculto, y cuando algo
+; fallaba ahi adentro no habia forma de enterarse.
+Name: "{group}\{#MyAppName}"; Filename: "{app}\desktop\MV FBA IA.exe"; WorkingDir: "{app}\desktop"; Comment: "{#MyAppExeDescription}"
 Name: "{group}\{#MyAppName} (modo navegador)"; Filename: "{app}\Iniciar_Silencioso.vbs"; WorkingDir: "{app}"; IconFilename: "{app}\assets\icon.ico"; Comment: "Abrir en el navegador (alternativa)"
 Name: "{group}\Diagnostico"; Filename: "{app}\DIAGNOSTICO.bat"; WorkingDir: "{app}"; IconFilename: "{app}\assets\icon.ico"
 Name: "{group}\Verificar conexiones (Keepa, Claude, email)"; Filename: "{app}\CONECTAR.bat"; WorkingDir: "{app}"; IconFilename: "{app}\assets\icon.ico"
 Name: "{group}\Desinstalar {#MyAppName}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\App_Escritorio.vbs"; WorkingDir: "{app}"; IconFilename: "{app}\assets\icon.ico"; Tasks: desktopicon; Comment: "{#MyAppExeDescription}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\desktop\MV FBA IA.exe"; WorkingDir: "{app}\desktop"; Tasks: desktopicon; Comment: "{#MyAppExeDescription}"
 
 [Run]
-; PRIMERO el runtime WebView2, si falta: es lo que dibuja la ventana nativa.
-; Sin el, desktop.py no puede abrir la ventana y cae a mostrar la app en el
-; navegador -- el cliente ve "una web" en vez de un programa. No lleva
-; "Flags: postinstall": corre siempre durante la instalacion, no es opcional.
-; Tampoco corta la instalacion si falla (el bootstrapper necesita internet):
-; en el peor caso queda el comportamiento viejo, no uno peor.
-Filename: "{tmp}\MicrosoftEdgeWebview2Setup.exe"; Parameters: "/silent /install"; \
-    StatusMsg: "Instalando el componente de Windows que necesita la ventana de la app..."; \
-    Check: FaltaWebView2; Flags: waituntilterminated skipifdoesntexist runascurrentuser
-Filename: "{app}\App_Escritorio.vbs"; Description: "Abrir {#MyAppName} ahora"; Flags: postinstall skipifsilent nowait shellexec runasoriginaluser
+Filename: "{app}\desktop\MV FBA IA.exe"; WorkingDir: "{app}\desktop"; Description: "Abrir {#MyAppName} ahora"; Flags: postinstall skipifsilent nowait runasoriginaluser
 
 [Code]
 var
   BorrarDatosDelUsuario: Boolean;
-
-// GUID del "Microsoft Edge WebView2 Runtime (Evergreen)". Es el componente que
-// dibuja la ventana nativa de la app (pywebview -> edgechromium). Windows 11 lo
-// trae de fabrica; muchos Windows 10 no.
-const
-  GUID_WEBVIEW2 = '{{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}';
-
-function WebView2Instalado(): Boolean;
-var
-  v: String;
-begin
-  // Se prueban las tres ubicaciones porque el runtime puede estar instalado
-  // para toda la maquina (HKLM, en la vista de 32 bits WOW6432Node en un
-  // Windows x64) o solo para el usuario (HKCU).
-  Result := False;
-  if RegQueryStringValue(HKLM, 'SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\' + GUID_WEBVIEW2, 'pv', v) then
-    Result := (v <> '') and (v <> '0.0.0.0');
-  if not Result then
-    if RegQueryStringValue(HKLM, 'SOFTWARE\Microsoft\EdgeUpdate\Clients\' + GUID_WEBVIEW2, 'pv', v) then
-      Result := (v <> '') and (v <> '0.0.0.0');
-  if not Result then
-    if RegQueryStringValue(HKCU, 'Software\Microsoft\EdgeUpdate\Clients\' + GUID_WEBVIEW2, 'pv', v) then
-      Result := (v <> '') and (v <> '0.0.0.0');
-end;
-
-function FaltaWebView2(): Boolean;
-begin
-  Result := not WebView2Instalado();
-end;
 
 // Carpeta propuesta al abrir la pagina de destino. Se calcula aca en vez de
 // usar la constante autopf, que puede fallar y abortar la instalacion.
@@ -221,6 +185,7 @@ begin
     // nunca un DelTree total de {app}: el usuario puede elegir cualquier
     // destino, y si eligio una carpeta compartida un borrado en bloque se
     // llevaria puesto lo que no es nuestro.
+    DelTree(AppDir + '\desktop', True, True, True);
     DelTree(AppDir + '\runtime', True, True, True);
     DelTree(AppDir + '\frontend', True, True, True);
     DelTree(AppDir + '\agents', True, True, True);
