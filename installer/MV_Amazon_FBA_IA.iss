@@ -86,8 +86,17 @@ Name: "desktopicon"; Description: "Crear un acceso directo en el Escritorio"; Gr
 ; se cuela silenciosamente. Con la lista explicita, nada que no deba
 ; distribuirse (installer/, mobile/, android/, .git/, .env, fba.db) puede
 ; terminar dentro del instalador por accidente.
-Source: "..\*.py"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\*.bat"; DestDir: "{app}"; Flags: ignoreversion
+; El panel LEGACY de Streamlit NO se distribuye. streamlit no se instala en el
+; runtime del cliente (ver requirements-desktop.txt), asi que esos archivos
+; eran peso muerto que ademas FALLABA si el cliente los tocaba:
+;   dashboard_app.py  panel Streamlit viejo (88 KB)
+;   styles.py         sistema de diseño de ese panel, solo lo usa el
+;   core\i18n.py      "import streamlit as st" DURO -- reventaba al importarse
+;   LEGACY_STREAMLIT.bat  lanzador que arrancaba algo que no esta instalado
+; Verificado que app.py importa entero con streamlit BLOQUEADO: el programa
+; que usa el cliente no lo necesita para nada.
+Source: "..\*.py"; DestDir: "{app}"; Excludes: "dashboard_app.py,styles.py"; Flags: ignoreversion
+Source: "..\*.bat"; DestDir: "{app}"; Excludes: "LEGACY_STREAMLIT.bat"; Flags: ignoreversion
 ; Documentacion: SOLO la que es para el cliente. Antes se empaquetaba "..\*.md"
 ; en bloque, lo que metia en el instalador CLAUDE.md (instrucciones internas de
 ; desarrollo) y PENDIENTES.md (bloqueadores internos, nombres de secrets, mapa
@@ -99,10 +108,9 @@ Source: "..\requirements.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\.env.example"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\pitch_inversor_fba.html"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\agents\*"; DestDir: "{app}\agents"; Excludes: "*.pyc"; Flags: recursesubdirs ignoreversion
-Source: "..\core\*"; DestDir: "{app}\core"; Excludes: "*.pyc"; Flags: recursesubdirs ignoreversion
+Source: "..\core\*"; DestDir: "{app}\core"; Excludes: "*.pyc,i18n.py"; Flags: recursesubdirs ignoreversion
 Source: "..\data\*"; DestDir: "{app}\data"; Excludes: "*.pyc,*.csv"; Flags: recursesubdirs ignoreversion
 Source: "..\n8n\*"; DestDir: "{app}\n8n"; Flags: recursesubdirs ignoreversion
-Source: "..\.streamlit\*"; DestDir: "{app}\.streamlit"; Flags: recursesubdirs ignoreversion
 ; Panel web SaaS compilado (React -> frontend/dist, generado por `npm run build`
 ; en CI ANTES de compilar este instalador). Solo dist: ni node_modules ni src.
 Source: "..\frontend\dist\*"; DestDir: "{app}\frontend\dist"; Flags: recursesubdirs ignoreversion

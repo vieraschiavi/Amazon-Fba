@@ -38,23 +38,24 @@ if (i < 0) {
 } else {
   const bloque = LIC.slice(i, LIC.indexOf("\n  }", i));
 
-  // 1) exige el token del build
-  if (/OWNER_BUILD_TOKEN/.test(bloque)) ok("el camino ?dueno=1 exige OWNER_BUILD_TOKEN");
-  else falla("?dueno=1 NO exige OWNER_BUILD_TOKEN: cualquiera que adivine el email " +
-             "se emite una licencia Pro gratis");
+  // 1) exige PROBAR quien llama: acceso al repo privado, o token compartido
+  if (/accesoAlRepoValido/.test(bloque)) {
+    ok("el camino ?dueno=1 exige probar acceso al repo privado");
+  } else falla("?dueno=1 no verifica acceso al repo: cualquiera que adivine el " +
+               "email se emite una licencia Pro gratis");
 
-  // 2) falla cerrado: sin el token configurado, el camino se deshabilita.
-  //    El "!buildToken" del if es lo que lo garantiza.
-  if (/if\s*\(\s*!buildToken\s*\|\|/.test(bloque)) {
-    ok("falla CERRADO: sin OWNER_BUILD_TOKEN configurado, el camino queda deshabilitado");
+  // 2) falla cerrado: si no se prueba NINGUNA via, 403.
+  if (/if\s*\(\s*!porTokenCompartido\s*&&\s*!porAccesoAlRepo\s*\)/.test(bloque)) {
+    ok("falla CERRADO: sin probar ninguna de las dos vias, 403");
   } else {
-    falla("sin el chequeo '!buildToken' un deploy sin la variable dejaria el " +
-          "camino ABIERTO otra vez");
+    falla("falta el corte '!porTokenCompartido && !porAccesoAlRepo': el camino " +
+          "podria quedar ABIERTO");
   }
 
-  // 3) el token se compara, no solo se lee
-  if (/enviado\s*!==\s*buildToken/.test(bloque)) ok("el token recibido se compara contra el configurado");
-  else falla("el token no se compara: leerlo sin verificarlo no protege nada");
+  // 3) el token compartido, si se usa, se COMPARA (no solo se lee)
+  if (/enviado\s*===\s*buildToken/.test(bloque)) {
+    ok("la via del token compartido compara el valor recibido");
+  } else falla("el token compartido no se compara: leerlo sin verificarlo no protege");
 
   // 4) el email sigue validandose (segunda barrera, no se perdio)
   if (/OWNER_EMAIL/.test(bloque) && /email\s*!==\s*ownerEmail/.test(bloque)) {
@@ -62,12 +63,15 @@ if (i < 0) {
   } else falla("se perdio la validacion por OWNER_EMAIL");
 }
 
-// 5) el workflow manda el token
-if (/x-mv-owner-build/.test(WF)) ok("el workflow manda el token en la cabecera");
-else falla("el workflow no manda OWNER_BUILD_TOKEN: el build owner no podria pedir la licencia");
-if (/OWNER_BUILD_TOKEN:\s*\$\{\{\s*secrets\.OWNER_BUILD_TOKEN\s*\}\}/.test(WF)) {
-  ok("el token viaja desde un secret de GitHub, no hardcodeado");
-} else falla("OWNER_BUILD_TOKEN deberia venir de secrets, no escrito en el workflow");
+// 5) el workflow prueba su identidad con el token que Actions le da SOLO,
+// asi el dueño no tiene que configurar nada.
+if (/x-mv-github-token/.test(WF)) {
+  ok("el workflow manda el GITHUB_TOKEN para probar acceso al repo");
+} else falla("el workflow no manda el token de GitHub: el build owner no podria " +
+             "pedir la licencia sin configurar secrets a mano");
+if (/GITHUB_TOKEN:\s*\$\{\{\s*secrets\.GITHUB_TOKEN\s*\}\}/.test(WF)) {
+  ok("el token sale de secrets.GITHUB_TOKEN (lo genera Actions, no se configura)");
+} else falla("falta exponer GITHUB_TOKEN al paso de la licencia owner");
 
 // 6) el token NUNCA puede estar escrito en el repo
 const enRepo = /OWNER_BUILD_TOKEN\s*[:=]\s*["'][^"'$}]{6,}["']/.test(WF) ||
