@@ -223,6 +223,62 @@ if (/Verificar que el build owner lleva la licencia adentro/.test(WF)) {
         "un instalador NO pre-activado, con cara de owner");
 }
 
+// --- 11) la carpeta INSTALADOR/ del ZIP de GitHub ---
+// El .exe pesa ~126 MB y GitHub rechaza archivos de mas de 100 MB, asi que la
+// carpeta no lo lleva adentro: lleva dos lanzadores que lo traen del Release.
+const DIR_INST = path.join(RAIZ, "INSTALADOR");
+for (const archivo of ["LEEME.md", "INSTALAR_CLIENTE.bat", "INSTALAR_OWNER.bat"]) {
+  if (fs.existsSync(path.join(DIR_INST, archivo))) ok(`  INSTALADOR/${archivo} existe`);
+  else falla(`falta INSTALADOR/${archivo}`);
+}
+// Si alguien commitea el .exe igual, el push lo rechaza GitHub y el repo queda
+// trabado. Mejor que lo diga el test antes que el remoto.
+for (const suelto of fs.existsSync(DIR_INST) ? fs.readdirSync(DIR_INST) : []) {
+  const bytes = fs.statSync(path.join(DIR_INST, suelto)).size;
+  if (bytes > 100 * 1024 * 1024) {
+    falla(`INSTALADOR/${suelto} pesa ${(bytes / 1048576).toFixed(0)} MB: GitHub ` +
+          "rechaza el push arriba de 100 MB. Va al Release, no al repo.");
+  }
+}
+// INSTALAR_OWNER.bat le da a quien lo abra la URL del Release owner (el
+// instalador pre-activado). Si se colara en el instalador del CLIENTE, cada
+// comprador se llevaria ese cartel indicador puesto. Los wildcards de raiz del
+// .iss no son recursivos, asi que hoy no se cuela; esto lo fija.
+const lineasRaiz = lineasFiles.filter((l) => /Source:\s*"\.\.\\\*\./i.test(l));
+const raizRecursiva = lineasRaiz.filter((l) => /recursesubdirs/i.test(l));
+if (raizRecursiva.length) {
+  falla("un wildcard de la raiz del .iss usa recursesubdirs: se llevaria " +
+        "INSTALADOR\\INSTALAR_OWNER.bat (y su URL del release owner) al cliente");
+} else ok(`  los ${lineasRaiz.length} wildcards de raiz no son recursivos ` +
+          "(INSTALADOR/ no se cuela al cliente)");
+if (lineasFiles.some((l) => /INSTALADOR/i.test(l))) {
+  falla("[Files] empaqueta la carpeta INSTALADOR: el cliente recibiria el " +
+        "lanzador del build owner");
+} else ok("  [Files] no empaqueta INSTALADOR/");
+
+// El lanzador del cliente baja lo publico; el del owner NO lleva credenciales
+// (la autorizacion es la sesion de GitHub en el navegador).
+const BAT_CLI = fs.existsSync(path.join(DIR_INST, "INSTALAR_CLIENTE.bat"))
+  ? fs.readFileSync(path.join(DIR_INST, "INSTALAR_CLIENTE.bat"), "utf8") : "";
+const BAT_OWN = fs.existsSync(path.join(DIR_INST, "INSTALAR_OWNER.bat"))
+  ? fs.readFileSync(path.join(DIR_INST, "INSTALAR_OWNER.bat"), "utf8") : "";
+if (/api\/descarga\?demo=1/.test(BAT_CLI)) {
+  ok("  INSTALAR_CLIENTE.bat baja el instalador publico de la web");
+} else falla("INSTALAR_CLIENTE.bat no apunta al endpoint publico de descarga");
+if (/owner-latest|Owner_Setup/i.test(BAT_CLI)) {
+  falla("INSTALAR_CLIENTE.bat menciona el release OWNER: un cliente lo veria");
+} else ok("  INSTALAR_CLIENTE.bat no menciona el release owner");
+if (/releases\/tag\/owner-latest/.test(BAT_OWN)) {
+  ok("  INSTALAR_OWNER.bat manda al Release privado owner-latest");
+} else falla("INSTALAR_OWNER.bat no apunta al Release owner-latest");
+// Un token/clave hardcodeado en un .bat del repo es un secreto commiteado.
+for (const [re, que] of [[/gh[pousr]_[A-Za-z0-9]{20,}/, "un token de GitHub"],
+                         [/github_pat_[A-Za-z0-9_]{20,}/, "un PAT de GitHub"],
+                         [/Authorization:|Bearer\s+\S/i, "una cabecera de autorizacion"]]) {
+  if (re.test(BAT_OWN) || re.test(BAT_CLI)) falla(`los .bat de INSTALADOR traen ${que} adentro`);
+}
+ok("  ningun .bat de INSTALADOR lleva token ni clave hardcodeada");
+
 console.log("");
 if (fallos.length) {
   console.error(`FALLO: ${fallos.length} problema(s) en el instalador.`);
