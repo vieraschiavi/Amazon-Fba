@@ -20,6 +20,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { execSync } from "node:child_process";
 
 const RAIZ = path.join(import.meta.dirname, "..");
 
@@ -100,6 +101,42 @@ if (fs.existsSync(path.join(RAIZ, "core", "puerto.py"))) {
   ok("core/puerto.py existe (y el instalador lo copia por ..\\core\\*)");
 } else {
   mal("falta core/puerto.py: buscar_puerto no podria resolver nada");
+}
+
+// --- finales de linea: TODO script de Windows tiene que ir en CRLF ---
+// cmd.exe avanza por posicion de BYTE dando por sentado CRLF. Con LF le falta
+// un byte por linea y el desfasaje se ACUMULA: la primera sale entera, la
+// siguiente pierde 1 caracter, la siguiente 2... En la consola del cliente se
+// ve como  'cho' no se reconoce como un comando  /  'ho' ...  /  'o' ...
+// El .bat se lee perfecto en un editor, asi que no hay forma de notarlo sin
+// ejecutarlo en un Windows real -- exactamente como paso. .gitattributes lo
+// fija con "-text" (el CRLF vive en el blob); esto verifica que asi sea.
+const scripts = execSync("git ls-files '*.bat' '*.cmd' '*.ps1' '*.vbs'",
+  { cwd: RAIZ, encoding: "utf8" }).split("\n").filter(Boolean);
+if (!scripts.length) mal("no encontre ningun script de Windows para chequear");
+for (const rel of scripts) {
+  const b = fs.readFileSync(path.join(RAIZ, rel));
+  const lf = (b.toString("latin1").match(/\n/g) || []).length;
+  const crlf = (b.toString("latin1").match(/\r\n/g) || []).length;
+  if (lf && crlf === lf) ok(`${rel} en CRLF`);
+  else if (!crlf) {
+    mal(`${rel} esta en LF: cmd.exe se come los primeros caracteres de cada ` +
+        "linea y el usuario ve 'cho'/'ho'/'o' no se reconoce como un comando");
+  } else {
+    mal(`${rel} mezcla CRLF y LF (${crlf}/${lf}): se rompe a partir de la ` +
+        "primera linea con LF suelto");
+  }
+}
+// El .gitattributes es lo que mantiene el CRLF vivo al clonar/bajar el ZIP.
+const ATTRS = fs.existsSync(path.join(RAIZ, ".gitattributes"))
+  ? fs.readFileSync(path.join(RAIZ, ".gitattributes"), "utf8") : "";
+for (const ext of ["bat", "cmd", "ps1", "vbs"]) {
+  if (new RegExp(`^\\s*\\*\\.${ext}\\s+-text\\s*$`, "m").test(ATTRS)) {
+    ok(`  .gitattributes congela *.${ext} con -text`);
+  } else {
+    mal(`.gitattributes no protege *.${ext}: git puede volver a normalizar a ` +
+        "LF y el script vuelve a romperse en Windows sin que nadie lo toque");
+  }
 }
 
 if (fallas) {

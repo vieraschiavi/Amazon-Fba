@@ -1,0 +1,27 @@
+# Finales de linea de los scripts de Windows.
+#
+# POR QUE EXISTE: cmd.exe lee un .bat avanzando por POSICION DE BYTE y da por
+# sentado que cada linea termina en CRLF. Si el archivo viene con LF (lo normal
+# al escribirlo desde Linux o macOS), le falta un byte por linea y el desfasaje
+# se ACUMULA: la primera linea sale entera, la siguiente pierde 1 caracter, la
+# siguiente 2... Se ve asi en la consola del cliente:
+#
+#     'cho' no se reconoce como un comando interno o externo
+#     'ho' no se reconoce como un comando interno o externo
+#     'o' no se reconoce como un comando interno o externo
+#
+# El .bat "no tiene ningun error" leido en un editor -- por eso paso inadvertido
+# hasta que alguien lo ejecuto en un Windows real. Los .vbs que el instalador le
+# copia al cliente van igual, por la misma razon de fondo.
+#
+# Se usa "-text" (NO "text eol=crlf") a proposito: -text le prohibe a git
+# convertir nada, asi que el CRLF queda en el blob mismo. Con eso llega intacto
+# por cualquier via -- clone en Windows o Linux, "Download ZIP" de GitHub, o el
+# raw de un archivo suelto -- sin depender de que la herramienta del otro lado
+# aplique atributos de eol.
+#
+# test/verificar_lanzadores.mjs falla si alguno vuelve a LF.
+*.bat -text
+*.cmd -text
+*.ps1 -text
+*.vbs -text
