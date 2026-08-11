@@ -355,10 +355,15 @@ jobs:
           $ErrorActionPreference = "Stop"
           $zipName = if ($env:ES_OWNER -eq "true") { "MV_FBA_IA_Portable_Owner.zip" } else { "MV_FBA_IA_Portable.zip" }
           Expand-Archive -Path "portable-dist\$zipName" -DestinationPath "portable-smoke" -Force
-          $carpeta = Get-ChildItem "portable-smoke" -Directory | Select-Object -First 1
-          $p = Start-Process -FilePath "$($carpeta.FullName)\runtime\python.exe" `
+          # El paso anterior comprime con "-Path `"$dst\*`"" (items SUELTOS de la
+          # carpeta de staging, no la carpeta en si): el .zip NO tiene una carpeta
+          # contenedora adentro -- app.py, runtime\, agents\, etc. quedan sueltos
+          # en la raiz del .zip. Buscar "la primera carpeta" aca (como se hacia
+          # antes) agarraba "agents" en vez de la raiz real -- por eso se referencia
+          # "portable-smoke\..." directo, sin indireccion por Get-ChildItem.
+          $p = Start-Process -FilePath "portable-smoke\runtime\python.exe" `
                -ArgumentList "-m","uvicorn","app:app","--host","127.0.0.1","--port","8766" `
-               -WorkingDirectory $carpeta.FullName -PassThru -NoNewWindow
+               -WorkingDirectory "portable-smoke" -PassThru -NoNewWindow
           $ok = $false
           for ($i = 0; $i -lt 20; $i++) {
             Start-Sleep -Seconds 1
