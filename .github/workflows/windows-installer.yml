@@ -266,6 +266,119 @@ jobs:
           }
           Write-Host "owner_licencia.json OK (formato de clave valido)"
 
+      # Version "sin instalador": el MISMO app.py, el MISMO runtime embebido
+      # (ya probado arriba con el smoke test funcional) y la MISMA base de
+      # licencia que el .exe -- solo que en un .zip que se descomprime y se
+      # corre con un doble clic en INICIAR.bat. Existe para las PCs de empresa
+      # donde la politica de seguridad bloquea ejecutar .exe bajados de
+      # internet (SmartScreen/AppLocker) pero SI permite .bat/.vbs.
+      #
+      # Lista de archivos deliberadamente explicita, en espejo de [Files] en
+      # el .iss (mismos excludes: sin dashboard_app.py/styles.py/i18n.py, sin
+      # el .pyc, sin los .csv de data/) para que ninguna de las dos versiones
+      # filtre algo que la otra ya sabe que no debe filtrar. Se excluye ademas
+      # APP_ESCRITORIO.bat/desktop.py a proposito: esa via necesita WebView2
+      # (componente del SISTEMA) para abrir ventana nativa -- la razon de ser
+      # de esta version portable es funcionar SIEMPRE, y en las maquinas mas
+      # restringidas (el publico objetivo de este .zip) es tanto o mas
+      # probable que falte WebView2 como que este bloqueado el .exe. Con
+      # INICIAR.bat el panel abre en el navegador, sin esa dependencia.
+      - name: Armar la version portable (.zip, sin instalador)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $dst = "portable-dist\MV FBA IA"
+          New-Item -ItemType Directory -Force -Path $dst | Out-Null
+
+          $excluirPy = @("dashboard_app.py", "styles.py", "desktop.py")
+          Get-ChildItem *.py | Where-Object { $excluirPy -notcontains $_.Name } |
+            Copy-Item -Destination $dst
+
+          $excluirBat = @("LEGACY_STREAMLIT.bat", "APP_ESCRITORIO.bat")
+          Get-ChildItem *.bat | Where-Object { $excluirBat -notcontains $_.Name } |
+            Copy-Item -Destination $dst
+
+          Copy-Item README.md, CONEXIONES.md, requirements.txt, .env.example -Destination $dst
+          Copy-Item installer\assets\icon.ico -Destination (New-Item -ItemType Directory -Force -Path "$dst\assets").FullName
+          Copy-Item installer\Iniciar_Silencioso.vbs -Destination $dst
+          Copy-Item installer\portable\LEEME_PORTABLE.md, installer\portable\crear_accesos.vbs, `
+                     installer\portable\CREAR_ACCESOS_DIRECTOS.bat, installer\portable\DESINSTALAR.bat `
+                     -Destination $dst
+          if (Test-Path owner_licencia.json) { Copy-Item owner_licencia.json -Destination $dst }
+
+          # robocopy en vez de Copy-Item -Recurse -Exclude: mas confiable
+          # filtrando por nombre en TODA la profundidad del arbol, no solo en
+          # el primer nivel. Los codigos de salida 0-7 son exito (1 = "se
+          # copiaron archivos", no un error); 8+ es el unico caso real de
+          # fallo, asi que se valida a mano en vez de dejar que
+          # $ErrorActionPreference lo interprete solo.
+          function Copiar-Carpeta($origen, $destino, $excluir) {
+            robocopy $origen $destino /E /XF $excluir /NFL /NDL /NJH /NJS | Out-Null
+            if ($LASTEXITCODE -ge 8) { throw "robocopy fallo copiando $origen (codigo $LASTEXITCODE)" }
+            # robocopy devuelve 0-7 en EXITO (1 = "se copiaron archivos", el caso
+            # normal aca) -- pero un $LASTEXITCODE no-cero que quede COLGADO al
+            # final del script hace que GitHub Actions marque el STEP entero como
+            # fallido, aunque nada haya tirado una excepcion (el wrapper de pwsh
+            # de Actions chequea $LASTEXITCODE al terminar, no solo si hubo throw).
+            # Sin este reset, la ULTIMA llamada a robocopy (la de runtime\, la mas
+            # pesada) deja pegado un exit code de "1 archivo copiado" que ningun
+            # cmdlet de PowerShell de ahi en mas pisa (Compress-Archive, Get-Item,
+            # Write-Host no tocan $LASTEXITCODE), y el paso muere en silencio
+            # DESPUES de haber armado el .zip entero y bien.
+            $global:LASTEXITCODE = 0
+          }
+          Copiar-Carpeta "agents" "$dst\agents" "*.pyc"
+          Copiar-Carpeta "core" "$dst\core" @("*.pyc", "i18n.py")
+          Copiar-Carpeta "data" "$dst\data" @("*.pyc", "*.csv")
+          Copiar-Carpeta "frontend\dist" "$dst\frontend\dist" @()
+          Copiar-Carpeta "runtime" "$dst\runtime" @()
+
+          $zipName = if ($env:ES_OWNER -eq "true") { "MV_FBA_IA_Portable_Owner.zip" } else { "MV_FBA_IA_Portable.zip" }
+          Compress-Archive -Path "$dst\*" -DestinationPath "portable-dist\$zipName" -Force
+          $mb = [math]::Round((Get-Item "portable-dist\$zipName").Length / 1MB)
+          Write-Host "Version portable: $mb MB ($zipName)"
+          # Umbral BAJO a proposito (no se puede medir el tamaño real sin
+          # correr este paso en Windows): solo busca atajar el caso obvio de
+          # un runtime\ que no se copio o un zip vacio/corrupto, sin arriesgar
+          # un falso positivo por no conocer el peso exacto de antemano.
+          if ($mb -lt 20) { throw "El .zip portable quedo chico ($mb MB): revisar que runtime\ se haya copiado entero." }
+        env:
+          ES_OWNER: ${{ github.event.inputs.owner }}
+
+      # Smoke test de la version portable: se descomprime en OTRA carpeta (no
+      # la que se usó para armarla) y se arranca con el runtime que trae
+      # ADENTRO DEL ZIP -- prueba que lo que de verdad recibe el cliente
+      # funciona, no que la carpeta de staging funcionaba antes de comprimir.
+      - name: Smoke test de la version portable (arranca desde el .zip)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $zipName = if ($env:ES_OWNER -eq "true") { "MV_FBA_IA_Portable_Owner.zip" } else { "MV_FBA_IA_Portable.zip" }
+          Expand-Archive -Path "portable-dist\$zipName" -DestinationPath "portable-smoke" -Force
+          # El paso anterior comprime con "-Path `"$dst\*`"" (items SUELTOS de la
+          # carpeta de staging, no la carpeta en si): el .zip NO tiene una carpeta
+          # contenedora adentro -- app.py, runtime\, agents\, etc. quedan sueltos
+          # en la raiz del .zip. Buscar "la primera carpeta" aca (como se hacia
+          # antes) agarraba "agents" en vez de la raiz real -- por eso se referencia
+          # "portable-smoke\..." directo, sin indireccion por Get-ChildItem.
+          $p = Start-Process -FilePath "portable-smoke\runtime\python.exe" `
+               -ArgumentList "-m","uvicorn","app:app","--host","127.0.0.1","--port","8766" `
+               -WorkingDirectory "portable-smoke" -PassThru -NoNewWindow
+          $ok = $false
+          for ($i = 0; $i -lt 20; $i++) {
+            Start-Sleep -Seconds 1
+            try {
+              $r = Invoke-WebRequest -Uri "http://127.0.0.1:8766/health" -UseBasicParsing -TimeoutSec 2
+              if ($r.StatusCode -eq 200) { $ok = $true; break }
+            } catch {}
+          }
+          Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+          Remove-Item "portable-smoke" -Recurse -Force -ErrorAction SilentlyContinue
+          if (-not $ok) { throw "La version portable descomprimida no respondio /health" }
+          Write-Host "portable-smoke-ok"
+        env:
+          ES_OWNER: ${{ github.event.inputs.owner }}
+
       - name: Compilar instalador
         run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\MV_Amazon_FBA_IA.iss
@@ -292,8 +405,18 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      # Publica/actualiza el Release "pc-latest" con el instalador de CLIENTES,
-      # para que la descarga gated (api/descarga.js, tras pago verificado) lo
+      - name: Publicar version portable como artifact
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: MV-Amazon-FBA-IA-portable-sin-instalador
+          path: portable-dist/MV_FBA_IA_Portable*.zip
+          if-no-files-found: error
+          retention-days: 7
+
+      # Publica/actualiza el Release "pc-latest" con las DOS versiones para
+      # CLIENTES (el .exe con instalador y el .zip portable sin instalador),
+      # para que la descarga gated (api/descarga.js, tras pago verificado) las
       # pueda entregar. NUNCA en un build owner (no debe pisar el de clientes).
       - name: Publicar instalador como Release
         if: github.ref == 'refs/heads/main' && github.event.inputs.owner != 'true'
@@ -302,9 +425,14 @@ jobs:
           tag_name: pc-latest
           name: MV FBA IA — Instalador PC (Windows)
           body: >-
-            Instalador oficial de MV FBA IA para Windows.
-            La descarga se habilita tras la compra (ver /gracias.html).
-          files: installer/Output/MV_Amazon_FBA_IA_Setup.exe
+            Instalador oficial de MV FBA IA para Windows. La descarga se
+            habilita tras la compra (ver /gracias.html). Incluye dos
+            versiones: el instalador .exe (icono de Escritorio, Menú Inicio y
+            desinstalador) y una versión portable .zip sin instalador — para
+            PCs donde la política de la empresa bloquea ejecutar .exe.
+          files: |
+            installer/Output/MV_Amazon_FBA_IA_Setup.exe
+            portable-dist/MV_FBA_IA_Portable.zip
           make_latest: "false"
 
       # Build owner: publica en un Release SEPARADO (owner-latest), que el dueño
@@ -319,6 +447,9 @@ jobs:
           body: >-
             Build interno del dueño: arranca ya activado como Pro (trae la
             licencia adentro, se valida contra el servidor en el primer
-            arranque). NO distribuir — es para uso propio.
-          files: installer/Output/MV_Amazon_FBA_IA_Owner_Setup.exe
+            arranque). NO distribuir — es para uso propio. Incluye el .exe y
+            la version portable .zip, las dos pre-activadas.
+          files: |
+            installer/Output/MV_Amazon_FBA_IA_Owner_Setup.exe
+            portable-dist/MV_FBA_IA_Portable_Owner.zip
           make_latest: "false"

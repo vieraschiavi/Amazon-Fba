@@ -359,6 +359,7 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
       <p style="margin:-16px 0 22px;font-size:12.5px;color:#8ea0cc">
         <span data-t="hero.ctaWebNote">¿Preferís probarlo sin instalar?</span>
         <a href="/app/" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline;text-underline-offset:2px" data-t="hero.ctaWebLink">Abrí la demo rápida en el navegador</a>
+        · <a href="/api/descarga?demo=1&amp;tipo=bat" style="color:#fff;text-decoration:underline;text-underline-offset:2px" data-t="hero.ctaBatLink">¿La empresa bloquea instalar .exe? Descargá la versión sin instalador</a>
       </p>
       <div class="trustrow">
         <span data-t="hero.trust1"><b>10</b><em>marketplaces de keywords</em></span>
@@ -532,6 +533,7 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
     <div class="demo-banner-row">
       <a class="demo-banner" href="/api/descarga?demo=1" data-t="pricing.demoBanner">Descargá la demo completa de escritorio (Windows) — 7 días gratis, todas las funciones</a>
       <a class="demo-banner-alt" href="/app/" target="_blank" rel="noopener" data-t="pricing.demoBannerWeb">o probá la vista rápida en el navegador</a>
+      <a class="demo-banner-alt" href="/api/descarga?demo=1&amp;tipo=bat" data-t="pricing.demoBannerBat">o la versión sin instalador (.zip, para PCs que bloquean .exe)</a>
     </div>
     <div class="g3">
       <div class="card price-card">
@@ -748,6 +750,7 @@ const I18N = {
     "hero.sub":"Semáforo de margen, sueldo proyectado y portafolio completo — en español, pago único, sin sorpresas. La investigación de nichos viene incluida.",
     "hero.ctaPrimary":"Ver precios y comprar","hero.ctaGhost":"Descargar demo de escritorio (7 días gratis)",
     "hero.ctaWebNote":"¿Preferís probarlo sin instalar?","hero.ctaWebLink":"Abrí la demo rápida en el navegador",
+    "hero.ctaBatLink":"¿La empresa bloquea instalar .exe? Descargá la versión sin instalador",
     "hero.trust1":"<b>10</b><em>marketplaces de keywords</em>","hero.trust2":"<b>2</b><em>plataformas: PC · Android</em>","hero.trust3":"<b>US$0</b><em>de costo en APIs (motor propio)</em>",
     "feat.label":"El producto","feat.h2":"Todo lo que necesitás para decidir qué vender, y cuánto vas a ganar",
     "feat.sub":"Un solo lugar, sin duplicar suscripciones ni pegar datos entre planillas.",
@@ -775,6 +778,7 @@ const I18N = {
     "pricing.monedaAviso":"Precio de referencia en USD — MercadoPago procesa el cobro en pesos uruguayos (UYU) al tipo de cambio del día del pago.",
     "pricing.demoBanner":"Descargá la demo completa de escritorio (Windows) — 7 días gratis, todas las funciones",
     "pricing.demoBannerWeb":"o probá la vista rápida en el navegador",
+    "pricing.demoBannerBat":"o la versión sin instalador (.zip, para PCs que bloquean .exe)",
     "pricing.once":" pago único","pricing.mo":" /mes","pricing.desde":" desde","pricing.buy":"Comprar","pricing.popular":"MÁS VENDIDO",
     "pricing.garantia":"✔ 7 días de garantía o te devolvemos el pago",
     "pricing.starter.name":"Starter · Celular","pricing.starter.alt":"o US$4,99/mes",
@@ -827,6 +831,7 @@ const I18N = {
     "hero.sub":"Margin traffic-light, projected income and a full portfolio — one-time payment, no surprises. Niche research comes included.",
     "hero.ctaPrimary":"See pricing & buy","hero.ctaGhost":"Download desktop demo (7 days free)",
     "hero.ctaWebNote":"Prefer to try it without installing?","hero.ctaWebLink":"Open the quick browser demo",
+    "hero.ctaBatLink":"Company blocks installing .exe files? Get the no-install version",
     "hero.trust1":"<b>10</b><em>keyword marketplaces</em>","hero.trust2":"<b>2</b><em>platforms: PC · Android</em>","hero.trust3":"<b>US$0</b><em>API cost (own engine)</em>",
     "feat.label":"The product","feat.h2":"Everything you need to decide what to sell, and how much you'll make",
     "feat.sub":"One place — no duplicate subscriptions, no copy-pasting between spreadsheets.",
@@ -854,6 +859,7 @@ const I18N = {
     "pricing.monedaAviso":"Reference price in USD — MercadoPago processes the charge in Uruguayan pesos (UYU) at the exchange rate on the day of payment.",
     "pricing.demoBanner":"Download the full desktop demo (Windows) — 7 days free, every feature unlocked",
     "pricing.demoBannerWeb":"or try the quick browser preview",
+    "pricing.demoBannerBat":"or the no-install version (.zip, for PCs that block .exe files)",
     "pricing.once":" one-time","pricing.mo":" /mo","pricing.desde":" from","pricing.buy":"Buy now","pricing.popular":"MOST POPULAR",
     "pricing.garantia":"✔ 7-day money-back guarantee",
     "pricing.starter.name":"Starter · Mobile","pricing.starter.alt":"or US$4.99/mo",
@@ -906,6 +912,7 @@ const I18N = {
     "hero.sub":"Semáforo de margem, salário projetado e portfólio completo — pagamento único, sem surpresas. A pesquisa de nichos já vem incluída.",
     "hero.ctaPrimary":"Ver preços e comprar","hero.ctaGhost":"Baixar demo de desktop (7 dias grátis)",
     "hero.ctaWebNote":"Prefere testar sem instalar?","hero.ctaWebLink":"Abrir a demo rápida no navegador",
+    "hero.ctaBatLink":"A empresa bloqueia instalar .exe? Baixe a versão sem instalador",
     "hero.trust1":"<b>10</b><em>marketplaces de palavras-chave</em>","hero.trust2":"<b>2</b><em>plataformas: PC · Android</em>","hero.trust3":"<b>US$0</b><em>de custo em APIs (motor próprio)</em>",
     "feat.label":"O produto","feat.h2":"Tudo que você precisa para decidir o que vender e quanto vai ganhar",
     "feat.sub":"Um só lugar, sem duplicar assinaturas nem colar dados entre planilhas.",
@@ -933,6 +940,7 @@ const I18N = {
     "pricing.monedaAviso":"Preço de referência em USD — o MercadoPago processa a cobrança em pesos uruguaios (UYU) na cotação do dia do pagamento.",
     "pricing.demoBanner":"Baixe a demo completa de desktop (Windows) — 7 dias grátis, todas as funções",
     "pricing.demoBannerWeb":"ou teste a prévia rápida no navegador",
+    "pricing.demoBannerBat":"ou a versão sem instalador (.zip, para PCs que bloqueiam .exe)",
     "pricing.once":" pagamento único","pricing.mo":" /mês","pricing.desde":" a partir de","pricing.buy":"Comprar","pricing.popular":"MAIS VENDIDO",
     "pricing.garantia":"✔ 7 dias de garantia ou devolvemos o pagamento",
     "pricing.starter.name":"Starter · Celular","pricing.starter.alt":"ou US$4,99/mês",

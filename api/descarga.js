@@ -1,22 +1,35 @@
-// api/descarga.js — Descarga real del instalador de PC y del APK Android.
+// api/descarga.js — Descarga real del instalador de PC, la version portable
+// sin instalador, y el APK Android.
 //
 // El repo es privado: el link "publico" de un Release de GitHub le da 404 a
 // cualquier visitante anonimo (ver api/_release.js). Por eso esta funcion
 // jamas redirige ahi directo -- resuelve el asset server-side y redirige al
 // link firmado que da la API de GitHub, que ese si es descargable sin login.
 //
-// ?demo=1: instalador de PC SIN pago (el limite de 7 dias lo controla la
-// propia app al abrirla, no la descarga) -- lo usan los botones "Probar
-// demo" de la landing.
+// ?tipo= elige el asset dentro del release "pc-latest" (o android-latest):
+//   (sin tipo)  instalador .exe (icono de Escritorio, Menu Inicio, desinstalador)
+//   bat         version portable .zip sin instalador (para PCs que bloquean
+//               ejecutar .exe -- se descomprime y se corre con INICIAR.bat)
+//   apk         app Android
+//
+// ?demo=1: SIN pago (el limite de 7 dias lo controla la propia app al
+// abrirla, no la descarga) -- lo usan los botones "Probar demo" de la
+// landing. Honra ?tipo=bat (demo portable) pero NO ?tipo=apk a proposito: no
+// existe un APK gratis, esa combinacion sigue devolviendo el .exe de PC.
 // Sin ?demo: exige un pago aprobado real (MercadoPago o PayPal, via
-// payment_id/orden + ?proc=paypal si corresponde). gracias.html llama aca
-// para el instalador de PC y, con ?tipo=apk, para el APK de Android -- la
-// misma licencia sirve para ambos, no hay gate distinto por plan.
+// payment_id/orden + ?proc=paypal si corresponde) y honra los tres ?tipo=.
 import { obtenerOrden, leerOrden, paypalConfigurado } from "./_paypal.js";
 import { resolverDescargaRelease } from "./_release.js";
 
 const RELEASE_PC = { tag: "pc-latest", asset: "MV_Amazon_FBA_IA_Setup.exe" };
+const RELEASE_PC_BAT = { tag: "pc-latest", asset: "MV_FBA_IA_Portable.zip" };
 const RELEASE_APK = { tag: "android-latest", asset: "MV-Amazon-FBA-IA.apk" };
+
+function releasePedido(tipo) {
+  if (tipo === "apk") return RELEASE_APK;
+  if (tipo === "bat") return RELEASE_PC_BAT;
+  return RELEASE_PC;
+}
 
 async function redirigirA(release, res) {
   const r = await resolverDescargaRelease(release.tag, release.asset);
@@ -30,9 +43,12 @@ async function redirigirA(release, res) {
 
 export default async function handler(req, res) {
   const q = req.query || {};
-  const release = String(q.tipo || "") === "apk" ? RELEASE_APK : RELEASE_PC;
+  const tipo = String(q.tipo || "");
+  const release = releasePedido(tipo);
 
-  if (String(q.demo || "") === "1") return redirigirA(RELEASE_PC, res);
+  if (String(q.demo || "") === "1") {
+    return redirigirA(tipo === "bat" ? RELEASE_PC_BAT : RELEASE_PC, res);
+  }
 
   const paymentId = q.payment_id || q.collection_id;
   if (!paymentId) return res.status(400).json({ error: "sin_pago" });
