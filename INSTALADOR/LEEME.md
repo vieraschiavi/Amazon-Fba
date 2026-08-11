@@ -1,53 +1,34 @@
 # INSTALADOR — MV FBA IA
 
-Esta carpeta es el punto de entrada para **instalar el programa en Windows**.
+Esta carpeta es el punto de entrada para **poner a andar el programa en
+Windows**. Hay DOS formas de correrlo — instalado (`.exe`) o portable
+(`.zip`, sin instalador) — porque algunas empresas bloquean ejecutar `.exe`
+bajados de internet (SmartScreen/AppLocker) pero sí permiten `.bat`/`.vbs`.
+Las dos son el mismo programa, el mismo motor y la misma licencia.
 
-El instalador (`.exe`) **no vive acá adentro**: pesa ~126 MB (trae Python
-embebido + Electron con su propio Chromium) y GitHub rechaza cualquier archivo
-de más de 100 MB en el repo. Vive en los **Releases**, que es el lugar correcto
-para binarios grandes, y estos dos `.bat` lo traen de ahí con un doble clic.
+Ninguno de los dos vive acá adentro: el `.exe` pesa ~126 MB y el `.zip`
+portable no se queda muy atrás (los dos traen Python embebido) — GitHub
+rechaza cualquier archivo de más de 100 MB en el repo. Viven en los
+**Releases**, que es el lugar correcto para binarios grandes, y estos `.bat`
+los traen de ahí con un doble clic.
 
-| Doble clic en… | Qué instala | Para quién |
+| Doble clic en… | Qué trae | Para quién |
 |---|---|---|
-| `INSTALAR_CLIENTE.bat` | Versión **cliente** (arranca en demo de 7 días; con la licencia pasa a completa) | Cualquiera |
-| `INSTALAR_OWNER.bat` | Versión **owner** (arranca ya activada, plan Pro, sin pedir clave) | Solo el dueño |
+| `INSTALAR_CLIENTE.bat` | El instalador **`.exe`** (icono, Menú Inicio, desinstalador) | Cualquiera |
+| `INSTALAR_CLIENTE_SIN_INSTALADOR.bat` | La versión **portable `.zip`** (sin instalar nada) | Cualquiera, sobre todo si el `.exe` está bloqueado |
+| `INSTALAR_OWNER.bat` | Las dos versiones owner (`.exe` y `.zip`), pre-activadas | Solo el dueño |
+
+Las dos versiones de cliente arrancan en **demo de 7 días** y pasan a
+completas con la misma licencia (paga en la web → clave por email → la pegás
+en la app). No hay versión "recortada": la portable tiene exactamente las
+mismas funciones que la instalada.
 
 ---
 
-## Versión CLIENTE
+## Versión CLIENTE — instalador `.exe`
 
-`INSTALAR_CLIENTE.bat` descarga el instalador desde `mvfbaia.com` y lo ejecuta.
-Es exactamente el mismo archivo que baja un comprador desde la web, así que
-sirve para probar de punta a punta lo que recibe el cliente.
-
-Cómo funciona el ciclo del cliente:
-
-1. Baja el instalador desde `https://mvfbaia.com` (botón *"Descargar demo de
-   escritorio"*) o con este `.bat`.
-2. Instala y usa el programa **7 días completos**, con todas las funciones.
-3. Cuando se le vence, la app le pide la licencia.
-4. Paga en la web → recibe la clave por email → la pega en la app → queda
-   activada la versión completa. **No hay que volver a descargar nada**: es el
-   mismo programa, la licencia le saca el límite.
-
-## Versión OWNER
-
-`INSTALAR_OWNER.bat` abre la página del Release `owner-latest` en el navegador.
-Ese Release es **privado**: solo alguien con acceso al repo lo ve. Como ya
-estás logueado en GitHub para haber bajado este ZIP, la descarga sale sola —
-**no hay que escribir ninguna clave, ni un token, ni el mail**.
-
-El instalador owner trae adentro la licencia ya horneada (`owner_licencia.json`,
-emitida por el build a nombre de `OWNER_EMAIL`), así que el programa abre
-directamente en Pro: sin pantalla de activación, sin cuenta regresiva.
-
-> Si el Release todavía no existe: GitHub → pestaña **Actions** → workflow
-> **Windows Installer** → *Run workflow* → tildar **owner** → *Run*. Cuando
-> termina, el `.exe` queda publicado en `owner-latest`.
-
----
-
-## Qué hace el instalador (las dos versiones)
+`INSTALAR_CLIENTE.bat` descarga el instalador desde `mvfbaia.com` y lo
+ejecuta. Es exactamente el mismo archivo que baja un comprador desde la web.
 
 - Deja **elegir la carpeta de instalación** (podés mandarlo a `D:\` si `C:\`
   está lleno) y las tareas opcionales.
@@ -57,15 +38,56 @@ directamente en Pro: sin pantalla de activación, sin cuenta regresiva.
 - El programa abre en **su propia ventana** (Electron con su Chromium propio):
   no abre el navegador, no depende de que Windows tenga WebView2 y **no usa
   Streamlit**.
-- Elige un **puerto libre real** al arrancar (se lo pide al sistema operativo),
-  así que no choca con nada que ya tengas escuchando.
+
+## Versión CLIENTE — portable `.zip` (sin instalador)
+
+`INSTALAR_CLIENTE_SIN_INSTALADOR.bat` descarga un `.zip` y lo descomprime en
+el Escritorio (`%USERPROFILE%\Desktop\MV FBA IA`) — no instala nada, no pide
+permisos de administrador, no toca el registro de Windows.
+
+- El programa abre como una **pestaña del navegador** (`INICIAR.bat`), no una
+  ventana propia — mismo panel, mismo motor Python, misma base de licencia.
+- Un doble clic aparte en `CREAR_ACCESOS_DIRECTOS.bat` (adentro de esa
+  carpeta) crea el **icono de Escritorio** y el grupo del **Menú Inicio**,
+  con acceso también a **Diagnóstico** y a **Desinstalar**.
+- `DESINSTALAR.bat` borra esos accesos directos y, si se confirma, la
+  carpeta entera con los datos.
+
+## Versión OWNER (las dos)
+
+`INSTALAR_OWNER.bat` abre la página del Release `owner-latest` en el
+navegador. Ese Release es **privado**: solo alguien con acceso al repo lo ve.
+Como ya estás logueado en GitHub para haber bajado este ZIP, la descarga sale
+sola — **no hay que escribir ninguna clave, ni un token, ni el mail**. Ahí
+hay dos archivos, los dos pre-activados como Pro (traen `owner_licencia.json`
+adentro, emitido a nombre de `OWNER_EMAIL`): el instalador `.exe` y el `.zip`
+portable. Elegís el que quieras probar.
+
+> Si el Release todavía no existe: GitHub → pestaña **Actions** → workflow
+> **Windows Installer** → *Run workflow* → tildar **owner** → *Run*. Cuando
+> termina, los dos archivos quedan publicados en `owner-latest`.
+
+---
+
+## Cómo elegir (y cuándo cambiar de opinión)
+
+- **Empezá por el `.exe`** si no sabés si hace falta la portable: es la
+  experiencia más pulida (ventana propia, icono, desinstalador normal).
+- Si Windows lo bloquea (SmartScreen, "el administrador restringió esta
+  app", o directamente no deja hacer doble clic) — **pasá a la portable**
+  sin perder nada: es el mismo programa, misma licencia, mismos datos si
+  activaste la licencia primero.
 
 ## Si algo falla
 
-- **"No se pudo descargar"** en el `.bat` de cliente → probá abrir
-  `https://mvfbaia.com/api/descarga?demo=1` a mano en el navegador.
-- **Windows SmartScreen** ("Windows protegió tu PC") → *Más información* →
-  *Ejecutar de todas formas*. Pasa porque el `.exe` todavía no tiene firma de
-  código; no es un error del instalador.
-- **El antivirus lo pone en cuarentena** → misma razón; agregalo como excepción
-  o descargalo desde la web oficial.
+- **"No se pudo descargar"** en cualquiera de los dos `.bat` de cliente →
+  probá abrir la URL que imprime el propio error (`/api/descarga?demo=1`, o
+  con `&tipo=bat` para la portable) a mano en el navegador.
+- **Windows SmartScreen** ("Windows protegió tu PC") en el `.exe` → *Más
+  información* → *Ejecutar de todas formas*. Pasa porque todavía no tiene
+  firma de código; no es un error del instalador.
+- **El antivirus lo pone en cuarentena** → misma razón; agregalo como
+  excepción, o pasate a la versión portable si no podés hacer eso.
+- **"Este Windows no trae curl/tar"** → hace falta Windows 10 versión 1803 o
+  más nuevo (los trae de fábrica desde ahí). Bajá el archivo a mano con la
+  URL que imprime el `.bat`.

@@ -212,7 +212,10 @@ const tags = [...DESCARGA.matchAll(/tag:\s*"([^"]+)"/g)].map((m) => m[1]);
 if (!tags.length) falla("no encontre los tags de release en api/descarga.js");
 else if (tags.some((t) => !["pc-latest", "android-latest"].includes(t))) {
   falla(`api/descarga.js puede servir tags inesperados: ${tags.join(", ")}`);
-} else ok(`api/descarga.js solo sirve ${tags.join(" y ")} (tags fijos, no elegibles)`);
+} else {
+  const unicos = [...new Set(tags)];
+  ok(`api/descarga.js solo sirve ${unicos.join(" y ")} (tags fijos, no elegibles)`);
+}
 
 // El build owner no puede publicar un instalador SIN la licencia adentro:
 // el .iss la incluye con skipifsourcedoesntexist, o sea que compilaria igual.
@@ -271,13 +274,65 @@ if (/owner-latest|Owner_Setup/i.test(BAT_CLI)) {
 if (/releases\/tag\/owner-latest/.test(BAT_OWN)) {
   ok("  INSTALAR_OWNER.bat manda al Release privado owner-latest");
 } else falla("INSTALAR_OWNER.bat no apunta al Release owner-latest");
+const BAT_CLI_ZIP = fs.existsSync(path.join(DIR_INST, "INSTALAR_CLIENTE_SIN_INSTALADOR.bat"))
+  ? fs.readFileSync(path.join(DIR_INST, "INSTALAR_CLIENTE_SIN_INSTALADOR.bat"), "utf8") : "";
 // Un token/clave hardcodeado en un .bat del repo es un secreto commiteado.
 for (const [re, que] of [[/gh[pousr]_[A-Za-z0-9]{20,}/, "un token de GitHub"],
                          [/github_pat_[A-Za-z0-9_]{20,}/, "un PAT de GitHub"],
                          [/Authorization:|Bearer\s+\S/i, "una cabecera de autorizacion"]]) {
-  if (re.test(BAT_OWN) || re.test(BAT_CLI)) falla(`los .bat de INSTALADOR traen ${que} adentro`);
+  if (re.test(BAT_OWN) || re.test(BAT_CLI) || re.test(BAT_CLI_ZIP)) {
+    falla(`los .bat de INSTALADOR traen ${que} adentro`);
+  }
 }
 ok("  ningun .bat de INSTALADOR lleva token ni clave hardcodeada");
+
+// --- 12) la version portable (.zip, sin instalador) ---
+// Para empresas que bloquean ejecutar .exe pero permiten .bat/.vbs: mismo
+// motor, misma licencia, sin instalar nada.
+if (BAT_CLI_ZIP) {
+  if (/api\/descarga\?demo=1&tipo=bat/.test(BAT_CLI_ZIP)) {
+    ok("  INSTALAR_CLIENTE_SIN_INSTALADOR.bat pide la version portable (tipo=bat)");
+  } else falla("INSTALAR_CLIENTE_SIN_INSTALADOR.bat no pide ?tipo=bat: bajaria el .exe, no el .zip");
+  if (/owner-latest|Owner_Setup|Portable_Owner/i.test(BAT_CLI_ZIP)) {
+    falla("INSTALAR_CLIENTE_SIN_INSTALADOR.bat menciona el release OWNER: un cliente lo veria");
+  } else ok("  INSTALAR_CLIENTE_SIN_INSTALADOR.bat no menciona el release owner");
+} else falla("falta INSTALADOR/INSTALAR_CLIENTE_SIN_INSTALADOR.bat");
+
+for (const archivo of ["crear_accesos.vbs", "CREAR_ACCESOS_DIRECTOS.bat", "DESINSTALAR.bat", "LEEME_PORTABLE.md"]) {
+  if (fs.existsSync(path.join(RAIZ, "installer", "portable", archivo))) {
+    ok(`  installer/portable/${archivo} existe`);
+  } else falla(`falta installer/portable/${archivo}`);
+}
+// Nada en installer/ se cuela al cliente por wildcard (ver chequeo 11): los
+// .iss solo listan archivos SUELTOS de su propia carpeta (Iniciar_Silencioso.vbs,
+// assets\icon.ico), nunca "installer\*" ni "installer\portable\*". Si algun dia
+// alguien agrega un wildcard asi, el paquete portable se filtraria dentro del
+// instalador de Electron sin que nadie lo pidiera.
+if (/Source:\s*"(\.\.\\)?installer\\(\*|portable\\\*)"/i.test(ISS)) {
+  falla('el .iss tiene un wildcard sobre "installer\\*" o "installer\\portable\\*": ' +
+        "se llevaria los lanzadores de la version portable al instalador .exe");
+} else ok("  el .iss no tiene ningun wildcard sobre installer\\ (portable\\ no se cuela)");
+
+// El workflow tiene que armar y publicar el .zip portable, para las dos
+// versiones (cliente en pc-latest, owner en owner-latest) -- si alguien
+// borra el paso sin querer, el boton "sin instalador" de la web quedaria
+// pidiendo un asset que nunca se publica (502 descarga_no_disponible).
+if (/MV_FBA_IA_Portable\.zip/.test(WF) && /MV_FBA_IA_Portable_Owner\.zip/.test(WF)) {
+  ok("  el workflow arma y publica el .zip portable (cliente y owner)");
+} else falla("el workflow no arma/publica MV_FBA_IA_Portable(.zip|_Owner.zip): " +
+             "el boton 'sin instalador' de la web quedaria roto");
+if (/Smoke test de la version portable/.test(WF)) {
+  ok("  el CI arranca el .zip portable YA DESCOMPRIMIDO y prueba /health");
+} else falla("no hay smoke test de la version portable: se podria publicar un " +
+             ".zip que no arranca sin que el CI lo note");
+
+// api/descarga.js: el .zip portable tiene que estar en el MISMO tag que el
+// .exe (pc-latest) -- si tuviera un tag propio, el chequeo de arriba sobre
+// "tags fijos, no elegibles" no lo cubriria y alguien podria colar un tag
+// nuevo sin que ningun test lo note.
+if (/RELEASE_PC_BAT\s*=\s*\{\s*tag:\s*"pc-latest"/.test(DESCARGA)) {
+  ok("  api/descarga.js sirve el .zip portable bajo el mismo tag pc-latest");
+} else falla("RELEASE_PC_BAT no esta atado al tag pc-latest en api/descarga.js");
 
 console.log("");
 if (fallos.length) {

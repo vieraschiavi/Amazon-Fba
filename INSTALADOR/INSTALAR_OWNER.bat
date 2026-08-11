@@ -17,8 +17,10 @@ echo  "owner-latest". Como ya estas logueado en GitHub (por eso
 echo  pudiste bajar este ZIP^), la descarga sale sola: no hay que
 echo  escribir ninguna clave, ni un token, ni el mail.
 echo.
-echo  Ahi bajas:  MV_Amazon_FBA_IA_Owner_Setup.exe
-echo  y le das doble clic para instalar.
+echo  Ahi hay DOS archivos, las dos pre-activadas como Pro:
+echo    MV_Amazon_FBA_IA_Owner_Setup.exe   instalador con icono/desinstalador
+echo    MV_FBA_IA_Portable_Owner.zip       version sin instalador (descomprimir
+echo                                       y correr INICIAR.bat)
 echo.
 echo  Si la pagina da 404, el build owner todavia no se corrio:
 echo    GitHub ^> Actions ^> "Windows Installer" ^> Run workflow
