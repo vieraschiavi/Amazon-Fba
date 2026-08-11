@@ -315,6 +315,17 @@ jobs:
           function Copiar-Carpeta($origen, $destino, $excluir) {
             robocopy $origen $destino /E /XF $excluir /NFL /NDL /NJH /NJS | Out-Null
             if ($LASTEXITCODE -ge 8) { throw "robocopy fallo copiando $origen (codigo $LASTEXITCODE)" }
+            # robocopy devuelve 0-7 en EXITO (1 = "se copiaron archivos", el caso
+            # normal aca) -- pero un $LASTEXITCODE no-cero que quede COLGADO al
+            # final del script hace que GitHub Actions marque el STEP entero como
+            # fallido, aunque nada haya tirado una excepcion (el wrapper de pwsh
+            # de Actions chequea $LASTEXITCODE al terminar, no solo si hubo throw).
+            # Sin este reset, la ULTIMA llamada a robocopy (la de runtime\, la mas
+            # pesada) deja pegado un exit code de "1 archivo copiado" que ningun
+            # cmdlet de PowerShell de ahi en mas pisa (Compress-Archive, Get-Item,
+            # Write-Host no tocan $LASTEXITCODE), y el paso muere en silencio
+            # DESPUES de haber armado el .zip entero y bien.
+            $global:LASTEXITCODE = 0
           }
           Copiar-Carpeta "agents" "$dst\agents" "*.pyc"
           Copiar-Carpeta "core" "$dst\core" @("*.pyc", "i18n.py")
