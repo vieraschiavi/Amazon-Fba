@@ -150,6 +150,38 @@ def test_pricing():
     _igual(r.json(), directo)
 
 
+def test_pricing_rechaza_imposibles():
+    """Plata negativa y margenes >=100% son imposibles, no un caso borde.
+
+    QUE PASABA: /api/pricing aceptaba costo=-50 y devolvia HTTP 200 con
+    "precio": -90.0 y semaforo "rojo" -- un numero imposible presentado como
+    un resultado valido. Un error de tipeo (-50 en vez de 50) salia como una
+    respuesta legitima. Choca con la regla del proyecto: si el dato no sirve,
+    se avisa; no se inventa un resultado.
+
+    El limite vive en PricingIn (frontera de la API). La formula de pricing NO
+    se toco: los casos validos siguen dando exactamente lo mismo, y eso lo
+    cubre test_pricing() comparando contra pricing.evaluar() directo.
+    """
+    base = {"costo": 10.0, "flete": 2.0, "arancel_pct": 5.0}
+    assert cliente.post("/api/pricing", json=base).status_code == 200
+
+    for campo, valor in [("costo", -50), ("flete", -1), ("arancel_pct", -500),
+                         ("prep", -0.01), ("fba_fee", -3),
+                         ("precio_competencia", -19.99),
+                         ("margen_obj", -5), ("margen_obj", 100),
+                         ("margen_obj", 150)]:
+        r = cliente.post("/api/pricing", json={**base, campo: valor})
+        assert r.status_code == 422, f"{campo}={valor} deberia rechazarse, dio {r.status_code}"
+        # el error tiene que decir QUE campo, no un 422 generico
+        campos = [d["loc"][-1] for d in r.json()["detail"]]
+        assert campo in campos, f"el 422 de {campo}={valor} no nombra el campo: {campos}"
+
+    # Y el 0 sigue siendo valido: un producto regalado/muestra es real.
+    assert cliente.post("/api/pricing", json={**base, "costo": 0}).status_code == 200
+    assert cliente.post("/api/pricing", json={**base, "margen_obj": 0}).status_code == 200
+
+
 def test_pricing_acos():
     r = cliente.get("/api/pricing/acos",
                     params={"margen_actual_pct": 37.0, "margen_minimo_pct": 12.0})

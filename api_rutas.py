@@ -22,7 +22,7 @@ if _AQUI not in sys.path:
     sys.path.insert(0, _AQUI)
 
 from fastapi import APIRouter, Body, Response, UploadFile
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 import config
 import generar_pitch
@@ -107,13 +107,28 @@ class RecomendadorIn(BaseModel):
 
 
 class PricingIn(BaseModel):
-    costo: float = 0.0
-    flete: float = 0.0
-    arancel_pct: float = 0.0
-    prep: float = 0.0
-    fba_fee: float | None = None
-    precio_competencia: float | None = None
-    margen_obj: float | None = None
+    # Todo lo que entra aca es plata o un porcentaje de costo: nada puede ser
+    # negativo. Sin estos limites, un error de tipeo del usuario (-50 en vez de
+    # 50) devolvia HTTP 200 con "precio: -90.0" y un semaforo en rojo, o sea un
+    # numero imposible presentado como un resultado valido. Eso choca de frente
+    # con la regla del proyecto: si el dato no sirve, se avisa, no se inventa un
+    # resultado. Con ge=0 la API contesta 422 diciendo cual campo esta mal.
+    #
+    # El limite va ACA (frontera de la API) y no en agents/pricing.py a
+    # proposito: la formula de pricing no se toca. landed_cost() sigue siendo
+    # la misma; lo unico que cambia es que ya no se la llama con basura.
+    costo: float = Field(0.0, ge=0)
+    flete: float = Field(0.0, ge=0)
+    arancel_pct: float = Field(0.0, ge=0)
+    prep: float = Field(0.0, ge=0)
+    fba_fee: float | None = Field(None, ge=0)
+    # El codigo ya ignora una competencia <= 0 (ver pricing.evaluar), asi que
+    # ge=0 no cambia ningun comportamiento valido: solo rechaza el disparate.
+    precio_competencia: float | None = Field(None, ge=0)
+    # Margen objetivo en PORCENTAJE (config.TARGET_MARGIN = 25.0, no 0.25).
+    # Un margen >= 100% es imposible por definicion -- el margen es una parte
+    # del precio -- y hace que precio_objetivo() no pueda converger.
+    margen_obj: float | None = Field(None, ge=0, lt=100)
 
 
 class CajaIn(BaseModel):
