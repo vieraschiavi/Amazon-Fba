@@ -40,12 +40,35 @@ export async function accesoAlRepoValido(token, fetchImpl = fetch) {
     });
     if (!r.ok) return false;
     const d = await r.json();
-    // Dos comprobaciones, no una:
-    //   full_name  -> que sea EXACTAMENTE este repo y no otro homonimo;
-    //   private    -> si algun dia el repo se hiciera publico, un token
-    //                 cualquiera podria leerlo y esto dejaria de probar nada.
-    //                 Mejor que deje de autorizar a que autorice de mas.
-    return d && d.full_name === REPO_ESPERADO && d.private === true;
+    // Que sea EXACTAMENTE este repo y no otro homonimo. Si no, nada mas importa.
+    if (!d || d.full_name !== REPO_ESPERADO) return false;
+
+    // Repo PRIVADO: poder leerlo YA prueba acceso, porque nadie mas puede.
+    if (d.private === true) return true;
+
+    // Repo PUBLICO: leerlo no prueba absolutamente nada -- lo lee cualquiera,
+    // sin token siquiera. Antes esto devolvia false y listo, lo que dejaba el
+    // build owner IMPOSIBLE de correr mientras el repo estuviera publico (hay
+    // razones para tenerlo asi: los repos publicos tienen minutos de Actions
+    // ilimitados). Obligaba a togglear la visibilidad a mano en cada build, y
+    // peor: si alguien lo hacia publico y se olvidaba, el build owner fallaba
+    // con un 403 que no explicaba por que.
+    //
+    // Lo que SI prueba ser el dueño, con el repo publico o privado, es tener
+    // permiso de ESCRITURA. GitHub devuelve "permissions" cuando la llamada va
+    // autenticada: a un desconocido con un token propio le da
+    // {pull:true, push:false, admin:false} sobre un repo publico -- puede
+    // leerlo, no tocarlo. Al dueño (y al GITHUB_TOKEN efimero del workflow,
+    // que corre con contents:write) le da push/admin en true.
+    //
+    // O sea: la barrera sigue siendo "tener acceso de escritura al repo", que
+    // es exactamente el mismo grupo de gente que puede correr el workflow. No
+    // se abre nada; se deja de depender de un detalle (la visibilidad) que no
+    // tiene por que estar atado a esto.
+    const permisos = d.permissions || {};
+    return permisos.admin === true
+        || permisos.maintain === true
+        || permisos.push === true;
   } catch (_) {
     return false;   // sin red, token invalido, respuesta rara: no autoriza
   }

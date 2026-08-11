@@ -334,6 +334,67 @@ if (/RELEASE_PC_BAT\s*=\s*\{\s*tag:\s*"pc-latest"/.test(DESCARGA)) {
   ok("  api/descarga.js sirve el .zip portable bajo el mismo tag pc-latest");
 } else falla("RELEASE_PC_BAT no esta atado al tag pc-latest en api/descarga.js");
 
+// --- 13) la herramienta que pasa una instalacion a OWNER ---
+// Convierte una instalacion normal en Pro sin recompilar. Tiene que cumplir
+// DOS cosas: no viajar al cliente, y no servir de nada aunque igual llegara.
+const ACT_BAT = fs.existsSync(path.join(DIR_INST, "ACTIVAR_OWNER.bat"))
+  ? fs.readFileSync(path.join(DIR_INST, "ACTIVAR_OWNER.bat"), "utf8") : "";
+const ACT_PY = fs.existsSync(path.join(DIR_INST, "activar_owner.py"))
+  ? fs.readFileSync(path.join(DIR_INST, "activar_owner.py"), "utf8") : "";
+if (ACT_BAT && ACT_PY) ok("  INSTALADOR/ACTIVAR_OWNER.bat + activar_owner.py existen");
+else falla("falta ACTIVAR_OWNER.bat o activar_owner.py en INSTALADOR/");
+
+// No se empaquetan: el chequeo 11 ya prueba que [Files] no toca INSTALADOR/ y
+// que los wildcards de raiz no son recursivos. Aca se fija lo especifico.
+for (const f of ["ACTIVAR_OWNER.bat", "activar_owner.py"]) {
+  if (lineasFiles.some((l) => l.includes(f))) {
+    falla(`[Files] empaqueta ${f}: el cliente recibiria la herramienta de owner`);
+  }
+}
+ok("  el instalador no empaqueta la herramienta de activacion owner");
+
+// La propiedad que la hace segura aunque se filtre: NO calcula la clave, se la
+// PIDE al servidor, que exige prueba de acceso al repo. Si algun dia alguien
+// "simplificara" esto calculando el HMAC localmente, haria falta meter
+// LICENCIA_SECRETO en el archivo -- y ahi si, cualquiera que lo consiga se
+// fabrica licencias Pro infinitas para cualquier email.
+if (/api\/licencia\?dueno=1/.test(ACT_PY)) {
+  ok("  activar_owner.py PIDE la clave al servidor (no la fabrica)");
+} else falla("activar_owner.py no pide la clave a /api/licencia?dueno=1");
+// Se mira el CODIGO, no la prosa: el docstring explica justamente por que no
+// se usa HMAC ni LICENCIA_SECRETO, y nombrarlos ahi no es usarlos (mismo
+// criterio que el chequeo de netstat en verificar_lanzadores.mjs).
+const ACT_PY_CODIGO = ACT_PY
+  .replace(/"""[\s\S]*?"""/g, "")   // docstrings
+  .replace(/'''[\s\S]*?'''/g, "")
+  .replace(/#.*$/gm, "");           // comentarios de linea
+let calculaLocal = false;
+for (const [re, que] of [[/\bhmac\b/i, "hmac"], [/hashlib/, "hashlib"],
+                         [/LICENCIA_SECRETO/, "LICENCIA_SECRETO"]]) {
+  if (re.test(ACT_PY_CODIGO)) {
+    calculaLocal = true;
+    falla(`activar_owner.py usa ${que}: estaria calculando la clave localmente, ` +
+          "lo que obliga a llevar el secreto de firma adentro del archivo");
+  }
+}
+if (!calculaLocal) ok("  activar_owner.py no calcula la clave localmente (no lleva el secreto)");
+
+// Antes de escribir, valida el formato: si el servidor contesta cualquier otra
+// cosa (una pagina de error, un JSON raro), un owner_licencia.json invalido
+// haria fallar la activacion en silencio al abrir el programa.
+if (/MVFBA\(-\[A-F0-9\]\{4\}\)\{4\}/.test(ACT_PY)) {
+  ok("  activar_owner.py valida el formato de la clave antes de escribirla");
+} else falla("activar_owner.py no valida el formato MVFBA-XXXX-XXXX-XXXX-XXXX");
+
+// Ningun token hardcodeado en la herramienta (mismo criterio que los otros).
+for (const [re, que] of [[/gh[pousr]_[A-Za-z0-9]{20,}/, "un token de GitHub"],
+                         [/github_pat_[A-Za-z0-9_]{20,}/, "un PAT de GitHub"]]) {
+  if (re.test(ACT_BAT) || re.test(ACT_PY)) {
+    falla(`la herramienta de activacion owner trae ${que} adentro`);
+  }
+}
+ok("  la herramienta de activacion owner no lleva ningun token adentro");
+
 console.log("");
 if (fallos.length) {
   console.error(`FALLO: ${fallos.length} problema(s) en el instalador.`);

@@ -53,6 +53,34 @@ permisos de administrador, no toca el registro de Windows.
 - `DESINSTALAR.bat` borra esos accesos directos y, si se confirma, la
   carpeta entera con los datos.
 
+## Pasar una instalación YA HECHA a owner (sin recompilar)
+
+Si ya tenés el programa instalado (la versión de cliente, o la portable) y
+querés dejarlo en edición owner **sin bajar otro instalador ni esperar un
+build**: copiá `ACTIVAR_OWNER.bat` y `activar_owner.py` dentro de la carpeta
+del programa (la que tiene `app.py`) y doble clic en el `.bat`.
+
+Le pide la licencia real al servidor y la deja instalada. Al reabrir el
+programa, se activa solo — plan Pro, sin límite de días, sin pantalla de
+activación.
+
+**Necesita una cosa, una sola vez: un token de GitHub** con acceso de
+escritura a este repo (o el `OWNER_BUILD_TOKEN`). No se puede evitar, y no es
+un capricho del diseño: la clave se firma con `LICENCIA_SECRETO`, que vive
+solo en Vercel, así que ningún programa local puede calcularla — hay que
+pedírsela al servidor. Y el servidor no se la da a cualquiera que diga ser el
+dueño, porque el mail del dueño es público y adivinarlo es trivial. Ese token
+es lo único que separa "el dueño" de "un cliente que quiere Pro gratis".
+
+El token se escribe a mano (no se muestra en pantalla) y **no se guarda en
+ningún lado**. También se puede pasar por variable de entorno
+`MV_GITHUB_TOKEN` para no tipearlo.
+
+> **Uso interno.** No repartas estos dos archivos ni los pongas en el
+> instalador. Aunque se filtraran no le servirían a nadie sin un token con
+> acceso de escritura al repo (el servidor devuelve 403), pero no hay motivo
+> para regalar el mapa.
+
 ## Versión OWNER (las dos)
 
 `INSTALAR_OWNER.bat` abre la página del Release `owner-latest` en el

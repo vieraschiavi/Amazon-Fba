@@ -7,7 +7,9 @@
  *
  *   - un token que da 200 sobre OTRO repo no sirve (si el repo se tomara del
  *     request, cualquiera apuntaria a uno suyo y entraria);
- *   - un repo PUBLICO no sirve como prueba (lo lee cualquiera);
+ *   - sobre un repo PUBLICO, poder LEERLO no sirve como prueba (lo lee
+ *     cualquiera, hasta sin token): ahi hace falta permiso de ESCRITURA, que
+ *     es el mismo grupo de gente que puede correr el workflow;
  *   - sin token, con token vacio, o si GitHub falla, NO autoriza (falla cerrado).
  *
  * Uso:   node test/verificar_owner_github.mjs
@@ -49,11 +51,58 @@ const REPO = "vieraschiavi/Amazon-Fba";
     (await accesoAlRepoValido("token-ajeno", gh)) === false);
 }
 
-// --- el repo dejo de ser privado: ya no prueba nada ---
+// --- repo PUBLICO: leerlo no prueba nada, lo lee cualquiera ---
+// Este es el caso del curioso que se hace un token propio y prueba el endpoint:
+// GitHub le contesta 200 sobre el repo publico, pero con pull y nada mas.
 {
-  const gh = githubFalso({ "token-cualquiera": { full_name: REPO, private: false } });
-  comprobar("si el repo fuera PUBLICO no autoriza (leerlo dejaria de probar acceso)",
-    (await accesoAlRepoValido("token-cualquiera", gh)) === false);
+  const gh = githubFalso({ "token-de-un-curioso": {
+    full_name: REPO, private: false,
+    permissions: { admin: false, maintain: false, push: false, triage: false, pull: true },
+  } });
+  comprobar("repo PUBLICO + solo lectura NO autoriza (leerlo no prueba nada)",
+    (await accesoAlRepoValido("token-de-un-curioso", gh)) === false);
+}
+
+// --- repo PUBLICO pero con acceso de ESCRITURA: ese si es el dueño ---
+// Es el caso del GITHUB_TOKEN del workflow (corre con contents:write) y el del
+// dueño con su propio token. Mismo grupo que puede correr el workflow.
+for (const [rol, permisos] of [
+  ["push",     { admin: false, maintain: false, push: true,  pull: true }],
+  ["maintain", { admin: false, maintain: true,  push: false, pull: true }],
+  ["admin",    { admin: true,  maintain: false, push: false, pull: true }],
+]) {
+  const gh = githubFalso({ "token-con-escritura": { full_name: REPO, private: false, permissions: permisos } });
+  comprobar(`repo PUBLICO + permiso "${rol}" SI autoriza (solo lo tiene quien puede correr el workflow)`,
+    (await accesoAlRepoValido("token-con-escritura", gh)) === true);
+}
+
+// --- repo publico y GitHub ni siquiera manda "permissions" ---
+// Pasa en llamadas sin autenticar. Sin dato, no se asume nada: falla cerrado.
+{
+  const gh = githubFalso({ "token-raro": { full_name: REPO, private: false } });
+  comprobar("repo PUBLICO sin campo permissions NO autoriza (no se asume nada)",
+    (await accesoAlRepoValido("token-raro", gh)) === false);
+}
+
+// --- el repo PRIVADO sigue autorizando por sola lectura ---
+// Ahi leerlo SI prueba acceso: nadie mas que un colaborador puede.
+{
+  const gh = githubFalso({ "token-lector-privado": {
+    full_name: REPO, private: true,
+    permissions: { admin: false, maintain: false, push: false, pull: true },
+  } });
+  comprobar("repo PRIVADO + solo lectura SI autoriza (nadie mas puede leerlo)",
+    (await accesoAlRepoValido("token-lector-privado", gh)) === true);
+}
+
+// --- y un repo AJENO no entra ni con permisos de admin ---
+{
+  const gh = githubFalso({ "token-admin-ajeno": {
+    full_name: "otro/repo", private: false,
+    permissions: { admin: true, maintain: true, push: true, pull: true },
+  } });
+  comprobar("ser admin de OTRO repo no autoriza (el repo esta fijo en el server)",
+    (await accesoAlRepoValido("token-admin-ajeno", gh)) === false);
 }
 
 // --- sin token / token vacio ---
