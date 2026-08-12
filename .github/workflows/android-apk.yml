@@ -44,7 +44,26 @@ jobs:
         with:
           gradle-version: "8.14.3"
 
+      # El keystore de firma YA NO viaja en el repo (viajaba, con su
+      # contraseña en texto plano en build.gradle, hasta que el repo paso por
+      # publico y quedo expuesto a cualquiera). Ahora vive SOLO como secret de
+      # GitHub, codificado en base64, y se decodifica aca a un archivo
+      # temporal que nunca se commitea ni se sube como artifact.
+      - name: Preparar el keystore de firma
+        env:
+          MVFBA_KEYSTORE_BASE64: ${{ secrets.MVFBA_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [ -z "${MVFBA_KEYSTORE_BASE64:-}" ]; then
+            echo "::error::Falta el secret MVFBA_KEYSTORE_BASE64. Sin el keystore no se puede firmar el APK." >&2
+            exit 1
+          fi
+          echo "$MVFBA_KEYSTORE_BASE64" | base64 -d > android/app/mv-release.keystore
+
       - name: Compilar y firmar APK (v1+v2+v3)
+        env:
+          MVFBA_KEYSTORE_PASSWORD: ${{ secrets.MVFBA_KEYSTORE_PASSWORD }}
+          MVFBA_KEY_ALIAS: ${{ secrets.MVFBA_KEY_ALIAS }}
         run: bash android/build-apk.sh
 
       - name: Publicar APK como artifact
@@ -53,6 +72,15 @@ jobs:
           name: MV-Amazon-FBA-IA-apk
           path: android/app/build/outputs/apk/release/MV-Amazon-FBA-IA.apk
           if-no-files-found: error
+
+      # El runner se destruye entero al terminar el job (no hay reuso entre
+      # corridas), asi que esto no es indispensable -- pero borrar el
+      # keystore decodificado apenas termina de usarse es la practica
+      # correcta, y corre "if: always()" para no saltearse aunque el build
+      # anterior haya fallado.
+      - name: Borrar el keystore decodificado
+        if: always()
+        run: rm -f android/app/mv-release.keystore
 
       - name: Publicar APK en un Release (descarga directa desde el celular)
         if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'

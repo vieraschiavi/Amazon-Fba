@@ -25,18 +25,38 @@ android {
         versionName "1.1.5"
     }
 
-    // Firma de distribucion (sideload). El keystore viaja en el repo a proposito:
-    // para una app que se instala por fuera de Play Store, la firma solo sirve
-    // para identificar de forma consistente al emisor y permitir updates; no es
-    // un secreto que proteja datos del usuario. Se firma con v1 (JAR) + v2 + v3
-    // a la vez: v1 es imprescindible para que los instaladores de APK de terceros
-    // y los Android 7-9 reconozcan el paquete (sin v1, muchos "no detectan la APK").
+    // Firma de distribucion (sideload). Para una app que se instala por fuera
+    // de Play Store, la firma sirve para identificar de forma consistente al
+    // emisor y permitir updates -- eso sigue siendo cierto y es por lo que el
+    // MISMO keystore se reusa entre builds. Lo que cambio es que la clave y su
+    // contraseña YA NO viajan en texto plano dentro de un archivo trackeado:
+    // antes cualquiera que leyera este .gradle (y cualquiera que hubiera
+    // clonado el repo mientras fue publico) tenia la contraseña completa.
+    //
+    // Ahora salen de variables de entorno, que en CI vienen de GitHub Actions
+    // Secrets (ver .github/workflows/android-apk.yml) y en una maquina local
+    // las carga quien compila, nunca commiteadas. Sin las tres, el build
+    // falla ACA con un mensaje claro -- no arranca con una contraseña de
+    // repuesto ni compila "silenciosamente sin firmar".
+    //
+    // Se firma con v1 (JAR) + v2 + v3 a la vez: v1 es imprescindible para que
+    // los instaladores de APK de terceros y los Android 7-9 reconozcan el
+    // paquete (sin v1, muchos "no detectan la APK").
+    def ksPath = System.getenv('MVFBA_KEYSTORE_PATH') ?: 'mv-release.keystore'
+    def ksPass = System.getenv('MVFBA_KEYSTORE_PASSWORD')
+    def ksAlias = System.getenv('MVFBA_KEY_ALIAS') ?: 'mvfba-release'
     signingConfigs {
         release {
-            storeFile file('mv-release.keystore')
-            storePassword 'mvfba2026'
-            keyAlias 'mvfba'
-            keyPassword 'mvfba2026'
+            if (ksPass == null || ksPass.isEmpty()) {
+                throw new GradleException(
+                    "Falta MVFBA_KEYSTORE_PASSWORD. Sin esta variable de entorno " +
+                    "no se puede firmar el APK -- no hay contraseña de repuesto. " +
+                    "Ver android/README.md (o el workflow de Actions) para como cargarla.")
+            }
+            storeFile file(ksPath)
+            storePassword ksPass
+            keyAlias ksAlias
+            keyPassword ksPass   // PKCS12 exige la misma password para store y key
             enableV1Signing true
             enableV2Signing true
             enableV3Signing true

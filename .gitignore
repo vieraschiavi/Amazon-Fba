@@ -36,6 +36,12 @@ owner_licencia.json
 android/app/src/main/assets/
 landing/app/
 
+# Keystore de firma de la app Android. NUNCA se commitea: en CI se decodifica
+# desde el secret MVFBA_KEYSTORE_BASE64 (ver .github/workflows/android-apk.yml);
+# localmente cada quien pone su propia copia (ver android/README.md).
+*.keystore
+*.jks
+
 # Electron: dependencias y salida del empaquetado (los arma el CI)
 electron/node_modules/
 electron-dist/

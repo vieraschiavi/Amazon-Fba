@@ -16,8 +16,17 @@ SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/opt/android-sdk}}"
 BT="$(ls -d "$SDK"/build-tools/* | sort -V | tail -1)"
 APKSIGNER="$BT/apksigner"
 ZIPALIGN="$BT/zipalign"
-KS="app/mv-release.keystore"
-STOREPASS="${MV_KS_PASS:-mvfba2026}"
+KS="app/${MVFBA_KEYSTORE_PATH:-mv-release.keystore}"
+KS_ALIAS="${MVFBA_KEY_ALIAS:-mvfba-release}"
+# Sin contraseña de repuesto a proposito: antes quedaba hardcodeada aca Y en
+# build.gradle, en texto plano, en un repo que estuvo publico. Ver la
+# explicacion completa en build.gradle (signingConfigs.release).
+if [ -z "${MVFBA_KEYSTORE_PASSWORD:-}" ]; then
+    echo "[ERROR] Falta la variable de entorno MVFBA_KEYSTORE_PASSWORD." >&2
+    echo "        Sin ella no se puede firmar el APK -- no hay contraseña de repuesto." >&2
+    exit 1
+fi
+STOREPASS="$MVFBA_KEYSTORE_PASSWORD"
 
 GRADLE="${GRADLE_BIN:-gradle}"
 echo "==> gradle assembleRelease"
@@ -28,7 +37,7 @@ FINAL="app/build/outputs/apk/release/MV-Amazon-FBA-IA.apk"
 
 echo "==> re-firmando con v1+v2+v3 (apksigner, min-sdk 19)"
 "$APKSIGNER" sign \
-  --ks "$KS" --ks-key-alias mvfba \
+  --ks "$KS" --ks-key-alias "$KS_ALIAS" \
   --ks-pass "pass:$STOREPASS" --key-pass "pass:$STOREPASS" \
   --min-sdk-version 19 \
   --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true \
