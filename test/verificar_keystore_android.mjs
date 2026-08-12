@@ -36,11 +36,18 @@ const GITIGNORE = fs.readFileSync(path.join(RAIZ, ".gitignore"), "utf8");
 // --- 1) la contraseña vieja no puede reaparecer en NINGUN archivo del repo ---
 // git grep, no fs: cubre el arbol entero de una, y falla si el binario del
 // keystore (que la lleva embebida en su blob) volviera a estar trackeado.
+//
+// Se excluye ESTE archivo de su propio escaneo: el string vive legitimamente
+// en el comentario de arriba y en el propio comando de busqueda de abajo, asi
+// que git grep se encuentra a si mismo apenas queda trackeado -- un falso
+// positivo que se confirmo en la practica (el test paso mientras el archivo
+// estaba sin commitear, y fallo solo -contra si mismo- despues del commit).
+const ESTE_ARCHIVO = path.relative(RAIZ, import.meta.filename ?? new URL(import.meta.url).pathname);
 try {
-  const hit = execSync('git grep -l "mvfba2026" -- . 2>/dev/null || true',
+  const hit = execSync(`git grep -l "mvfba2026" -- . ":(exclude)${ESTE_ARCHIVO}" 2>/dev/null || true`,
     { cwd: RAIZ, encoding: "utf8" }).trim();
   if (hit) falla(`la contraseña vieja "mvfba2026" sigue apareciendo en: ${hit}`);
-  else ok('la contraseña vieja "mvfba2026" no aparece en ningun archivo trackeado');
+  else ok('la contraseña vieja "mvfba2026" no aparece en ningun archivo trackeado (fuera de este test)');
 } catch (e) {
   falla(`no se pudo correr git grep: ${e.message}`);
 }

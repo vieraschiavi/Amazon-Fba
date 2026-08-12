@@ -1,144 +1,138 @@
 # Pendientes — MV FBA IA
 
-> Estado verificado el **2026-07-25** contra producción (mvfbaia.com) y GitHub.
-> Todo lo que queda pendiente depende de una **acción tuya** (credenciales o
-> facturación): no hay código pendiente de escribir.
+> Estado verificado el **2026-08-12** contra producción (mvfbaia.com), GitHub y
+> CI real. La versión anterior de este archivo (2026-07-25) describía tres
+> bloqueadores que **ya se resolvieron**; se reescribe entero en vez de
+> parchearlo para no arrastrar información vieja mezclada con la nueva.
 
 ---
 
-## Bloqueador 1 — La CI no puede compilar el instalador (cuota de GitHub Actions)
+## Ya resuelto desde la última vez (no reabrir sin evidencia nueva)
 
-**Síntoma:** todos los jobs `build` fallan a los 2-5 segundos, con `runner_id: 0`
-y sin runner asignado. Pasa tanto en `windows-latest` (Windows Installer) como en
-`ubuntu-latest` (Android APK). Que fallen en segundos y sin runner significa que
-**nunca llegaron a ejecutar nada**: no es un error del código.
+| Bloqueador viejo | Qué pasó |
+|---|---|
+| CI sin runner, `pc-latest` congelado en julio | El repo pasó a público (Actions con minutos ilimitados) y volvió a privado; el build owner se arregló para funcionar en los dos casos (ver `api/_owner_github.js`). `pc-latest` se republicó, última vez **2026-08-12 04:41**. |
+| Descarga daba 401 (`GITHUB_RELEASE_TOKEN`) | Verificado en producción: `/api/descarga?demo=1` → `302`, igual `&tipo=bat`. |
+| Instalador owner nunca compilado | El mecanismo ya funciona sin configurar nada (autorización = acceso de escritura al repo). Sigue faltando que alguien **corra el workflow una vez** — ver más abajo. |
 
-**Consecuencia (importante):** el Release `pc-latest` quedó congelado en el
-**5 de julio de 2026**. O sea, el instalador que se descarga desde la web **no
-tiene** nada de lo que hicimos después:
+Y de yapa, cosas que no estaban ni en la lista vieja:
 
-- Python embebido (el cliente ya no necesita instalar Python) — PR #39
-- API de Jungle Scout (BYOK) — PR #42
-- Recomendación de nicho con Claude — PR #42
-- Insights Jungle Scout: estacionalidad / share of voice / ventas por ASIN — PR #44
-- Reabastecimiento (restock) — PR #45
-- Herramientas: generador de URLs + Plan de Acción (POA) — PR #46
-- Demo de 7 días — PR #47
+- **Versión portable sin instalador** (`.zip`, para PCs que bloquean `.exe`): en producción, `MV_FBA_IA_Portable.zip`, 81.7 MB.
+- Migración completa de Streamlit a **Electron + React** para el cliente (el panel legacy ya no se distribuye).
+- Herramienta `ACTIVAR_OWNER.bat` para pasar una instalación ya hecha a edición owner sin recompilar.
+- Auditoría de validación de entrada en toda la API de negocio: 3 endpoints devolvían resultados imposibles con HTTP 200 (unidades/facturación negativas), uno **crasheaba con HTTP 500** (`/api/plan/interes-compuesto` con años muy altos), y uno **corrompía datos** (`/api/ventas` guardaba ventas negativas en la base). Los cinco arreglados y con test de regresión.
+- **Suite de tests**: 82 pytest + 12 suites JS (antes: "47/47" sin más detalle).
 
-**Cómo destrabarlo (elegí una):**
-1. Esperar a que se renueve la cuota mensual de Actions.
-2. Subir el límite en **GitHub → Settings → Billing → Actions → spending limit**.
-3. Si no querés seguir gastando ahí, desactivar los workflows que no uses
-   (Android APK) para que la cuota rinda solo para el instalador de Windows.
+---
 
-**Después de destrabar:** correr el workflow *Windows Installer (EXE)* (se dispara
-solo con cualquier push a `*.py`, `agents/**`, `core/**`, `data/**`, `frontend/**`,
-`installer/**`, o a mano desde Actions → Run workflow) para que publique un
-`pc-latest` actualizado.
+## Pendiente 1 — Compilar el build owner (una vez)
+
+El instalador owner (`.exe` y `.zip`, pre-activados en Pro, sin pedir mail ni
+clave al abrir) **todavía no existe** — nadie corrió el workflow con
+`owner: true` desde que el mecanismo se arregló.
+
+```
+GitHub → Actions → "Windows Installer (EXE)" → Run workflow → tildar "owner" → Run
+```
+
+Yo no puedo dispararlo: mi integración no tiene permiso de `workflow_dispatch`.
 
 **Cómo verificar que quedó bien:**
 ```bash
-# la fecha de publicación tiene que ser posterior al 2026-07-25
-curl -s https://api.github.com/repos/vieraschiavi/Amazon-Fba/releases/tags/pc-latest \
-  | grep -E '"published_at"|"name"'
+curl -s -o /dev/null -w "%{http_code}\n" \
+  https://github.com/vieraschiavi/Amazon-Fba/releases/tag/owner-latest
+# 200 -> ya existe.  404 -> todavia no se corrio el build owner.
 ```
 
 ---
 
-## Bloqueador 2 — La descarga del instalador da 401 (`GITHUB_RELEASE_TOKEN` inválido)
+## Pendiente 2 — Cargar los 3 secrets del keystore de Android nuevo
 
-**Síntoma actual en producción:**
-```bash
-curl "https://mvfbaia.com/api/descarga?demo=1"
-# {"error":"descarga_no_disponible","motivo":"release_no_encontrado","status":401}
+El keystore de firma viejo estaba commiteado en texto plano y se rotó (PR
+#69). El nuevo se entregó **fuera del repo**. Sin cargar los secrets, el
+próximo build de Android falla mostrando exactamente cuál falta — ya se
+confirmó en CI real, no es un bug:
+
+```
+##[error]Falta el secret MVFBA_KEYSTORE_BASE64. Sin el keystore no se puede firmar el APK.
 ```
 
-Ese `status: 401` es la respuesta de GitHub: el token existe en Vercel pero está
-**vencido, mal copiado o sin el permiso correcto**. (Si faltara el token, el
-`motivo` diría `sin_token`.)
-
-**Por qué hace falta un token:** el repo es privado, así que las URLs de descarga
-de los Releases devuelven 404 a cualquiera que no esté autenticado.
-`api/_release.js` resuelve la descarga server-side con este token.
-
-**Pasos exactos:**
-1. GitHub → **Settings → Developer settings → Personal access tokens →
-   Fine-grained tokens → Generate new token**.
-2. **Repository access:** *Only select repositories* → `vieraschiavi/Amazon-Fba`.
-3. **Permissions → Repository permissions → Contents: Read-only**.
-   (Con eso alcanza; no le des nada más.)
-4. Copiar el token (se muestra una sola vez).
-5. Vercel → proyecto `amazon-fba` → **Settings → Environment Variables** →
-   `GITHUB_RELEASE_TOKEN` = el token nuevo (Production).
-6. **Deployments → (el de Production) → ⋯ → Redeploy.**
-   ⚠️ Guardar la variable **no** alcanza: las funciones siguen corriendo con las
-   variables horneadas en el último build. Sin redeploy no cambia nada.
-
-**Cómo verificar que quedó bien:**
-```bash
-curl -sS -o /dev/null -w '%{http_code}\n' "https://mvfbaia.com/api/descarga?demo=1"
-# 302  -> OK (redirige al instalador)
-# 502  -> seguí mirando "motivo" en el body
 ```
+GitHub → tu repo → Settings → Secrets and variables → Actions → New repository secret
+  MVFBA_KEYSTORE_BASE64     <- del archivo que te mandé
+  MVFBA_KEYSTORE_PASSWORD   <- del archivo que te mandé
+  MVFBA_KEY_ALIAS           <- mvfba-release
+```
+
+Nadie había descargado el APK viejo (`download_count: 0`), así que rotar la
+clave no rompe ninguna instalación existente — no hay apuro por el lado de
+usuarios, solo por tener el build de Android funcionando de nuevo.
 
 ---
 
-## Bloqueador 3 — El instalador "owner" nunca se compiló
+## Pendiente 3 — El keystore viejo sigue en el historial de git
 
-No existe el Release `owner-latest`. El build owner (el instalador tuyo, que
-arranca ya activado como Pro, sin pagar ni activar nada a mano) **nunca se corrió**.
-
-Depende del Bloqueador 1 (necesita la CI andando) y además de dos secrets:
-
-1. GitHub → **Settings → Secrets and variables → Actions**:
-   - `OWNER_LICENSE_EMAIL` = tu email (el mismo que `OWNER_EMAIL` en Vercel)
-   - `OWNER_LICENSE_KEY` = la clave que devuelve el endpoint de dueño (ver abajo)
-2. Actions → **Windows Installer (EXE) → Run workflow** → marcar **owner: true**.
-3. Se publica en el Release `owner-latest` (nunca pisa `pc-latest`, que es el de
-   los clientes).
-
-**Para obtener tu clave de licencia de dueño** (esto ya funciona hoy):
-```bash
-curl -H "x-mv-app: mvfba-web-1" \
-  "https://mvfbaia.com/api/licencia?dueno=1&email=TU_EMAIL"
-```
+Se sacó del árbol actual (`git rm --cached`), pero **no se reescribió
+historia** — eso es una operación destructiva (`git filter-repo` o similar +
+force-push) que requiere tu confirmación explícita antes de que la haga.
+La clave vieja está rotada y no sirve para firmar nada que el proyecto vaya
+a aceptar, así que el riesgo práctico hoy es bajo — pero si en algún momento
+querés que el historial quede completamente limpio, avisame y lo encaramos
+aparte (cambia los hashes de commit de toda la rama, así que hay que
+coordinarlo).
 
 ---
 
 ## Pendiente de producto — falta traducir la PWA / app de celular
 
-El **panel de escritorio ya está traducido** a inglés y portugués (formularios,
-KPI, tablas y los textos que arma el backend). Lo que **sigue casi todo en
-español** es la **PWA / app de celular** (`mobile/`): solo cambian de idioma la
-pantalla de licencia y poco más; el resto —Resumen ejecutivo, Facturación,
-Accesos rápidos, la barra de navegación— está siempre en castellano.
+El **panel de escritorio** ya está traducido a inglés y portugués
+(formularios, KPI, tablas, textos que arma el backend). La **PWA / app de
+celular** (`mobile/`) sigue casi toda en español: solo cambia de idioma la
+pantalla de licencia. Es otra base de código (JS a mano, sin el sistema de
+i18n del panel), así que merece su propio cambio — sin tocar todavía.
 
-Es otra base de código (JS a mano, sin el sistema de i18n del panel), así que
-merece su propio cambio. Mientras tanto, la escena "multiplataforma" del video
-se ve en español en los tres idiomas, porque muestra esa app tal cual es.
+---
 
-## Ya verificado y funcionando (no tocar)
+## Pendiente de verificación — nadie probó el instalador en Windows real
 
-| Cosa | Estado |
-|---|---|
-| `OWNER_EMAIL` en Vercel | ✅ Configurado. El endpoint de dueño devuelve licencia Pro válida. |
-| Demo de 7 días — reloj real | ✅ `DIAS_DEMO = 7` en `core/licencia.py` y `mobile/js/licencia.js`. |
-| Demo de 7 días — web | ✅ 13 menciones en ES/EN/PT en producción, 0 residuos de "3 días". |
-| Demo de 7 días — audios | ✅ Los 3 `.mp3` en producción dicen "siete días / seven days / sete dias" (checksums idénticos a los locales). |
-| Escenas del video sincronizadas | ✅ 9 escenas × 3 idiomas verificadas tras regenerar el audio. |
-| Banco de tests | ✅ 47/47. |
-| Flujo e2e en modo demo | ✅ 32/32 checks, datos correlacionados entre todas las pestañas. |
+Todo lo de esta sesión se verificó con: pytest local, 12 suites JS, CI de
+GitHub Actions (que sí compila en un Windows real, pero no instala/desinstala
+interactivamente), y sondeo directo de la API en producción. Lo que **ningún
+test cubre**: instalar de verdad en una PC Windows, mandarlo a `D:\`, abrir
+desde el ícono del Escritorio (no el navegador), desinstalar y confirmar que
+la carpeta desaparece entera. Es el único hueco real del "end to end".
+
+---
+
+## Nota — el plan free de Vercel tiene 100 deploys/día
+
+Se agotó una vez esta sesión (varios pushes seguidos disparan un preview
+cada uno). Mensaje si vuelve a pasar:
+```
+Resource is limited - try again in 24 hours (more than 100, code: "api-deployments-free-per-day")
+```
+No afecta producción (`mvfbaia.com` sigue sirviendo lo último ya desplegado),
+solo bloquea publicar cambios **nuevos** por 24 horas. Se resuelve solo; no
+hay nada para arreglar en código.
 
 ---
 
 ## Notas para retomar
 
-- El repo es **privado**: cualquier descarga pública de Releases necesita pasar
-  por `api/descarga.js` + `api/_release.js` con el token.
-- `landing/app/` **no se commitea**: lo genera `scripts/vercel-build.sh` copiando
-  `mobile/`. Si tocás la PWA, editá `mobile/` (es la fuente de verdad).
+- La **visibilidad del repo** (público/privado) cambió varias veces en esta
+  sesión — antes de asumir cuál es, chequeala en GitHub. El build owner
+  funciona en los dos casos desde el PR #66; el resto de los workflows
+  también, aunque un repo público tiene minutos de Actions ilimitados y uno
+  privado tiene cuota mensual.
+- `landing/app/` **no se commitea**: lo genera `scripts/vercel-build.sh`
+  copiando `mobile/`. Si tocás la PWA, editá `mobile/` (es la fuente de
+  verdad).
 - `DOMINIO = "MV-Amazon-Fba"` y `LICENCIA_SECRETO` **no se cambian nunca**:
   cambiarlos invalida las licencias ya vendidas.
-- Las dos fuentes de verdad del reloj de la demo son `core/licencia.py` (PC) y
-  `mobile/js/licencia.js` (PWA/Android). Si cambia la duración, hay que ajustar
-  también la ventana del mail recordatorio en `api/cron-recordatorio-demo.js`.
+- Las dos fuentes de verdad del reloj de la demo son `core/licencia.py` (PC)
+  y `mobile/js/licencia.js` (PWA/Android). Si cambia la duración, hay que
+  ajustar también la ventana del mail recordatorio en
+  `api/cron-recordatorio-demo.js`.
+- El keystore de Android (`android/app/mv-release.keystore`) **no vive en el
+  repo** desde el PR #69: variables de entorno / GitHub Secrets, ver
+  `android/README.md`. Si perdés el archivo, no hay forma de recuperarlo.
