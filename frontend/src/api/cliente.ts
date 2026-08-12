@@ -52,6 +52,54 @@ export const api = {
   },
 };
 
+/** Traduce un item de error de Pydantic (ver ctx.ge/le/lt) a espanol. */
+function mensajePydantic(item: { msg?: string; type?: string; ctx?: Record<string, unknown> }): string {
+  const ctx = item.ctx || {};
+  switch (item.type) {
+    case "greater_than_equal": return `tiene que ser mayor o igual a ${ctx.ge}`;
+    case "less_than_equal": return `tiene que ser menor o igual a ${ctx.le}`;
+    case "less_than": return `tiene que ser menor a ${ctx.lt}`;
+    case "greater_than": return `tiene que ser mayor a ${ctx.gt}`;
+    case "missing": return "es obligatorio";
+    default: return item.msg || "valor invalido";
+  }
+}
+
+/**
+ * Convierte cualquier error de una llamada a la API en un mensaje en
+ * español, listo para un <Alerta tipo="error">.
+ *
+ * POR QUE EXISTE: varias pantallas (Pricing, Caja, Inversores, Ventas, Plan)
+ * mandan numeros que la API ahora valida (costo/flete/unidades no pueden ser
+ * negativos, meses tiene un tope, etc. -- ver PricingIn/CajaIn/VentaIn en
+ * api_rutas.py). Antes de esa validacion, un `.catch(() => {})` en cada
+ * pantalla no perdia nada porque la API nunca fallaba por estos campos. Con
+ * la validacion agregada, ese mismo catch silencioso paso a esconder un 422
+ * real: el usuario escribe un valor invalido, la pantalla se queda mostrando
+ * el ULTIMO resultado bueno sin ningun aviso, y no hay forma de saber que su
+ * numero nuevo no se aplico.
+ *
+ * Usa el nombre TECNICO del campo (el que manda el backend en loc), no la
+ * etiqueta traducida de cada pantalla -- es menos prolijo que mapear cada
+ * campo a su etiqueta exacta, pero es siempre correcto: no hay riesgo de
+ * mapear mal un campo a otro en alguna de las 5 pantallas que usan esto.
+ */
+export function mensajeError(e: unknown): string {
+  if (e instanceof ErrorApi && e.status === 422 && e.detalle && typeof e.detalle === "object") {
+    const cuerpo = e.detalle as { detail?: Array<{ loc?: unknown[]; msg?: string; type?: string; ctx?: Record<string, unknown> }> };
+    if (Array.isArray(cuerpo.detail) && cuerpo.detail.length > 0) {
+      const partes = cuerpo.detail.map((item) => {
+        const loc = Array.isArray(item.loc) ? item.loc : [];
+        const campo = loc.length ? String(loc[loc.length - 1]) : "un campo";
+        return `${campo} ${mensajePydantic(item)}`;
+      });
+      return `Revisá estos valores: ${partes.join(" · ")}.`;
+    }
+  }
+  if (e instanceof ErrorApi) return `No se pudo completar (error ${e.status}). Probá de nuevo.`;
+  return "No se pudo completar. Probá de nuevo.";
+}
+
 /** Query string desde un objeto, omitiendo null/undefined/"". */
 export function qs(params: Record<string, string | number | boolean | undefined | null>) {
   const p = new URLSearchParams();

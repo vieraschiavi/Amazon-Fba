@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api } from "../api/cliente";
+import { api, mensajeError } from "../api/cliente";
 import type { FilaProyeccion } from "../api/tipos";
 import { GraficoLineas } from "../components/Graficos";
 import { Alerta, Boton, CampoNumero, Card, FilaKpis, Kpi, Seccion, Tabla, usd, num } from "../components/ui";
@@ -25,6 +25,7 @@ export function Caja() {
   const [meses, setMeses] = useState(12);
   const [proy, setProy] = useState<Proyeccion | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     setLanded(A("landed", 5.5)); setPrecio(A("precio", 24.0));
@@ -38,7 +39,14 @@ export function Caja() {
         budget, landed, precio, net_unit: neto, techo_demanda: techo, meses,
       });
       setProy(d);
-    } catch { /* mantiene el resultado anterior */ }
+      setError("");
+    } catch (e) {
+      // Mantiene el resultado anterior a la vista, pero ahora AVISA que el
+      // valor que se acaba de pedir no se pudo calcular (antes quedaba en
+      // silencio: se veian numeros viejos sin ninguna pista de que el
+      // ultimo cambio no se aplico).
+      setError(mensajeError(e));
+    }
     setOcupado(false);
   };
 
@@ -59,6 +67,8 @@ export function Caja() {
           <Boton onClick={() => void proyectar()} disabled={ocupado}>{t("cj.proyectar")}</Boton>
         </div>
       </Card>
+
+      {error && <Alerta tipo="error">{error}</Alerta>}
 
       {proy && r && (
         <>

@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
-import { api } from "../api/cliente";
+import { api, mensajeError } from "../api/cliente";
 import { GraficoBarras } from "../components/Graficos";
-import { Badge, Boton, Campo, CampoNumero, Card, FilaKpis, Kpi, Seccion, Tabla, usd, num, pct } from "../components/ui";
+import { Alerta, Badge, Boton, Campo, CampoNumero, Card, FilaKpis, Kpi, Seccion, Tabla, usd, num, pct } from "../components/ui";
 import { useT } from "../i18n";
 import { useProductoActivo } from "../stores/productoActivo";
 
@@ -23,6 +23,7 @@ export function Ventas() {
   const [segmento, setSegmento] = useState("general");
   const [kpis, setKpis] = useState<Kpis | null>(null);
   const [guardado, setGuardado] = useState("");
+  const [error, setError] = useState("");
 
   const cargar = () => { api.get<Kpis>("/dashboard").then(setKpis).catch(() => {}); };
   useEffect(cargar, []);
@@ -34,13 +35,24 @@ export function Ventas() {
   const registrar = async (e: FormEvent) => {
     e.preventDefault();
     if (!asin.trim()) { setGuardado("asin"); return; }
-    await api.post("/api/ventas", {
-      asin, unidades, precio, neto_unitario: neto, pais, segmento,
-      product_id: activo?.id ?? null,
-    });
-    setGuardado("ok");
-    cargar();
-    setTimeout(() => setGuardado(""), 2500);
+    // Esta es la unica pantalla de las 5 que ESCRIBE en la base (una venta
+    // nueva). Antes no tenia try/catch: si la API rechazaba el precio o las
+    // unidades (ver VentaIn en api_rutas.py -- unidades tiene que ser >= 1,
+    // precio no puede ser negativo), la promesa quedaba rechazada sin
+    // capturar y el formulario no daba ninguna señal de que la venta NO se
+    // guardo. Con el guardado real de por medio, ese silencio es peor que en
+    // las otras pantallas: el usuario podia creer que la venta quedo
+    // registrada cuando nunca llego a la base.
+    try {
+      await api.post("/api/ventas", {
+        asin, unidades, precio, neto_unitario: neto, pais, segmento,
+        product_id: activo?.id ?? null,
+      });
+      setError("");
+      setGuardado("ok");
+      cargar();
+      setTimeout(() => setGuardado(""), 2500);
+    } catch (err) { setError(mensajeError(err)); }
   };
 
   return (
@@ -60,6 +72,7 @@ export function Ventas() {
             {guardado === "asin" && <Badge texto={t("vt.falta_asin")} tono="amarillo" />}
           </div>
         </form>
+        {error && <Alerta tipo="error">{error}</Alerta>}
       </Card>
 
       {kpis && (
