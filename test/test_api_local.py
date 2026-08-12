@@ -182,6 +182,64 @@ def test_pricing_rechaza_imposibles():
     assert cliente.post("/api/pricing", json={**base, "margen_obj": 0}).status_code == 200
 
 
+def test_caja_rechaza_imposibles():
+    """Una proyeccion de caja con unidades negativas no es un caso borde.
+
+    QUE PASABA: sell_through=-1 devolvia HTTP 200 con "vendidas": -1488896
+    -- un millon y medio de unidades NEGATIVAS -- porque el motor hace
+    vendidas = min(int(round(disponible * sell_through)), disponible, techo)
+    y el min() se queda con ese negativo. techo_demanda=-50 daba -50 unidades.
+    Y meses=100000 generaba 100.000 filas en una sola request.
+
+    El limite vive en CajaIn (frontera de la API). El motor NO se toco: el
+    techo de demanda sigue siendo el mismo, y test_caja_proyeccion() lo
+    verifica comparando la respuesta HTTP contra capital_planner directo.
+    """
+    base = {"budget": 8000, "landed": 5.5, "precio": 24.0, "net_unit": 6.9}
+    assert cliente.post("/api/caja/proyeccion", json=base).status_code == 200
+
+    for campo, valor in [("budget", -1), ("landed", -1), ("precio", -1),
+                         ("sell_through", -1), ("sell_through", 5.0),
+                         ("devoluciones", -0.1), ("devoluciones", 2.0),
+                         ("lead_time_meses", -3), ("payout_delay_meses", -1),
+                         ("techo_demanda", -50),
+                         ("meses", 0), ("meses", -12), ("meses", 100000)]:
+        r = cliente.post("/api/caja/proyeccion", json={**base, campo: valor})
+        assert r.status_code == 422, f"{campo}={valor} deberia rechazarse, dio {r.status_code}"
+        assert campo in [d["loc"][-1] for d in r.json()["detail"]], \
+            f"el 422 de {campo}={valor} no nombra el campo"
+
+    # net_unit negativo SI es valido: vender a perdida para liquidar stock es
+    # un escenario real que el usuario puede querer proyectar.
+    assert cliente.post("/api/caja/proyeccion",
+                        json={**base, "net_unit": -2.0}).status_code == 200
+
+
+def test_inversores_rechaza_imposibles():
+    """Facturacion negativa no existe.
+
+    QUE PASABA: capital_propio=-10000 devolvia "unidades_mes": -455 y
+    "facturacion": -10909; techo=-1 daba "facturacion": -24.
+    """
+    assert cliente.post("/api/inversores/escenario",
+                        json={"capital_propio": 10000}).status_code == 200
+    for campo, valor in [("capital_propio", -10000), ("techo", -1),
+                         ("precio", -24), ("landed", -5.5),
+                         ("capital_inversor", -1), ("n_productos", 0),
+                         ("pct_facturacion", -20), ("pct_facturacion", 500),
+                         ("pipeline_meses", 0)]:
+        r = cliente.post("/api/inversores/escenario",
+                         json={"capital_propio": 10000, campo: valor})
+        assert r.status_code == 422, f"escenario {campo}={valor} dio {r.status_code}"
+
+    assert cliente.post("/api/inversores/retorno", json={}).status_code == 200
+    for campo, valor in [("ticket", -1000), ("pct_facturacion", 900),
+                         ("meses", 0), ("meses", 100000), ("mes_arranque", 0),
+                         ("devoluciones", 2.0)]:
+        r = cliente.post("/api/inversores/retorno", json={campo: valor})
+        assert r.status_code == 422, f"retorno {campo}={valor} dio {r.status_code}"
+
+
 def test_pricing_acos():
     r = cliente.get("/api/pricing/acos",
                     params={"margen_actual_pct": 37.0, "margen_minimo_pct": 12.0})

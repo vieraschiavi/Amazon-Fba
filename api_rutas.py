@@ -132,41 +132,61 @@ class PricingIn(BaseModel):
 
 
 class CajaIn(BaseModel):
-    budget: float
-    landed: float
-    precio: float
+    # Mismo criterio que PricingIn: los imposibles se rechazan en la frontera,
+    # el motor (agents/capital_planner.py) NO se toca.
+    #
+    # QUE PASABA: sell_through=-1 devolvia HTTP 200 con "vendidas": -1488896
+    # -- un millon y medio de unidades NEGATIVAS -- porque
+    #   vendidas = min(int(round(disponible * sell_through)), disponible, techo)
+    # y el min() se queda con ese negativo gigante. techo_demanda=-50 daba
+    # "vendidas": -50. Numeros imposibles presentados como una proyeccion real,
+    # que es justo lo que el techo de demanda existe para evitar.
+    budget: float = Field(..., ge=0)
+    landed: float = Field(..., ge=0)
+    precio: float = Field(..., ge=0)
+    # net_unit SIN limite inferior a proposito: un neto negativo es un caso
+    # legitimo a modelar (vender a perdida para liquidar stock), no un error.
     net_unit: float
-    sell_through: float = 0.5
-    devoluciones: float = 0.05
-    lead_time_meses: int = 2
-    payout_delay_meses: int = 1
-    techo_demanda: int = 290
-    meses: int = 12
+    # Fracciones, no porcentajes (default 0.5 = 50%, 0.05 = 5%): el motor hace
+    # `disponible * sell_through` y `1 - devoluciones`.
+    sell_through: float = Field(0.5, ge=0, le=1)
+    devoluciones: float = Field(0.05, ge=0, le=1)
+    lead_time_meses: int = Field(2, ge=0)
+    payout_delay_meses: int = Field(1, ge=0)
+    techo_demanda: int = Field(290, ge=0)
+    # meses=100000 generaba 100.000 filas en una sola request (memoria y CPU
+    # por una entrada sin sentido). 120 = 10 años, de sobra para una
+    # proyeccion de caja; abajo de 1 no hay nada que proyectar.
+    meses: int = Field(12, ge=1, le=120)
 
 
 class EscenarioInversorIn(BaseModel):
-    capital_propio: float
-    n_productos: int = 1
-    techo: int = 290
-    precio: float = 24.0
-    net_unit: float = 6.9
-    landed: float = 5.5
-    capital_inversor: float = 0.0
-    pct_facturacion: float = 10.0
-    pipeline_meses: int = 4
+    # capital_propio negativo daba "unidades_mes": -455 y "facturacion":
+    # -10909; techo=-1 daba "facturacion": -24. Facturacion negativa no existe.
+    capital_propio: float = Field(..., ge=0)
+    n_productos: int = Field(1, ge=1)
+    techo: int = Field(290, ge=0)
+    precio: float = Field(24.0, ge=0)
+    net_unit: float = 6.9          # puede ser negativo (ver CajaIn)
+    landed: float = Field(5.5, ge=0)
+    capital_inversor: float = Field(0.0, ge=0)
+    # Comision del inversor sobre la facturacion que financia su capital: una
+    # parte de la facturacion, nunca mas del 100% ni negativa.
+    pct_facturacion: float = Field(10.0, ge=0, le=100)
+    pipeline_meses: int = Field(4, ge=1)
 
 
 class RetornoInversorIn(BaseModel):
-    ticket: float = 1000.0
-    pct_facturacion: float = 10.0
-    techo: int = 290
-    precio: float = 24.0
-    landed: float = 5.5
-    meses: int = 24
-    productos_financia: float = 1.0
-    pipeline_meses: int = 4
-    devoluciones: float = 0.05
-    mes_arranque: int = 2
+    ticket: float = Field(1000.0, ge=0)
+    pct_facturacion: float = Field(10.0, ge=0, le=100)
+    techo: int = Field(290, ge=0)
+    precio: float = Field(24.0, ge=0)
+    landed: float = Field(5.5, ge=0)
+    meses: int = Field(24, ge=1, le=120)
+    productos_financia: float = Field(1.0, ge=0)
+    pipeline_meses: int = Field(4, ge=1)
+    devoluciones: float = Field(0.05, ge=0, le=1)
+    mes_arranque: int = Field(2, ge=1)
 
 
 class InteresCompuestoIn(BaseModel):
