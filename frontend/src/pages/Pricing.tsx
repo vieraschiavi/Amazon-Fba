@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api } from "../api/cliente";
+import { api, mensajeError } from "../api/cliente";
 import type { ResultadoPricing } from "../api/tipos";
 import { Alerta, Badge, Boton, Campo, CampoNumero, Card, FilaKpis, Kpi, Seccion, Semaforo, usd, pct } from "../components/ui";
 import { useT } from "../i18n";
@@ -21,6 +21,7 @@ export function Pricing() {
   const [fba, setFba] = useState(3.65);
   const [competencia, setCompetencia] = useState(19.99);
   const [res, setRes] = useState<ResultadoPricing | null>(null);
+  const [errorCalculo, setErrorCalculo] = useState("");
   const [nombre, setNombre] = useState("");
   const [asin, setAsin] = useState("");
   const [techo, setTecho] = useState(290);
@@ -40,7 +41,11 @@ export function Pricing() {
       api.post<ResultadoPricing>("/api/pricing", {
         costo, flete, arancel_pct: arancel, prep,
         fba_fee: fba || null, precio_competencia: competencia || null,
-      }).then(setRes).catch(() => {});
+      }).then((r) => { setRes(r); setErrorCalculo(""); })
+        // Si el valor no sirve (ej. un costo negativo) la API lo rechaza: se
+        // avisa y se deja el ULTIMO resultado valido a la vista (abajo sigue
+        // mostrando ese numero, no uno recalculado con el valor invalido).
+        .catch((e) => setErrorCalculo(mensajeError(e)));
     }, 350);
     return () => clearTimeout(timer);
   }, [costo, flete, arancel, prep, fba, competencia]);
@@ -70,6 +75,8 @@ export function Pricing() {
           <CampoNumero label={t("pr.precio_competencia_0")} value={competencia} step={0.5} onValor={setCompetencia} />
         </div>
       </Card>
+
+      {errorCalculo && <Alerta tipo="error">{errorCalculo}</Alerta>}
 
       {res && (
         <>

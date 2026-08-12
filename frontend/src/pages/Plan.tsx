@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { api, qs } from "../api/cliente";
+import { api, mensajeError, qs } from "../api/cliente";
 import { GraficoLineas } from "../components/Graficos";
 import { Alerta, Boton, CampoNumero, Card, FilaKpis, Kpi, Seccion, Selector, Tabla, usd, num } from "../components/ui";
 import { useT } from "../i18n";
@@ -38,20 +38,37 @@ export function Plan() {
   const [anios, setAnios] = useState(5);
   const [techoCap, setTechoCap] = useState(0);
   const [comp, setComp] = useState<Compuesto | null>(null);
+  // Las tres llamadas de abajo no tenian try/catch: si la API rechazaba un
+  // valor (objetivo/capital negativo, o -- el caso mas serio -- años/tasa
+  // tan altos que el interes compuesto desbordaba y la API contestaba 500,
+  // ver api_rutas.py InteresCompuestoIn) la promesa quedaba rechazada sin
+  // capturar y el boton no hacia nada visible.
+  const [errorPlan, setErrorPlan] = useState("");
+  const [errorDedic, setErrorDedic] = useState("");
+  const [errorComp, setErrorComp] = useState("");
 
   const calcularPlan = async () => {
-    setPlan(await api.post<PlanRes>("/api/plan/portafolio",
-      { objetivo_mensual: objetivo, capital_propio: capital }));
+    try {
+      setPlan(await api.post<PlanRes>("/api/plan/portafolio",
+        { objetivo_mensual: objetivo, capital_propio: capital }));
+      setErrorPlan("");
+    } catch (e) { setErrorPlan(mensajeError(e)); }
   };
   const calcularDedicacion = async () => {
-    setDedic(await api.get<Dedicacion>(
-      `/dedicacion${qs({ productos: nProd, lanzando })}`));
+    try {
+      setDedic(await api.get<Dedicacion>(
+        `/dedicacion${qs({ productos: nProd, lanzando })}`));
+      setErrorDedic("");
+    } catch (e) { setErrorDedic(mensajeError(e)); }
   };
   const calcularCompuesto = async () => {
-    setComp(await api.post<Compuesto>("/api/plan/interes-compuesto", {
-      aporte_inicial: aporteIni, aporte_periodico: aportePer,
-      tasa_anual_pct: tasa, anios, techo_capital: techoCap,
-    }));
+    try {
+      setComp(await api.post<Compuesto>("/api/plan/interes-compuesto", {
+        aporte_inicial: aporteIni, aporte_periodico: aportePer,
+        tasa_anual_pct: tasa, anios, techo_capital: techoCap,
+      }));
+      setErrorComp("");
+    } catch (e) { setErrorComp(mensajeError(e)); }
   };
 
   return (
@@ -63,6 +80,7 @@ export function Plan() {
           <CampoNumero label={t("pl.capital_propio")} value={capital} step={500} onValor={setCapital} />
         </div>
         <div className="mt-3"><Boton onClick={() => void calcularPlan()}>Calcular plan</Boton></div>
+        {errorPlan && <Alerta tipo="error">{errorPlan}</Alerta>}
         {plan && (
           <div className="mt-4">
             <FilaKpis>
@@ -94,6 +112,7 @@ export function Plan() {
           </Selector>
           <Boton onClick={() => void calcularDedicacion()}>{t("pl.estimar")}</Boton>
         </div>
+        {errorDedic && <Alerta tipo="error">{errorDedic}</Alerta>}
         {dedic && (
           <div className="mt-4">
             <Kpi label={t("pl.horas_semana")} valor={`${dedic.horas_semana_min}–${dedic.horas_semana_max} h`} hero />
@@ -112,6 +131,7 @@ export function Plan() {
           <CampoNumero label={t("pl.techo_capital_0")} value={techoCap} step={1000} onValor={setTechoCap} />
         </div>
         <div className="mt-3"><Boton onClick={() => void calcularCompuesto()}>{t("pl.calcular")}</Boton></div>
+        {errorComp && <Alerta tipo="error">{errorComp}</Alerta>}
         {comp && (
           <div className="mt-4">
             <FilaKpis>

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { api } from "../api/cliente";
+import { api, mensajeError } from "../api/cliente";
 import { GraficoLineas } from "../components/Graficos";
-import { Boton, CampoNumero, Card, FilaKpis, Kpi, Seccion, usd, num, pct } from "../components/ui";
+import { Alerta, Boton, CampoNumero, Card, FilaKpis, Kpi, Seccion, usd, num, pct } from "../components/ui";
 import { useT } from "../i18n";
 import { useProductoActivo } from "../stores/productoActivo";
 
@@ -35,22 +35,33 @@ export function Inversores() {
   const [ticket, setTicket] = useState(1000);
   const [meses, setMeses] = useState(24);
   const [retorno, setRetorno] = useState<Retorno | null>(null);
+  // Antes ninguna de las dos llamadas de abajo tenia try/catch: si la API
+  // rechazaba un valor (ej. capital negativo, comision > 100%), la promesa
+  // quedaba rechazada sin capturar -- ni un aviso en pantalla, ni siquiera
+  // "no paso nada" limpio, un error de React en la consola que el usuario
+  // nunca ve. Ahora se captura y se muestra que fue lo que no sirvio.
+  const [errorEsc, setErrorEsc] = useState("");
+  const [errorRet, setErrorRet] = useState("");
 
   const simular = async () => {
     const base = { capital_propio: capProp, techo, precio, net_unit: neto,
                    landed, capital_inversor: capInv, pct_facturacion: pctFact };
-    const [a, b] = await Promise.all([
-      api.post<Escenario>("/api/inversores/escenario", { ...base, n_productos: 1 }),
-      api.post<Escenario>("/api/inversores/escenario", { ...base, n_productos: 2 }),
-    ]);
-    setEsc1(a); setEsc2(b);
+    try {
+      const [a, b] = await Promise.all([
+        api.post<Escenario>("/api/inversores/escenario", { ...base, n_productos: 1 }),
+        api.post<Escenario>("/api/inversores/escenario", { ...base, n_productos: 2 }),
+      ]);
+      setEsc1(a); setEsc2(b); setErrorEsc("");
+    } catch (e) { setErrorEsc(mensajeError(e)); }
   };
 
   const trayectoria = async () => {
-    const d = await api.post<Retorno>("/api/inversores/retorno", {
-      ticket, pct_facturacion: pctFact, techo, precio, landed, meses,
-    });
-    setRetorno(d);
+    try {
+      const d = await api.post<Retorno>("/api/inversores/retorno", {
+        ticket, pct_facturacion: pctFact, techo, precio, landed, meses,
+      });
+      setRetorno(d); setErrorRet("");
+    } catch (e) { setErrorRet(mensajeError(e)); }
   };
 
   const pitchUrl = `/api/plan/pitch?ticket=${ticket}&pct=${pctFact}&techo=${techo}&precio=${precio}&landed=${landed}&meses=${meses}`;
@@ -83,6 +94,7 @@ export function Inversores() {
           <CampoNumero label={t("iv.landed")} value={landed} step={0.1} onValor={setLanded} />
         </div>
         <div className="mt-3"><Boton onClick={() => void simular()}>{t("iv.simular")}</Boton></div>
+        {errorEsc && <Alerta tipo="error">{errorEsc}</Alerta>}
       </Card>
 
       {esc1 && esc2 && (
@@ -105,6 +117,7 @@ export function Inversores() {
             {t("comun.descargar")} pitch HTML
           </a>
         </div>
+        {errorRet && <Alerta tipo="error">{errorRet}</Alerta>}
         {retorno && (
           <div className="mt-4">
             <FilaKpis>
