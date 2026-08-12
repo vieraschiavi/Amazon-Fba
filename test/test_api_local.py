@@ -13,6 +13,7 @@ Correr:  python -m pytest test/test_api_local.py -q
      o:  python test/test_api_local.py   (fallback sin pytest)
 """
 import json
+import math
 import os
 import sys
 import tempfile
@@ -180,6 +181,137 @@ def test_pricing_rechaza_imposibles():
     # Y el 0 sigue siendo valido: un producto regalado/muestra es real.
     assert cliente.post("/api/pricing", json={**base, "costo": 0}).status_code == 200
     assert cliente.post("/api/pricing", json={**base, "margen_obj": 0}).status_code == 200
+
+
+def test_caja_rechaza_imposibles():
+    """Una proyeccion de caja con unidades negativas no es un caso borde.
+
+    QUE PASABA: sell_through=-1 devolvia HTTP 200 con "vendidas": -1488896
+    -- un millon y medio de unidades NEGATIVAS -- porque el motor hace
+    vendidas = min(int(round(disponible * sell_through)), disponible, techo)
+    y el min() se queda con ese negativo. techo_demanda=-50 daba -50 unidades.
+    Y meses=100000 generaba 100.000 filas en una sola request.
+
+    El limite vive en CajaIn (frontera de la API). El motor NO se toco: el
+    techo de demanda sigue siendo el mismo, y test_caja_proyeccion() lo
+    verifica comparando la respuesta HTTP contra capital_planner directo.
+    """
+    base = {"budget": 8000, "landed": 5.5, "precio": 24.0, "net_unit": 6.9}
+    assert cliente.post("/api/caja/proyeccion", json=base).status_code == 200
+
+    for campo, valor in [("budget", -1), ("landed", -1), ("precio", -1),
+                         ("sell_through", -1), ("sell_through", 5.0),
+                         ("devoluciones", -0.1), ("devoluciones", 2.0),
+                         ("lead_time_meses", -3), ("payout_delay_meses", -1),
+                         ("techo_demanda", -50),
+                         ("meses", 0), ("meses", -12), ("meses", 100000)]:
+        r = cliente.post("/api/caja/proyeccion", json={**base, campo: valor})
+        assert r.status_code == 422, f"{campo}={valor} deberia rechazarse, dio {r.status_code}"
+        assert campo in [d["loc"][-1] for d in r.json()["detail"]], \
+            f"el 422 de {campo}={valor} no nombra el campo"
+
+    # net_unit negativo SI es valido: vender a perdida para liquidar stock es
+    # un escenario real que el usuario puede querer proyectar.
+    assert cliente.post("/api/caja/proyeccion",
+                        json={**base, "net_unit": -2.0}).status_code == 200
+
+
+def test_inversores_rechaza_imposibles():
+    """Facturacion negativa no existe.
+
+    QUE PASABA: capital_propio=-10000 devolvia "unidades_mes": -455 y
+    "facturacion": -10909; techo=-1 daba "facturacion": -24.
+    """
+    assert cliente.post("/api/inversores/escenario",
+                        json={"capital_propio": 10000}).status_code == 200
+    for campo, valor in [("capital_propio", -10000), ("techo", -1),
+                         ("precio", -24), ("landed", -5.5),
+                         ("capital_inversor", -1), ("n_productos", 0),
+                         ("pct_facturacion", -20), ("pct_facturacion", 500),
+                         ("pipeline_meses", 0)]:
+        r = cliente.post("/api/inversores/escenario",
+                         json={"capital_propio": 10000, campo: valor})
+        assert r.status_code == 422, f"escenario {campo}={valor} dio {r.status_code}"
+
+    assert cliente.post("/api/inversores/retorno", json={}).status_code == 200
+    for campo, valor in [("ticket", -1000), ("pct_facturacion", 900),
+                         ("meses", 0), ("meses", 100000), ("mes_arranque", 0),
+                         ("devoluciones", 2.0)]:
+        r = cliente.post("/api/inversores/retorno", json={campo: valor})
+        assert r.status_code == 422, f"retorno {campo}={valor} dio {r.status_code}"
+
+
+def test_interes_compuesto_no_crashea():
+    """Este no devolvia un numero raro: CRASHEABA con HTTP 500.
+
+    QUE PASABA: anios=10000 desbordaba el capital a inf, y FastAPI moria al
+    serializar -- "ValueError: Out of range float values are not JSON
+    compliant". Un 500 con stack trace, no una respuesta. De paso generaba
+    120.000 filas. tasa_anual_pct=1e12 producia el mismo inf ya con 50 años.
+
+    Los topes se eligieron VERIFICANDO que el peor caso permitido siga dando
+    un float finito, no a ojo.
+    """
+    assert cliente.post("/api/plan/interes-compuesto",
+                        json={"aporte_inicial": 1000}).status_code == 200
+
+    for campo, valor in [("anios", 10000), ("anios", 0), ("anios", -5),
+                         ("tasa_anual_pct", 1e12), ("tasa_anual_pct", -500),
+                         ("aporte_inicial", -1000), ("aporte_periodico", -1),
+                         ("techo_capital", -1)]:
+        r = cliente.post("/api/plan/interes-compuesto",
+                         json={"aporte_inicial": 1000, campo: valor})
+        assert r.status_code == 422, f"{campo}={valor} deberia rechazarse, dio {r.status_code}"
+
+    # El PEOR caso que sigue permitido tiene que serializar (no ser inf).
+    r = cliente.post("/api/plan/interes-compuesto",
+                     json={"aporte_inicial": 1e9, "aporte_periodico": 1e9,
+                           "tasa_anual_pct": 1000, "anios": 50})
+    assert r.status_code == 200
+    capital = r.json()["filas"][-1]["capital"]
+    assert math.isfinite(capital), f"el borde permitido da {capital}, no serializa"
+
+    # Y una tasa NEGATIVA sigue siendo valida: un mal año es un escenario real.
+    assert cliente.post("/api/plan/interes-compuesto",
+                        json={"aporte_inicial": 1000, "tasa_anual_pct": -50}
+                        ).status_code == 200
+
+
+def test_ventas_rechaza_imposibles():
+    """El unico endpoint de la familia que ESCRIBE EN LA BASE.
+
+    QUE PASABA: unidades=-500 creaba una fila real con ingreso -12000 y
+    mandaba un mail diciendo "Vendiste -500 unidades de ...". No es una
+    respuesta rara que se descarta: queda guardada y ensucia la analitica
+    para siempre. precio=-24 daba ingreso -240 con neto +69 (incoherente).
+
+    No hay concepto de devolucion/reembolso en agents/analytics.py (solo
+    `ingreso = unidades * precio`), asi que una venta negativa no es una
+    funcion no documentada: es entrada sin validar.
+    """
+    ok = {"asin": "B0TEST", "unidades": 10, "precio": 24.0, "neto_unitario": 6.9}
+    assert cliente.post("/api/ventas", json=ok).status_code == 200
+
+    for campo, valor in [("unidades", -500), ("unidades", 0), ("precio", -24.0)]:
+        r = cliente.post("/api/ventas", json={**ok, campo: valor})
+        assert r.status_code == 422, f"venta {campo}={valor} dio {r.status_code}"
+        assert campo in [d["loc"][-1] for d in r.json()["detail"]]
+
+    # neto_unitario negativo SI es valido: vender a perdida es real.
+    assert cliente.post("/api/ventas",
+                        json={**ok, "neto_unitario": -2.0}).status_code == 200
+
+
+def test_plan_portafolio_rechaza_imposibles():
+    """objetivo_mensual=-3000 devolvia 200 con "alcanzado": True -- o sea,
+    declaraba cumplido un objetivo de sueldo NEGATIVO."""
+    base = {"objetivo_mensual": 3000, "capital_propio": 10000}
+    assert cliente.post("/api/plan/portafolio", json=base).status_code == 200
+    for campo, valor in [("objetivo_mensual", -3000), ("capital_propio", -10000),
+                         ("techo", -1), ("precio", -24), ("pct_comision", 500),
+                         ("pct_comision", -5)]:
+        r = cliente.post("/api/plan/portafolio", json={**base, campo: valor})
+        assert r.status_code == 422, f"portafolio {campo}={valor} dio {r.status_code}"
 
 
 def test_pricing_acos():

@@ -132,60 +132,94 @@ class PricingIn(BaseModel):
 
 
 class CajaIn(BaseModel):
-    budget: float
-    landed: float
-    precio: float
+    # Mismo criterio que PricingIn: los imposibles se rechazan en la frontera,
+    # el motor (agents/capital_planner.py) NO se toca.
+    #
+    # QUE PASABA: sell_through=-1 devolvia HTTP 200 con "vendidas": -1488896
+    # -- un millon y medio de unidades NEGATIVAS -- porque
+    #   vendidas = min(int(round(disponible * sell_through)), disponible, techo)
+    # y el min() se queda con ese negativo gigante. techo_demanda=-50 daba
+    # "vendidas": -50. Numeros imposibles presentados como una proyeccion real,
+    # que es justo lo que el techo de demanda existe para evitar.
+    budget: float = Field(..., ge=0)
+    landed: float = Field(..., ge=0)
+    precio: float = Field(..., ge=0)
+    # net_unit SIN limite inferior a proposito: un neto negativo es un caso
+    # legitimo a modelar (vender a perdida para liquidar stock), no un error.
     net_unit: float
-    sell_through: float = 0.5
-    devoluciones: float = 0.05
-    lead_time_meses: int = 2
-    payout_delay_meses: int = 1
-    techo_demanda: int = 290
-    meses: int = 12
+    # Fracciones, no porcentajes (default 0.5 = 50%, 0.05 = 5%): el motor hace
+    # `disponible * sell_through` y `1 - devoluciones`.
+    sell_through: float = Field(0.5, ge=0, le=1)
+    devoluciones: float = Field(0.05, ge=0, le=1)
+    lead_time_meses: int = Field(2, ge=0)
+    payout_delay_meses: int = Field(1, ge=0)
+    techo_demanda: int = Field(290, ge=0)
+    # meses=100000 generaba 100.000 filas en una sola request (memoria y CPU
+    # por una entrada sin sentido). 120 = 10 años, de sobra para una
+    # proyeccion de caja; abajo de 1 no hay nada que proyectar.
+    meses: int = Field(12, ge=1, le=120)
 
 
 class EscenarioInversorIn(BaseModel):
-    capital_propio: float
-    n_productos: int = 1
-    techo: int = 290
-    precio: float = 24.0
-    net_unit: float = 6.9
-    landed: float = 5.5
-    capital_inversor: float = 0.0
-    pct_facturacion: float = 10.0
-    pipeline_meses: int = 4
+    # capital_propio negativo daba "unidades_mes": -455 y "facturacion":
+    # -10909; techo=-1 daba "facturacion": -24. Facturacion negativa no existe.
+    capital_propio: float = Field(..., ge=0)
+    n_productos: int = Field(1, ge=1)
+    techo: int = Field(290, ge=0)
+    precio: float = Field(24.0, ge=0)
+    net_unit: float = 6.9          # puede ser negativo (ver CajaIn)
+    landed: float = Field(5.5, ge=0)
+    capital_inversor: float = Field(0.0, ge=0)
+    # Comision del inversor sobre la facturacion que financia su capital: una
+    # parte de la facturacion, nunca mas del 100% ni negativa.
+    pct_facturacion: float = Field(10.0, ge=0, le=100)
+    pipeline_meses: int = Field(4, ge=1)
 
 
 class RetornoInversorIn(BaseModel):
-    ticket: float = 1000.0
-    pct_facturacion: float = 10.0
-    techo: int = 290
-    precio: float = 24.0
-    landed: float = 5.5
-    meses: int = 24
-    productos_financia: float = 1.0
-    pipeline_meses: int = 4
-    devoluciones: float = 0.05
-    mes_arranque: int = 2
+    ticket: float = Field(1000.0, ge=0)
+    pct_facturacion: float = Field(10.0, ge=0, le=100)
+    techo: int = Field(290, ge=0)
+    precio: float = Field(24.0, ge=0)
+    landed: float = Field(5.5, ge=0)
+    meses: int = Field(24, ge=1, le=120)
+    productos_financia: float = Field(1.0, ge=0)
+    pipeline_meses: int = Field(4, ge=1)
+    devoluciones: float = Field(0.05, ge=0, le=1)
+    mes_arranque: int = Field(2, ge=1)
 
 
 class InteresCompuestoIn(BaseModel):
-    aporte_inicial: float
-    aporte_periodico: float = 0.0
-    tasa_anual_pct: float = 60.0
-    anios: int = 5
+    # Este era el peor de la familia: no devolvia un numero raro, CRASHEABA.
+    # anios=10000 hacia desbordar el capital a inf, y FastAPI moria al
+    # serializar con "ValueError: Out of range float values are not JSON
+    # compliant" -> HTTP 500 con stack trace. De paso generaba 120.000 filas.
+    # tasa_anual_pct=1e12 producia el mismo inf ya con 50 años.
+    #
+    # Los topes se eligieron VERIFICANDO que el peor caso permitido siga
+    # dando un float finito: aporte 1e9 + 1e9/mes al 1000% durante 50 años
+    # da 6.48e61, que serializa bien.
+    aporte_inicial: float = Field(..., ge=0)
+    aporte_periodico: float = Field(0.0, ge=0)
+    # Una tasa negativa es un escenario legitimo (un mal año); no se puede
+    # perder mas del 100% del capital en un periodo. El techo de 1000% anual
+    # (10x por año) ya es absurdo de sobra para una proyeccion real.
+    tasa_anual_pct: float = Field(60.0, ge=-100, le=1000)
+    anios: int = Field(5, ge=1, le=50)
+    techo_capital: float = Field(0.0, ge=0)
     frecuencia: str = "mensual"
-    techo_capital: float = 0.0
 
 
 class PlanPortafolioIn(BaseModel):
-    objetivo_mensual: float
-    capital_propio: float
-    techo: int = 290
-    precio: float = 24.0
-    net_unit: float = 6.9
+    # objetivo_mensual=-3000 devolvia 200 con "alcanzado": True -- decia que
+    # un objetivo de sueldo NEGATIVO estaba cumplido.
+    objetivo_mensual: float = Field(..., ge=0)
+    capital_propio: float = Field(..., ge=0)
+    techo: int = Field(290, ge=0)
+    precio: float = Field(24.0, ge=0)
+    net_unit: float = 6.9          # puede ser negativo (ver CajaIn)
     usar_inversores: bool = False
-    pct_comision: float = 5.0
+    pct_comision: float = Field(5.0, ge=0, le=100)
 
 
 class ChatIn(BaseModel):
@@ -227,9 +261,18 @@ class KitCreativoIn(BaseModel):
 
 
 class VentaIn(BaseModel):
+    # El unico de la familia que ESCRIBE EN LA BASE: unidades=-500 creaba una
+    # fila real con ingreso -12000 y mandaba un mail diciendo "Vendiste -500
+    # unidades de ...". Eso no es una respuesta rara que se descarta: queda
+    # guardado y ensucia la analitica de ventas para siempre.
+    #
+    # No hay concepto de devolucion/reembolso en agents/analytics.py (solo
+    # `ingreso = unidades * precio`), asi que una venta negativa no es una
+    # funcion no documentada -- es entrada sin validar.
     asin: str
-    unidades: int
-    precio: float
+    unidades: int = Field(..., ge=1)      # una venta de 0 unidades no es una venta
+    precio: float = Field(..., ge=0)      # 0 = muestra/regalo, es real
+    # neto_unitario SIN limite: vender a perdida es un caso legitimo.
     neto_unitario: float
     pais: str = "US"
     segmento: str = "general"
