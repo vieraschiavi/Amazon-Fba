@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/ia.js — Proxy de IA para el DEMO web y para cuentas con licencia y
 // saldo de creditos (ver api/_creditosia.js).
 //

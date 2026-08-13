@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/checkout.js — Crea un pago para un plan, en MercadoPago (Checkout Pro,
 // cobra en pesos uruguayos pese a mostrar USD) o PayPal (cobra USD real, sin
 // conversion para el comprador — ver la aclaracion de moneda en la landing).
@@ -19,7 +20,7 @@
 // /gracias.html?payment_id=...&proc=paypal.
 
 import crypto from "crypto";
-import { aplicarCors, clienteValido } from "./_seguridad.js";
+import { aplicarCors, clienteValido, limitarPorIp } from "./_seguridad.js";
 import { crearOrden, paypalConfigurado } from "./_paypal.js";
 import { guardarUtm } from "./_atribucion.js";
 import { PACKS_RECARGA } from "./_creditosia.js";
@@ -41,6 +42,14 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST") return res.status(405).json({ error: "method" });
   if (!clienteValido(req)) return res.status(403).json({ error: "cliente_no_reconocido" });
+
+  // Cada request crea una orden real en PayPal/MercadoPago con las
+  // credenciales del comercio: sin limite, se puede generar una cantidad
+  // ilimitada de ordenes vacias, gastando cuota de API y activando los
+  // sistemas antifraude que congelan/revisan cuentas de comercio por ese
+  // mismo patron.
+  const limite = await limitarPorIp(req, "checkout", 20, 3600);
+  if (!limite.permitido) return res.status(429).json({ error: "demasiados_intentos" });
 
   let body = req.body;
   if (typeof body === "string") { try { body = JSON.parse(body); } catch (e) { body = {}; } }

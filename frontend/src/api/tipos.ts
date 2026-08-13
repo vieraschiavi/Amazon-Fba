@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // Tipos de los contratos de la API local (passthrough de las funciones
 // Python — ver api_rutas.py). Solo los campos que la UI consume; el resto
 // viaja igual y se ignora sin romper.
@@ -128,10 +129,18 @@ export interface EstadoAsistente {
   ok: boolean; modo: string; proveedor: string | null; mensaje: string;
 }
 
+export interface ProveedorIA {
+  codigo: string; nombre: string;
+  clave_env: string; modelo_env: string;
+  tiene_clave: boolean; modelo: string;
+}
+
 export interface ConfigEstado {
   llm?: string; keepa?: string; email?: string; marketplace?: string;
   claves: Record<string, string>;
   ia_provider: string;
+  proveedores_ia: ProveedorIA[];
+  modelos_ia: Record<string, string[]>;
   acos_pct: number; umbral_verde: number; umbral_amarillo: number;
   [k: string]: unknown;
 }

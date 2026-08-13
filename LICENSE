@@ -1,0 +1,59 @@
+Copyright (c) 2026 Martín Viera. Todos los derechos reservados.
+Copyright (c) 2026 Martín Viera. All rights reserved.
+
+Este software y su código fuente, incluyendo pero no limitado a todos los
+archivos de este repositorio (backend, frontend, aplicaciones móviles y de
+escritorio, instaladores, scripts, documentación y activos asociados —
+en conjunto, el "Software"), son propiedad exclusiva de Martín Viera.
+
+Queda prohibido, salvo autorización previa y por escrito del titular:
+
+  - Copiar, reproducir o distribuir el Software, total o parcialmente.
+  - Modificar, adaptar o crear obras derivadas del Software.
+  - Sublicenciar, vender, alquilar o transferir el Software a terceros.
+  - Realizar ingeniería inversa, descompilar o desensamblar el Software,
+    salvo en la medida en que la ley aplicable lo permita expresamente.
+  - Usar el Software, o cualquier parte de él, fuera de los términos
+    específicos de una licencia de uso otorgada por el titular.
+
+El uso del Software por parte de un cliente que haya adquirido una licencia
+está sujeto a los términos comerciales acordados al momento de la compra
+(ver EULA.txt), no a los de este archivo.
+
+EL SOFTWARE SE PROPORCIONA "TAL CUAL", SIN GARANTÍA DE NINGÚN TIPO, EXPRESA
+O IMPLÍCITA, INCLUYENDO PERO NO LIMITADO A GARANTÍAS DE COMERCIABILIDAD,
+IDONEIDAD PARA UN PROPÓSITO PARTICULAR Y NO INFRACCIÓN. EN NINGÚN CASO EL
+TITULAR SERÁ RESPONSABLE POR RECLAMO, DAÑO U OTRA RESPONSABILIDAD ALGUNA,
+YA SEA EN UNA ACCIÓN DE CONTRATO, AGRAVIO O CUALQUIER OTRA, QUE SURJA DE,
+FUERA DE O EN CONEXIÓN CON EL SOFTWARE O EL USO U OTRO TIPO DE ACCIONES EN
+EL SOFTWARE.
+
+---
+
+This software and its source code, including but not limited to all files
+in this repository (backend, frontend, mobile and desktop applications,
+installers, scripts, documentation and associated assets — collectively,
+the "Software"), are the exclusive property of Martín Viera.
+
+Except with prior written authorization from the copyright holder, it is
+prohibited to:
+
+  - Copy, reproduce, or distribute the Software, in whole or in part.
+  - Modify, adapt, or create derivative works of the Software.
+  - Sublicense, sell, rent, or transfer the Software to third parties.
+  - Reverse engineer, decompile, or disassemble the Software, except to
+    the extent expressly permitted by applicable law.
+  - Use the Software, or any part of it, outside the specific terms of a
+    usage license granted by the copyright holder.
+
+Use of the Software by a customer who has purchased a license is governed
+by the commercial terms agreed to at the time of purchase (see EULA.txt),
+not by the terms of this file.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

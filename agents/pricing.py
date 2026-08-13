@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 agents/pricing.py — Costo desembarcado, precio, margen, ROI y semaforo (FBA).
 Reconstruido desde DOCUMENTACION.md (formulas oficiales, no se tocan):

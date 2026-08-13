@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/mercado.js — Búsqueda REAL de productos por API (Keepa) para el demo web.
 //
 // Los datos reales de mercado NO vienen de un modelo de IA (Claude/ChatGPT/Gemini

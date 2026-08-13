@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // app.js — MV FBA IA (app Android NATIVA, sin depender de la PC).
 //
 // TODO el negocio corre EN EL TELEFONO:

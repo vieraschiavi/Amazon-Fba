@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 import { useEffect, useState } from "react";
 import { api } from "../api/cliente";
 import type { ItemRestock, PanelRestock } from "../api/tipos";

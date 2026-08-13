@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 agents/customer_bot.py — Atencion al cliente con whitelist (FBA).
 Clasifica la consulta; auto-envia SOLO si la categoria esta en la whitelist y la

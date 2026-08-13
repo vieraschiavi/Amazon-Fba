@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 agents/exito.py — Asesor de probabilidad de exito de MV FBA IA.
 

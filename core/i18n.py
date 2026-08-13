@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 core/i18n.py — Traducciones ES/EN/PT del programa de escritorio (dashboard_app.py).
 

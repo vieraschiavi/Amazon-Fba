@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // i18n del SPA — misma semantica que core/i18n.t() de Python: si la clave no
 // existe devuelve la clave tal cual (nunca rompe la pantalla), y soporta
 // interpolacion {var}. El idioma vive en el store global (persistido

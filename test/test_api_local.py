@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 test/test_api_local.py — Tests de la API local (app.py + api_rutas.py).
 
@@ -29,6 +30,7 @@ os.environ["DB_PATH"] = os.path.join(_TMP, "test.db")
 from fastapi.testclient import TestClient  # noqa: E402
 
 import app as modapp  # noqa: E402
+import config  # noqa: E402
 from agents import exito, glosario, pricing, tutorial  # noqa: E402
 from agents import recomendador  # noqa: E402
 from agents import portafolio as agente_portafolio  # noqa: E402
@@ -128,14 +130,130 @@ def test_demo_ejemplo_ciclo():
     assert cliente.delete("/api/demo/ejemplo").json()["cargado"] is False
 
 
+# ---------------------- seguridad ---------------------- #
+def test_sin_cors_abierto():
+    """REGRESION: la API tenia CORSMiddleware(allow_origins=["*"]) sin ningun
+    otro chequeo de auth en /api/*. Cualquier pagina web que el usuario
+    tuviera abierta en el navegador mientras la app corria podia leer y
+    modificar toda la base de negocio en background (ningun consumidor
+    legitimo -- el panel, n8n, mobile -- necesita CORS cross-origin, ver el
+    comentario en app.py). Sin el middleware, el navegador no deja pasar la
+    respuesta a un origen ajeno, y el preflight de un POST/PUT/DELETE con
+    JSON ni siquiera deja salir la request real."""
+    r = cliente.get("/health", headers={"Origin": "https://sitio-ajeno.example.com"})
+    assert "access-control-allow-origin" not in {k.lower() for k in r.headers.keys()}
+
+    pre = cliente.options("/api/config", headers={
+        "Origin": "https://sitio-ajeno.example.com",
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "content-type",
+    })
+    assert "access-control-allow-origin" not in {k.lower() for k in pre.headers.keys()}
+    assert pre.status_code != 200 and pre.status_code != 204
+
+
 # ---------------------- config ---------------------- #
 def test_config_get_enmascara():
     r = cliente.get("/api/config")
     assert r.status_code == 200
     d = r.json()
     assert "claves" in d and "umbral_verde" in d
-    for v in d["claves"].values():          # nunca claves en texto plano
-        assert "sk-" not in v or "…" in v or v == ""
+    for k, v in d["claves"].items():        # nunca claves en texto plano
+        if k in config.CLAVES_SECRETAS:
+            assert "sk-" not in v or "…" in v or v == ""
+
+
+def test_config_expone_proveedores_y_modelos():
+    """El panel arma el selector de proveedor/modelo con esto: si el backend
+    deja de mandarlo, la pantalla de Config queda sin nada que elegir."""
+    d = cliente.get("/api/config").json()
+    codigos = [p["codigo"] for p in d["proveedores_ia"]]
+    assert codigos == [p["codigo"] for p in config.PROVEEDORES_IA]
+    for p in d["proveedores_ia"]:
+        assert p["modelo"]                  # nunca vacio: siempre hay default
+        # el selector necesita al menos una opcion, aun sin haber actualizado
+        assert p["modelo"] in d["modelos_ia"][p["codigo"]]
+
+
+def test_config_modelo_elegido_no_va_enmascarado():
+    """El modelo ("gpt-4o-mini") no es un secreto y el selector necesita el
+    valor exacto para arrancar donde debe; la clave SI va enmascarada."""
+    d = cliente.get("/api/config").json()
+    assert d["claves"]["OPENAI_MODEL"] == config.modelo_ia("openai")
+    assert "*" not in d["claves"]["OPENAI_MODEL"]
+
+
+def test_guardar_clave_rige_sin_reiniciar():
+    """REGRESION: guardar una clave desde Config actualizaba el .env y
+    os.environ pero NO las globales del modulo, que se calculaban una sola vez
+    al importar. Resultado: pegabas tu clave, el programa seguia diciendo que
+    no habia clave, y solo tomaba efecto al reiniciar."""
+    previos = {k: getattr(config, k) for k in
+               ("ANTHROPIC_API_KEY", "ANTHROPIC_MODEL", "IA_PROVIDER")}
+    try:
+        config.guardar_env(ANTHROPIC_API_KEY="", IA_PROVIDER="claude")
+        config.ANTHROPIC_API_KEY = ""
+        assert config.ia_provider_activo()[0] is None
+
+        r = cliente.post("/api/config", json={"ANTHROPIC_API_KEY": "sk-ant-de-prueba"})
+        assert r.status_code == 200 and r.json()["ok"] is True
+        prov, clave, _ = config.ia_provider_activo()
+        assert (prov, clave) == ("claude", "sk-ant-de-prueba")
+
+        # y elegir otro modelo tambien rige en el momento (es lo que regula el gasto)
+        cliente.post("/api/config", json={"ANTHROPIC_MODEL": "claude-haiku-4-5-20251001"})
+        assert config.ia_provider_activo()[2] == "claude-haiku-4-5-20251001"
+    finally:
+        config.guardar_env(**{k: (v or "x") for k, v in previos.items()})
+        for k, v in previos.items():
+            setattr(config, k, v)
+
+
+def test_actualizar_modelos_sin_clave_no_inventa():
+    """Sin clave de un proveedor no hay a quien preguntarle: se dice, no se
+    completa con una lista escrita a mano (misma regla que el resto del sistema)."""
+    from data import modelos_ia
+    previos = {p["clave_env"]: getattr(config, p["clave_env"])
+               for p in config.PROVEEDORES_IA}
+    try:
+        for k in previos:
+            setattr(config, k, "")
+        d = cliente.post("/api/config/modelos").json()
+        assert len(d["resultados"]) == len(config.PROVEEDORES_IA)
+        for r in d["resultados"]:
+            assert r["ok"] is False and r["modelos"] == []
+            assert "sin clave" in r["mensaje"]
+        assert modelos_ia.listar("claude", clave="")["ok"] is False
+    finally:
+        for k, v in previos.items():
+            setattr(config, k, v)
+
+
+def test_actualizar_modelos_filtra_los_que_no_son_de_chat():
+    """OpenAI devuelve TODO su catalogo en el mismo endpoint (embeddings,
+    audio, imagenes). En el selector solo tienen que quedar los de chat."""
+    from data import modelos_ia
+    respuesta = {"data": [{"id": "gpt-4o"}, {"id": "gpt-4o-mini"}, {"id": "o3-mini"},
+                          {"id": "text-embedding-3-large"}, {"id": "whisper-1"},
+                          {"id": "dall-e-3"}, {"id": "tts-1"},
+                          {"id": "omni-moderation-latest"}]}
+    orig = modelos_ia._get_json
+    try:
+        modelos_ia._get_json = lambda url, headers, timeout=20: respuesta
+        r = modelos_ia.listar("openai", clave="sk-fake")
+        assert r["ok"] is True
+        assert r["modelos"] == ["gpt-4o", "gpt-4o-mini", "o3-mini"]
+    finally:
+        modelos_ia._get_json = orig
+
+
+def test_cada_proveedor_de_ia_sabe_responder():
+    """Guarda contra sumar un proveedor a la tabla y olvidarse de escribir su
+    funcion: quedaria elegible en el panel y reventaria con KeyError al usarlo."""
+    from agents import asistente
+    for p in config.PROVEEDORES_IA:
+        assert p["codigo"] in asistente._DISPATCH
+        assert p["codigo"] in asistente._NOMBRE_PROV
 
 
 # ---------------------- finanzas (passthrough exacto) ---------------------- #
@@ -437,6 +555,22 @@ def test_recomendador_demo():
         config.ANTHROPIC_API_KEY = orig
 
 
+def test_recomendador_rechaza_imposibles():
+    """REGRESION: seeds/max_seeds/shortlist/top_n no tenian techo. seeds sin
+    max_length permitia mandar miles de strings; _pasada_amplia hace una
+    request HTTP por cada uno (con sleep entre medio, sincrono) y colgaba el
+    servidor. shortlist sin techo gasta tokens PAGOS de Keepa/Jungle Scout
+    por candidato -- sin limite, una sola request podia drenar la cuota
+    mensual del usuario en minutos."""
+    r = cliente.post("/api/recomendador/escanear",
+                     json={"demo": True, "seeds": ["x"] * 21})
+    assert r.status_code == 422
+    for campo, valor in (("max_seeds", 21), ("shortlist", 21), ("top_n", 21),
+                        ("max_seeds", 0), ("shortlist", 0), ("top_n", 0)):
+        r = cliente.post("/api/recomendador/escanear", json={"demo": True, campo: valor})
+        assert r.status_code == 422, f"{campo}={valor} deberia rechazarse"
+
+
 def test_recomendador_narrativa_top_offline():
     """Sin ANTHROPIC_API_KEY, narrativa_top devuelve un resumen deterministico
     del top 1 -- nunca vacio, nunca lanza."""
@@ -566,6 +700,63 @@ def test_subida_cerebro_csv():
                                      "text/csv")})
     d = r.json()
     assert d["ok"] is True and os.path.isfile(d["csv_path"])
+
+
+def test_investigacion_csv_path_no_permite_traversal():
+    """REGRESION: InvestigacionIn.csv_path viajaba sin ninguna validacion
+    hasta open(). "../../../../etc/passwd" (o una ruta absoluta a cualquier
+    archivo) dejaba leer su primera linea a traves del mensaje de error de
+    "columnas no reconocidas" -- exfiltracion de archivos locales del
+    usuario. Ahora csv_path se reduce SIEMPRE a un nombre de archivo dentro
+    de CEREBRO_CSV_DIR (mismo saneamiento que ya usa el upload)."""
+    # un archivo por fuera de CEREBRO_CSV_DIR con contenido "secreto"
+    afuera = os.path.join(_TMP, "secreto_del_sistema.txt")
+    with open(afuera, "w") as f:
+        f.write("CONTENIDO-QUE-NO-DEBERIA-VERSE-NUNCA\n")
+
+    for intento in ("../../../../secreto_del_sistema.txt", afuera):
+        r = cliente.post("/api/investigacion",
+                         json={"keyword": "test", "csv_path": intento, "demo": False})
+        assert r.status_code == 200          # nunca 500: el sistema avisa, no crashea
+        cuerpo = json.dumps(r.json())
+        # nunca el CONTENIDO del archivo, y nunca la ruta de AFUERA de
+        # CEREBRO_CSV_DIR tal cual se mando (si aparece intacta es que se
+        # intento abrir esa ruta en vez de redirigirla adentro del directorio)
+        assert "CONTENIDO-QUE-NO-DEBERIA-VERSE-NUNCA" not in cuerpo
+        assert afuera not in cuerpo
+
+    # el csv_path legitimo (lo que devuelve el propio upload) sigue funcionando igual
+    subido = cliente.post("/api/archivos/cerebro", files={
+        "file": ("legit.csv", b"Keyword Phrase,Search Volume\nbamboo,500", "text/csv")})
+    ruta_legit = subido.json()["csv_path"]
+    r = cliente.post("/api/investigacion",
+                     json={"keyword": "bamboo", "csv_path": ruta_legit, "demo": False})
+    assert r.json()["nicho"]["ok"] is True
+
+
+def test_subida_csv_rechaza_archivo_gigante():
+    """REGRESION: la subida de CSV (Cerebro y vendedores) volcaba el archivo
+    entero a disco sin ningun limite de tamaño -- llenar CEREBRO_CSV_DIR (y
+    el disco) repitiendo la subida era trivial. Ahora corta ANTES de escribir
+    si supera CSV_MAX_BYTES, sin escribir nada parcial a disco."""
+    import api_rutas
+    grande = b"a" * (api_rutas.CSV_MAX_BYTES + 1)
+    r = cliente.post("/api/archivos/cerebro",
+                     files={"file": ("gigante.csv", grande, "text/csv")})
+    d = r.json()
+    assert d["ok"] is False and "MB" in d["mensaje"]
+    assert not os.path.isfile(os.path.join(config.CEREBRO_CSV_DIR, "gigante.csv"))
+
+    r2 = cliente.post("/api/mercado/vendedores-csv",
+                      files={"file": ("gigante2.csv", grande, "text/csv")})
+    d2 = r2.json()
+    assert d2["ok"] is False and "MB" in d2["mensaje"]
+    assert not os.path.isfile(os.path.join(config.CEREBRO_CSV_DIR, "gigante2.csv"))
+
+    # un archivo normal, chico, sigue subiendo igual que siempre
+    r3 = cliente.post("/api/archivos/cerebro",
+                      files={"file": ("chico.csv", b"Keyword Phrase,Search Volume\na,1", "text/csv")})
+    assert r3.json()["ok"] is True
 
 
 # ---------------------- jungle scout (BYOK) ---------------------- #

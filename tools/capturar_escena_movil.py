@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """Genera landing/media/escena-plataformas-<idioma>.jpg (PWA movil).
 
 Requiere Playwright + el Chromium del entorno. Tras correrlo, convertir los

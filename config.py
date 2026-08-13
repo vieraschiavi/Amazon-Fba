@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 config.py — Configuracion central del sistema FBA. Lee .env (sin pisar el entorno).
 Sin claves -> modo offline / dry-run (no inventa datos, no envia mails).
@@ -85,35 +86,78 @@ def env_b(k, d=False):
 
 # --- LLM (asistente multi-proveedor, BYOK) ---
 # Proveedor recomendado: Claude (mejor razonamiento sobre los numeros del negocio).
-# El usuario puede elegir OpenAI (ChatGPT) o Gemini pegando su clave en Config.
-IA_PROVIDER = (env("IA_PROVIDER", "claude") or "claude").strip().lower()
-ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY")
+# El usuario puede elegir otro pegando su clave en Config.
 MODEL_OPUS = env("MODEL_OPUS", "claude-opus-4-8")
 MODEL_SONNET = env("MODEL_SONNET", "claude-sonnet-4-6")
 MODEL_HAIKU = env("MODEL_HAIKU", "claude-haiku-4-5-20251001")
-OPENAI_API_KEY = env("OPENAI_API_KEY")
-OPENAI_MODEL = env("OPENAI_MODEL", "gpt-4o-mini")
-GEMINI_API_KEY = env("GEMINI_API_KEY")
-GEMINI_MODEL = env("GEMINI_MODEL", "gemini-2.0-flash")
+
+# UN SOLO lugar donde vive la lista de proveedores de IA. Agregar uno nuevo es
+# agregar una entrada aca: la whitelist del .env, el endpoint de configuracion,
+# el selector del panel y el listado de modelos se derivan todos de esta tabla.
+# Antes la lista estaba repetida en cuatro archivos y agregar un proveedor
+# obligaba a acordarse de los cuatro.
+#
+# Como se consulta la lista de modelos de cada uno (para el boton "Actualizar
+# modelos") vive en data/modelos_ia.py: aca va la CONFIGURACION del proveedor,
+# no el formato de su API.
+PROVEEDORES_IA = (
+    {"codigo": "claude", "nombre": "Claude (Anthropic)",
+     "clave_env": "ANTHROPIC_API_KEY", "modelo_env": "ANTHROPIC_MODEL",
+     "modelo_default": MODEL_OPUS},
+    {"codigo": "openai", "nombre": "OpenAI (ChatGPT)",
+     "clave_env": "OPENAI_API_KEY", "modelo_env": "OPENAI_MODEL",
+     "modelo_default": "gpt-4o-mini"},
+    {"codigo": "gemini", "nombre": "Google Gemini",
+     "clave_env": "GEMINI_API_KEY", "modelo_env": "GEMINI_MODEL",
+     "modelo_default": "gemini-2.0-flash"},
+    {"codigo": "grok", "nombre": "Grok (xAI)",
+     "clave_env": "GROK_API_KEY", "modelo_env": "GROK_MODEL",
+     "modelo_default": "grok-2-latest"},
+    {"codigo": "deepseek", "nombre": "DeepSeek",
+     "clave_env": "DEEPSEEK_API_KEY", "modelo_env": "DEEPSEEK_MODEL",
+     "modelo_default": "deepseek-chat"},
+)
+
+_POR_CODIGO = {p["codigo"]: p for p in PROVEEDORES_IA}
+
+
+def proveedor_ia(codigo):
+    """Ficha del proveedor (o None si el codigo no existe)."""
+    return _POR_CODIGO.get((codigo or "").strip().lower())
+
+
+def clave_ia(codigo):
+    """Clave BYOK del proveedor.
+
+    Sale de la global del modulo (config.ANTHROPIC_API_KEY y companía), que es
+    como la lee el resto del sistema y lo que los tests pisan para forzar modo
+    offline. _refrescar_globals() la mantiene al dia con el .env."""
+    p = proveedor_ia(codigo)
+    return (globals().get(p["clave_env"]) or "").strip() if p else ""
+
+
+def modelo_ia(codigo):
+    """Modelo elegido para ese proveedor, o su default si el usuario no eligio."""
+    p = proveedor_ia(codigo)
+    if not p:
+        return ""
+    return (globals().get(p["modelo_env"]) or "").strip() or p["modelo_default"]
 
 
 def ia_provider_activo():
     """Devuelve (proveedor, clave, modelo) del proveedor elegido si tiene clave;
     si el elegido no tiene clave, cae al primero que si la tenga. (None, "", "")
     si no hay ninguna clave -> el asistente responde offline (glosario)."""
-    disp = {
-        "claude": (ANTHROPIC_API_KEY, MODEL_OPUS),
-        "openai": (OPENAI_API_KEY, OPENAI_MODEL),
-        "gemini": (GEMINI_API_KEY, GEMINI_MODEL),
-    }
-    orden = [IA_PROVIDER] + [p for p in ("claude", "openai", "gemini") if p != IA_PROVIDER]
+    elegido = (IA_PROVIDER or "claude").strip().lower()
+    orden = [elegido] + [p["codigo"] for p in PROVEEDORES_IA if p["codigo"] != elegido]
     for prov in orden:
-        clave, modelo = disp.get(prov, ("", ""))
-        if (clave or "").strip():
-            return prov, clave, modelo
+        clave = clave_ia(prov)
+        if clave:
+            return prov, clave, modelo_ia(prov)
     return None, "", ""
 
 # --- Datos de mercado ---
+# (las globales de IA se definen abajo, en _refrescar_globals)
 KEEPA_API_KEY = env("KEEPA_API_KEY")
 KEEPA_DOMAIN = int(env("KEEPA_DOMAIN", "1"))           # 1 = amazon.com (US)
 # Jungle Scout API (BYOK): a diferencia de Helium 10 (solo CSV), SI tiene API.
@@ -154,13 +198,44 @@ RECORDATORIO_DIAS = int(env("RECORDATORIO_DIAS", "3"))
 WHITELIST_BOT = ["envio", "tiempo_entrega", "garantia", "estado_pedido", "caracteristicas"]
 
 
+def _refrescar_globals():
+    """Recalcula las globales de conexion desde el entorno.
+
+    Existen como globales (config.ANTHROPIC_API_KEY y companía) porque medio
+    sistema las lee asi: agents/exito.py, poa.py, traductor.py, recomendador.py,
+    listing.py, customer_bot.py, test_conexiones.py y el panel legacy.
+    El problema era que se calculaban UNA vez al importar el modulo: guardar una
+    clave desde el panel actualizaba el .env y os.environ, pero NO estas
+    globales, asi que el programa seguia creyendose sin clave hasta que lo
+    reiniciabas -- pegabas tu clave de Claude, tocabas "Probar conexion" y te
+    decia que no habia clave. Ahora guardar_env() llama aca y todo toma efecto
+    en el momento.
+    """
+    g = globals()
+    g["IA_PROVIDER"] = (env("IA_PROVIDER", "claude") or "claude").strip().lower()
+    for p in PROVEEDORES_IA:
+        g[p["clave_env"]] = env(p["clave_env"])
+        # Del ENTORNO, no de modelo_ia(): esa lee justamente esta global, asi
+        # que derivarla de si misma dejaba el valor viejo pegado para siempre.
+        g[p["modelo_env"]] = env(p["modelo_env"]).strip() or p["modelo_default"]
+    for k in ("KEEPA_API_KEY", "JUNGLE_SCOUT_API_KEY", "JUNGLE_SCOUT_KEY_NAME",
+              "SMTP_USER", "SMTP_PASS"):
+        g[k] = env(k)
+    g["ALERT_TO"] = env("ALERT_TO", "vieraschiavi@gmail.com")
+    g["CEREBRO_CSV_DIR"] = env("CEREBRO_CSV_DIR",
+                               os.path.join(DIR_DATOS, "cerebro_exports"))
+
+
+_refrescar_globals()
+
+
 def estado_config():
     """Resumen para el dashboard: que esta conectado y que esta en modo offline.
     NUNCA incluye el valor de una clave (se expone por /health)."""
     prov, clave, modelo = ia_provider_activo()
-    _nom = {"claude": "Claude", "openai": "OpenAI (ChatGPT)", "gemini": "Gemini"}
+    p = proveedor_ia(prov)
     return {
-        "llm": f"{_nom.get(prov, prov)} ({modelo})" if prov else "offline (glosario)",
+        "llm": f"{p['nombre'] if p else prov} ({modelo})" if prov else "offline (glosario)",
         "ia_provider": IA_PROVIDER,
         "keepa": "conectado" if KEEPA_API_KEY else "sin clave",
         "jungle_scout": "conectado" if (JUNGLE_SCOUT_API_KEY and JUNGLE_SCOUT_KEY_NAME) else "sin clave",
@@ -178,10 +253,19 @@ ENV_PATH = os.path.join(DIR_DATOS, ".env")
 _migrar_legacy(".env", ENV_PATH)
 
 # Claves que el panel puede guardar. Nada fuera de esta lista se escribe.
-CLAVES_GUARDABLES = ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY",
-                     "IA_PROVIDER", "KEEPA_API_KEY", "JUNGLE_SCOUT_API_KEY",
-                     "JUNGLE_SCOUT_KEY_NAME", "SMTP_USER",
-                     "SMTP_PASS", "ALERT_TO", "CEREBRO_CSV_DIR")
+# Las de IA (clave + modelo elegido de cada proveedor) salen de PROVEEDORES_IA
+# para que agregar un proveedor no obligue a acordarse de tocar tambien aca.
+CLAVES_IA = tuple(v for p in PROVEEDORES_IA for v in (p["clave_env"], p["modelo_env"]))
+CLAVES_GUARDABLES = CLAVES_IA + (
+    "IA_PROVIDER", "KEEPA_API_KEY", "JUNGLE_SCOUT_API_KEY",
+    "JUNGLE_SCOUT_KEY_NAME", "SMTP_USER",
+    "SMTP_PASS", "ALERT_TO", "CEREBRO_CSV_DIR")
+
+# Las claves de IA son SECRETAS (se muestran enmascaradas); el modelo elegido
+# no lo es -- es un nombre publico tipo "gpt-4o-mini" y el panel necesita
+# mostrarlo tal cual para que el selector arranque en el valor correcto.
+CLAVES_SECRETAS = tuple(k for k in CLAVES_GUARDABLES
+                        if k.endswith(("_API_KEY", "_KEY_NAME")) or k == "SMTP_PASS")
 
 
 def mask(valor: str) -> str:
@@ -230,5 +314,6 @@ def guardar_env(**pares) -> dict:
     os.replace(tmp, ENV_PATH)
     for k, v in pares.items():
         os.environ[k] = v
+    _refrescar_globals()                     # rige sin reiniciar el programa
     return {"ok": True, "guardadas": sorted(pares.keys()),
             "mensaje": f"{len(pares)} clave(s) guardada(s) en .env."}

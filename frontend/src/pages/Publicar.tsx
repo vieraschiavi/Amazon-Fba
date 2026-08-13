@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 import { useState } from "react";
 import { api } from "../api/cliente";
 import { Boton, Campo, CampoNumero, Card, Seccion, Spinner } from "../components/ui";

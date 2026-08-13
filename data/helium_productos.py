@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 data/helium_productos.py — Importador de exports de PRODUCTOS (no de keywords).
 

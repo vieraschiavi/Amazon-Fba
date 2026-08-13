@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/_demo.js — Registro server-side (solo de marketing, no de seguridad)
 // de quien arranco la demo de 7 dias, para poder mandar un recordatorio
 // antes de que venza si todavia no compro.

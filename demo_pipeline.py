@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 demo_pipeline.py — Corre el slice completo de research del sistema FBA:
     Cerebro (keywords)  ->  market_intel (score de nicho)  ->  listing (copy).

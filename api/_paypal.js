@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/_paypal.js — Cliente minimo (fetch puro, sin SDK) para la API REST de
 // PayPal Orders v2. El prefijo "_" hace que Vercel NO trate este archivo
 // como una ruta.

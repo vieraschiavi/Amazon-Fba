@@ -11,7 +11,7 @@ fastapi
 uvicorn[standard]
 httpx
 anthropic
-pillow
+pillow>=12.2.0   # piso por varias CVEs (overflow/DoS) debajo de esa version
 pywebview>=5.0,<6.0
 python-multipart
 pandas

@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/licencia.js — Verifica un pago de MercadoPago y emite la licencia.
 //
 // La página /gracias.html llama aquí con el payment_id que devuelve MercadoPago.
@@ -7,7 +8,7 @@
 // queda a nombre del email con el que el comprador pagó: ese mismo email va en
 // la app para activarla.
 import { aplicarCors, clienteValido, limitarPorIp } from "./_seguridad.js";
-import { generarClave } from "./_licencia.js";
+import { generarClave, SECRETO_CONFIGURADO } from "./_licencia.js";
 import { otorgarBonoBienvenidaSiNuevo, acreditarRecargaSiNueva, esPackRecarga, PACKS_RECARGA } from "./_creditosia.js";
 import { avisarCreditosPorEmail } from "./_email_creditos.js";
 import { obtenerOrden, leerOrden, paypalConfigurado } from "./_paypal.js";
@@ -33,6 +34,11 @@ export default async function handler(req, res) {
   // la pagina) y vuelve la enumeracion impracticable.
   const limite = await limitarPorIp(req, "lic", 20, 3600);
   if (!limite.permitido) return res.status(429).json({ error: "demasiados_intentos" });
+
+  // Sin LICENCIA_SECRETO no hay forma de emitir una clave que despues valide:
+  // mejor decirlo (503) que entregar una licencia rota que el cliente crea
+  // que funciona.
+  if (!SECRETO_CONFIGURADO) return res.status(503).json({ error: "licencia_no_configurada" });
 
   const q = req.query || {};
 

@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 /* verificar_lanzadores.mjs — Test de regresion de los .bat que abren el
  * programa en Windows.
  *

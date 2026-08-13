@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/_email.js — Cliente minimo (fetch puro, sin SDK) para Resend, usado
 // SOLO para el recordatorio de "tu demo vence mañana" (api/cron-recordatorio-demo.js).
 // El prefijo "_" hace que Vercel NO trate este archivo como una ruta.
@@ -16,6 +17,20 @@ const FROM = process.env.RESEND_FROM || "MV FBA IA <onboarding@resend.dev>";
 
 export function emailConfigurado() {
   return Boolean(API_KEY);
+}
+
+// Escapa texto de USUARIO antes de interpolarlo en el HTML de un email.
+// Server-side no hay `document` (a diferencia de landing/gracias.html y
+// mobile/js/seguro.js, que escapan armando un <div> y leyendo su
+// innerHTML) -- por eso esta version es manual, pero cubre los mismos 5
+// caracteres. Sin esto, un campo como "nombre" (que el propio visitante
+// carga sin verificacion de que sea realmente el dueño del email) viajaba
+// crudo al HTML de un mail que sale FIRMADO por el dominio real: inyeccion
+// de HTML/links en un email con reputacion de envio legitima.
+export function escaparHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
 }
 
 export async function enviarEmail({ to, subject, html }) {

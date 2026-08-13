@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 dashboard_app.py — Panel FBA (Streamlit 1.45.1), cockpit BI navy/verde.
 Pipeline: Cerebro -> market_intel -> listing -> pricing -> caja -> ventas/analitica.

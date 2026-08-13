@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/descarga.js — Descarga real del instalador de PC, la version portable
 // sin instalador, y el APK Android.
 //
@@ -20,6 +21,7 @@
 // payment_id/orden + ?proc=paypal si corresponde) y honra los tres ?tipo=.
 import { obtenerOrden, leerOrden, paypalConfigurado } from "./_paypal.js";
 import { resolverDescargaRelease } from "./_release.js";
+import { limitarPorIp } from "./_seguridad.js";
 
 const RELEASE_PC = { tag: "pc-latest", asset: "MV_Amazon_FBA_IA_Setup.exe" };
 const RELEASE_PC_BAT = { tag: "pc-latest", asset: "MV_FBA_IA_Portable.zip" };
@@ -42,6 +44,22 @@ async function redirigirA(release, res) {
 }
 
 export default async function handler(req, res) {
+  // A diferencia del resto de api/*.js, ESTE endpoint se llega con un <a
+  // href> normal (navegacion de pagina completa, ver landing/index.html y
+  // gracias.html) -- no con fetch() desde el JS del sitio. Un navegador NO
+  // manda headers custom en una navegacion asi, asi que clienteValido()
+  // (que exige el header x-mv-app) rompería la descarga real: por eso ese
+  // chequeo no aplica aca, y el unico freno posible es el limite por IP.
+  //
+  // Antes este endpoint era el UNICO de todo api/* sin ningun limite: cada
+  // llamada exitosa gasta 2 requests contra la API de GitHub con el token
+  // COMPARTIDO de todos los clientes (GITHUB_RELEASE_TOKEN, 5000/hora). Un
+  // script anonimo en loop contra ?demo=1 (que ademas no exige pago) agotaba
+  // ese cupo en minutos -- y a partir de ahi, la descarga de un cliente que
+  // acaba de pagar de verdad tambien fallaba, durante el resto de la hora.
+  const limite = await limitarPorIp(req, "descarga", 30, 3600);
+  if (!limite.permitido) return res.status(429).json({ error: "demasiados_intentos" });
+
   const q = req.query || {};
   const tipo = String(q.tipo || "");
   const release = releasePedido(tipo);

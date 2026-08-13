@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // service-worker.js — cache del "shell" de la app (HTML/CSS/JS/iconos) para que
 // abra instantanea y funcione OFFLINE por completo. El motor de negocio corre
 // en el telefono (nucleo.js) y los datos viven en localStorage, asi que no hay

@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/validar.js — Valida una licencia DEL LADO DEL SERVIDOR.
 //
 // El secreto de firma vive SOLO en la variable de entorno LICENCIA_SECRETO de

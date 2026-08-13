@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 /* nucleo.js — Motor de negocio de MV FBA IA, portado a JavaScript para
    que la app Android funcione 100% en el telefono, SIN depender de la PC.
 

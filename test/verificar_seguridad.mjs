@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 /* verificar_seguridad.mjs — Test de regresion de api/_seguridad.js
  * (limitarPorIp, ipDeRequest) contra un servidor KV real (mock_kv_servidor.mjs
  * emula la API REST de Upstash, no mockea el codigo propio).

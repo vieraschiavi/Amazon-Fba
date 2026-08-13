@@ -1,4 +1,4 @@
-streamlit==1.45.1
+streamlit==1.54.0    # pin viejo (1.45.1) tenia 2 CVEs conocidas (hash debil, SSRF en Windows); solo lo usa el panel legacy dev
 typing_extensions>=4.13.0   # PEP 728 (closed TypedDict): altair 5.5 lo necesita en Python 3.13/3.14
 altair>=5.5.0               # charts de streamlit; version compatible con Python nuevo
 pandas
@@ -6,6 +6,6 @@ fastapi
 uvicorn[standard]
 httpx
 anthropic     # asistente IA + redaccion de listings con Claude (modo offline si no hay clave)
-pillow        # generador de creatividades (banner + infografia), sin costo ni API
+pillow>=12.2.0   # generador de creatividades (banner+infografia); piso por varias CVEs (overflow/DoS) debajo de esa version
 pywebview    # app de escritorio: ventana nativa que envuelve la UI (desktop.py)
 python-multipart

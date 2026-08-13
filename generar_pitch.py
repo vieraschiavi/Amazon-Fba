@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 generar_pitch.py — Genera pitch_inversor_fba.html desde el MISMO motor que el panel
 (agents/portafolio.retorno_inversor), para que el pitch y el dashboard cuenten

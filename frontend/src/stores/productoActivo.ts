@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // Producto activo: el patron A() del panel historico. Elegis un producto del
 // portafolio UNA vez y sus datos precargan los formularios de Pricing, Caja
 // y Ventas. El id elegido persiste server-side (/api/prefs).

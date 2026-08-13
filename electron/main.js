@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // main.js — MV FBA IA como aplicacion de escritorio con Electron.
 //
 // POR QUE ELECTRON Y NO pywebview

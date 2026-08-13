@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 import { useState } from "react";
 import { api, qs } from "../api/cliente";
 import type { OrdenCampo, ProductoEstrella, ResVendedores, VendedorPrincipal } from "../api/tipos";

@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/_seguridad.js — Guardas anti-abuso compartidas por los endpoints que
 // cuestan plata real (Claude, Keepa, MercadoPago). El prefijo "_" hace que
 // Vercel NO trate este archivo como una ruta (no es un endpoint).

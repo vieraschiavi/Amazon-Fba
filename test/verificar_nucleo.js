@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 /* verificar_nucleo.js — Prueba de regresion del motor de negocio portado.
  *
  * Corre el motor JavaScript (mobile/js/nucleo.js) con los MISMOS inputs que el

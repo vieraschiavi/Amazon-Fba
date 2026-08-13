@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 /* verificar_licencia_dueno.mjs — La licencia de DUEÑO no se puede pedir desde
  * la web: es solo para el build de GitHub.
  *

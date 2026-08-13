@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // Chat stateless reutilizable (Asistente IA de negocio y Dudas del programa):
 // el cliente acumula el historial y lo reenvia completo en cada llamada.
 import { FormEvent, useRef, useState } from "react";

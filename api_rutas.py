@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 api_rutas.py — Rutas /api/* del panel SaaS (frontend React).
 
@@ -47,6 +48,7 @@ from agents.listing import generar as generar_listing
 from agents.market_intel import market_intel
 from data import demanda_nativa
 from data import jungle_scout
+from data import modelos_ia
 from data import bsr as data_bsr
 from data import helium_productos
 from data import mercado as data_mercado
@@ -74,9 +76,15 @@ class PrefsIn(BaseModel):
 
 
 class ConfigIn(BaseModel):
-    ANTHROPIC_API_KEY: str | None = None
-    OPENAI_API_KEY: str | None = None
-    GEMINI_API_KEY: str | None = None
+    # extra="allow" para no repetir aca la lista de proveedores de IA: las
+    # claves y el modelo elegido de cada uno salen de config.PROVEEDORES_IA
+    # (ANTHROPIC_API_KEY, ANTHROPIC_MODEL, GROK_API_KEY, ...). Agregar un
+    # proveedor no obliga a tocar tambien este modelo. Lo que se acepta de
+    # verdad lo decide config.CLAVES_GUARDABLES: guardar_env() descarta
+    # cualquier cosa fuera de esa whitelist, asi que abrir el modelo no abre
+    # la escritura del .env.
+    model_config = {"extra": "allow"}
+
     IA_PROVIDER: str | None = None
     KEEPA_API_KEY: str | None = None
     JUNGLE_SCOUT_API_KEY: str | None = None
@@ -95,13 +103,24 @@ class InvestigacionIn(BaseModel):
 
 
 class RecomendadorIn(BaseModel):
+    # A diferencia de PricingIn/CajaIn (que limitan plata), esto limita TRABAJO:
+    # _pasada_amplia hace una request HTTP de autocompletado de Amazon POR
+    # CADA seed, con un sleep entre cada una -- y el endpoint es sincrono,
+    # asi que unas pocas requests con seeds/max_seeds grandes agotan el
+    # threadpool de Starlette y cuelgan el servidor entero para el usuario
+    # real. shortlist ademas gasta tokens PAGOS de Keepa/Jungle Scout por
+    # candidato si estan conectados: sin techo, una sola request (local, LAN,
+    # o disparada por una pagina de terceros si el CORS estuviera abierto)
+    # puede drenar en minutos la cuota mensual que el usuario paga de su
+    # bolsillo. Los topes (20) son generosos frente a los defaults (8/12/10):
+    # no cambian ningun uso normal, solo cortan el caso sin sentido.
     precio_min: float = 10.0
     precio_max: float = 50.0
     marketplace: str = "US"
-    seeds: list[str] | None = None
-    max_seeds: int = 8
-    shortlist: int = 12
-    top_n: int = 10
+    seeds: list[str] | None = Field(None, max_length=20)
+    max_seeds: int = Field(8, ge=1, le=20)
+    shortlist: int = Field(12, ge=1, le=20)
+    top_n: int = Field(10, ge=1, le=20)
     usar_keepa: bool = True
     demo: bool = False
 
@@ -319,11 +338,31 @@ def prefs_put(p: PrefsIn):
     return prefs.guardar(**p.model_dump(exclude_none=True))
 
 
+def _proveedores_ia():
+    """Los proveedores de IA tal como los necesita el panel: ficha + si ya
+    tiene clave cargada + que modelo esta usando hoy."""
+    return [{"codigo": p["codigo"], "nombre": p["nombre"],
+             "clave_env": p["clave_env"], "modelo_env": p["modelo_env"],
+             "tiene_clave": bool(config.clave_ia(p["codigo"])),
+             "modelo": config.modelo_ia(p["codigo"])}
+            for p in config.PROVEEDORES_IA]
+
+
 @router.get("/config")
 def config_get():
     estado = config.estado_config()
-    claves = {k: config.mask(config.env(k)) for k in config.CLAVES_GUARDABLES}
+    # El modelo elegido NO es un secreto (es "gpt-4o-mini", no una clave) y el
+    # panel lo necesita en claro para que el selector arranque donde debe. Va
+    # el modelo EFECTIVO (el default cuando el usuario nunca eligio uno), que
+    # es el que se usa de verdad al preguntar — no el "" del .env vacio.
+    modelos_env = {p["modelo_env"]: config.modelo_ia(p["codigo"])
+                   for p in config.PROVEEDORES_IA}
+    claves = {k: (config.mask(config.env(k)) if k in config.CLAVES_SECRETAS
+                  else modelos_env.get(k, config.env(k)))
+              for k in config.CLAVES_GUARDABLES}
     return {**estado, "claves": claves, "ia_provider": config.IA_PROVIDER,
+            "proveedores_ia": _proveedores_ia(),
+            "modelos_ia": modelos_ia.disponibles(),
             "acos_pct": config.ACOS_PCT,
             "umbral_verde": config.UMBRAL_VERDE,
             "umbral_amarillo": config.UMBRAL_AMARILLO}
@@ -338,6 +377,14 @@ def config_post(c: ConfigIn):
 def config_conexiones(asin: str | None = None):
     import test_conexiones
     return {"resultados": test_conexiones.verificar_todo(asin or None)}
+
+
+@router.post("/config/modelos")
+def config_modelos_actualizar():
+    """Boton "Actualizar modelos": le pregunta a cada proveedor con clave
+    cargada que modelos ofrece HOY, con la clave del propio usuario. Los que
+    no tienen clave se saltan (no hay a quien preguntarle)."""
+    return modelos_ia.actualizar()
 
 
 @router.get("/demo/ejemplo")
@@ -358,15 +405,65 @@ def demo_ejemplo_quitar():
 
 
 # ============================ investigacion / mercado ============================ #
+CSV_MAX_BYTES = 20 * 1024 * 1024   # 20 MB: de sobra para un export de keywords/productos
+
+
+class ArchivoDemasiadoGrande(Exception):
+    pass
+
+
+async def _leer_csv_limitado(file):
+    """Lee un UploadFile en chunks, cortando ANTES de volcar mas de
+    CSV_MAX_BYTES a memoria/disco.
+
+    POR QUE EXISTE: file.read() sin tope no tenia ningun limite de tamaño --
+    un archivo gigante (repetido) podia llenar el disco del usuario. Content-
+    Length no es confiable (lo pone el cliente), asi que se corta leyendo de
+    a partes reales, no confiando en un header."""
+    partes, total = [], 0
+    while True:
+        chunk = await file.read(1024 * 1024)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > CSV_MAX_BYTES:
+            raise ArchivoDemasiadoGrande()
+        partes.append(chunk)
+    return b"".join(partes)
+
+
+def _csv_seguro(csv_path):
+    """Reduce cualquier `csv_path` que llegue del cliente a un NOMBRE de
+    archivo dentro de CEREBRO_CSV_DIR -- nunca una ruta.
+
+    POR QUE EXISTE: InvestigacionIn.csv_path viaja del cliente sin ninguna
+    validacion hasta cerebro_con_estado() -> open(). El upload legitimo
+    (POST /archivos/cerebro, ariba) ya sanea el NOMBRE con este mismo regex,
+    asi que el csv_path que manda el panel para un archivo que el subio
+    siempre queda igual con esto. Lo que se cierra es el otro camino: alguien
+    mandando "../../../../etc/passwd" o una ruta absoluta a cualquier archivo
+    del disco y leyendo su contenido a traves del mensaje de error (las
+    columnas que no matchean se devuelven en la respuesta)."""
+    if not csv_path:
+        return None
+    nombre = re.sub(r"[^A-Za-z0-9._-]", "_", os.path.basename(csv_path))
+    return os.path.join(config.CEREBRO_CSV_DIR, nombre) if nombre else None
+
+
 @router.post("/archivos/cerebro")
 async def subir_cerebro(file: UploadFile):
     nombre = re.sub(r"[^A-Za-z0-9._-]", "_", file.filename or "cerebro.csv")
     if not nombre.lower().endswith(".csv"):
         return {"ok": False, "mensaje": "Solo se aceptan archivos .csv de Cerebro."}
+    try:
+        contenido = await _leer_csv_limitado(file)
+    except ArchivoDemasiadoGrande:
+        return {"ok": False, "mensaje": f"El archivo supera el máximo de "
+                                        f"{CSV_MAX_BYTES // 1024 // 1024} MB."}
     os.makedirs(config.CEREBRO_CSV_DIR, exist_ok=True)
     destino = os.path.join(config.CEREBRO_CSV_DIR, nombre)
     with open(destino, "wb") as f:
-        f.write(await file.read())
+        f.write(contenido)
     return {"ok": True, "csv_path": destino, "nombre": nombre}
 
 
@@ -384,20 +481,28 @@ async def subir_vendedores_csv(file: UploadFile):
                 "ventas_estim_lider": 0,
                 "mensaje": "Solo se aceptan archivos .csv exportados de Helium 10 "
                            "(Xray/Black Box) o de Jungle Scout."}
+    try:
+        contenido = await _leer_csv_limitado(file)
+    except ArchivoDemasiadoGrande:
+        return {"ok": False, "productos": [], "ventas_estim_total": 0,
+                "ventas_estim_lider": 0,
+                "mensaje": f"El archivo supera el máximo de "
+                          f"{CSV_MAX_BYTES // 1024 // 1024} MB."}
     os.makedirs(config.CEREBRO_CSV_DIR, exist_ok=True)
     destino = os.path.join(config.CEREBRO_CSV_DIR, nombre)
     with open(destino, "wb") as f:
-        f.write(await file.read())
+        f.write(contenido)
     return helium_productos.vendedores_desde_csv(destino)
 
 
 @router.post("/investigacion")
 def investigacion(i: InvestigacionIn):
-    mi = market_intel(i.keyword, i.marketplace, csv_path=i.csv_path, demo=i.demo)
+    ruta = _csv_seguro(i.csv_path)
+    mi = market_intel(i.keyword, i.marketplace, csv_path=ruta, demo=i.demo)
     out = {"nicho": mi}
     if mi["ok"] and i.con_listing:
         out["listing"] = generar_listing(i.keyword, i.marketplace,
-                                         csv_path=i.csv_path, demo=i.demo)
+                                         csv_path=ruta, demo=i.demo)
     return out
 
 

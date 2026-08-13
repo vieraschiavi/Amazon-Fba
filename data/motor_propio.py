@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 data/motor_propio.py — Motor de keywords/nichos EMBEBIDO de MV FBA IA.
 
