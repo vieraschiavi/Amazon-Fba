@@ -173,6 +173,25 @@ _NOTA = ("'interes' es un proxy del autocompletado de Amazon (posicion + "
          "(BSR->ventas) o un CSV de Cerebro.")
 
 
+def analizar_hallazgos(seed, hallazgos):
+    """Parte PURA de investigar(): de {keyword: {mejor_rank, apariciones}} a
+    (keywords puntuadas y ordenadas, nichos agrupados). Sin red.
+
+    Separada a proposito: es lo que la app Android porta a JavaScript
+    (mobile/js/nucleo.js, MV.analizarSugerencias) para puntuar en el celular
+    las sugerencias que trae con su propio internet -- y el test de paridad
+    (test/verificar_nucleo.js via test/generar_referencia.py) llama ESTA
+    funcion, la misma que usa produccion, no una copia."""
+    if not hallazgos:
+        return [], []
+    max_ap = max(i["apariciones"] for i in hallazgos.values())
+    kws = [{"keyword": k, "interes": _score_interes(i, max_ap),
+            "mejor_rank": i["mejor_rank"], "apariciones": i["apariciones"]}
+           for k, i in hallazgos.items()]
+    kws.sort(key=lambda x: (x["interes"], x["apariciones"]), reverse=True)
+    return kws, _nichos(seed, kws)
+
+
 def investigar(seed, profundidad=1, demo=False, marketplace="US"):
     """
     Investigacion completa de un seed. Devuelve:
@@ -193,14 +212,10 @@ def investigar(seed, profundidad=1, demo=False, marketplace="US"):
                 "mensaje": ("Amazon no devolvio sugerencias (sin red, bloqueado o "
                             "seed sin resultados). El sistema no inventa keywords: "
                             "proba otro seed o usa el CSV de Cerebro.")}
-    max_ap = max(i["apariciones"] for i in hallazgos.values())
-    kws = [{"keyword": k, "interes": _score_interes(i, max_ap),
-            "mejor_rank": i["mejor_rank"], "apariciones": i["apariciones"]}
-           for k, i in hallazgos.items()]
-    kws.sort(key=lambda x: (x["interes"], x["apariciones"]), reverse=True)
+    kws, nichos = analizar_hallazgos(seed, hallazgos)
     return {"ok": True, "fuente": "motor_propio (autocompletado Amazon, gratis)",
             "seed": seed, "requests": hechos, "keywords": kws,
-            "nichos": _nichos(seed, kws),
+            "nichos": nichos,
             "mensaje": f"{len(kws)} keywords reales en {hechos} consultas gratis.",
             "nota_honesta": _NOTA}
 

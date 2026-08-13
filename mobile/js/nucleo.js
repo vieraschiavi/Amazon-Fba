@@ -634,12 +634,105 @@ const MV = (function () {
     };
   }
 
+  // ==================== DEMANDA / NICHOS SIN API (autocompletado Amazon) ====
+  // Port FIEL de data/motor_propio.py (_score_interes, _nichos,
+  // analizar_hallazgos) y data/demanda_nativa.py (_score, _nivel). La red la
+  // pone el celular (fetch al autocompletado publico de Amazon, gratis, sin
+  // Keepa/Helium); la PUNTUACION corre aca, identica a la PC. Paridad probada
+  // en test/verificar_nucleo.js (compara contra la salida de los modulos
+  // Python via test/generar_referencia.py) -- por eso se replican los mismos
+  // detalles: round() banker's (pyRound) y los mismos pesos.
+  function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+
+  // Proxy 0-100 por keyword: rank en autocomplete (70%) + amplitud long-tail (30%).
+  function scoreInteres(mejorRank, apariciones, maxApariciones) {
+    const rank = clamp01(1 - (mejorRank - 1) / 10.0);
+    const amplitud = clamp01(apariciones / Math.max(1, maxApariciones));
+    return pyRound((0.70 * rank + 0.30 * amplitud) * 100);
+  }
+
+  // Agrupa keywords por el modificador que sigue al seed -> nichos candidatos.
+  function agruparNichos(seed, keywords) {
+    const seedL = String(seed).trim().toLowerCase();
+    const grupos = {};
+    for (const k of keywords) {
+      const kw = k.keyword.toLowerCase();
+      const resto = kw.startsWith(seedL) ? kw.slice(seedL.length).trim() : "";
+      const etiqueta = resto ? resto.split(/\s+/)[0] : "(seed exacto)";
+      if (!grupos[etiqueta]) {
+        grupos[etiqueta] = { nicho: (seedL + " " + etiqueta).trim(), keywords: [], interes_max: 0 };
+      }
+      grupos[etiqueta].keywords.push(kw);
+      grupos[etiqueta].interes_max = Math.max(grupos[etiqueta].interes_max, k.interes);
+    }
+    const nichos = Object.keys(grupos)
+      .filter((e) => e !== "(seed exacto)")
+      .map((e) => grupos[e]);
+    // mismo orden que Python: por interes_max, y a igualdad por cant. de keywords
+    nichos.sort((a, b) =>
+      b.interes_max - a.interes_max || b.keywords.length - a.keywords.length);
+    return nichos;
+  }
+
+  // Parte PURA: {keyword: {mejor_rank, apariciones}} -> {keywords, nichos}.
+  // Identica a data/motor_propio.analizar_hallazgos.
+  function analizarSugerencias(seed, hallazgos) {
+    const claves = Object.keys(hallazgos);
+    if (!claves.length) return { keywords: [], nichos: [] };
+    let maxAp = 1;
+    for (const k of claves) maxAp = Math.max(maxAp, hallazgos[k].apariciones);
+    const kws = claves.map((k) => ({
+      keyword: k, interes: scoreInteres(hallazgos[k].mejor_rank, hallazgos[k].apariciones, maxAp),
+      mejor_rank: hallazgos[k].mejor_rank, apariciones: hallazgos[k].apariciones,
+    }));
+    kws.sort((a, b) => b.interes - a.interes || b.apariciones - a.apariciones);
+    return { keywords: kws, nichos: agruparNichos(seed, kws) };
+  }
+
+  // Umbrales de amplitud -> etiqueta (identico a data/demanda_nativa._NIVELES).
+  function nivelDemanda(amplitud) {
+    if (amplitud >= 35) return "MUY ALTA";
+    if (amplitud >= 22) return "ALTA";
+    if (amplitud >= 12) return "MEDIA";
+    if (amplitud >= 4) return "BAJA";
+    return "NULA";
+  }
+
+  // Score 0-100 de demanda RELATIVA (identico a data/demanda_nativa._score):
+  // amplitud long-tail 60% + interes del top 25% + seed exacto presente 15%.
+  function scoreDemanda(amplitud, topInteres, seedDirecto) {
+    const amp = Math.min(amplitud / 40.0, 1.0);
+    const inter = Math.min((topInteres || 0) / 100.0, 1.0);
+    const directo = seedDirecto ? 1.0 : 0.0;
+    return pyRound((0.60 * amp + 0.25 * inter + 0.15 * directo) * 100);
+  }
+
+  // Cierra el circuito: de las keywords ya puntuadas al veredicto de demanda,
+  // con la misma nota honesta que la PC (no es volumen absoluto).
+  function estimarDemanda(seed, keywords) {
+    const amplitud = keywords.length;
+    if (!amplitud) {
+      return { ok: false, amplitud: 0, demanda_score: 0, nivel: "NULA",
+               top_interes: 0, seed_directo: false };
+    }
+    const seedL = String(seed).trim().toLowerCase();
+    const topInteres = keywords[0].interes;
+    const seedDirecto = keywords.slice(0, 15).some(
+      (k) => k.keyword.toLowerCase() === seedL || k.keyword.toLowerCase().startsWith(seedL));
+    return {
+      ok: true, amplitud: amplitud, demanda_score: scoreDemanda(amplitud, topInteres, seedDirecto),
+      nivel: nivelDemanda(amplitud), top_interes: topInteres, seed_directo: seedDirecto,
+    };
+  }
+
   return {
     CFG, landedCost, evaluarPrecio, proyeccionRealista, simularGanancias,
     evaluarExito, estimarDedicacion,
     // Investigacion de producto sin API (identico a la PC, y offline):
     ventasDesdeBsr, confianzaBsr, parsearBloqueBsr, estimarPorBsr,
     potencialProducto, vendedoresPrincipales,
+    // Demanda / nichos sin API (autocompletado Amazon, puntuacion identica a PC):
+    analizarSugerencias, estimarDemanda, scoreInteres, scoreDemanda, nivelDemanda,
   };
 })();
 
