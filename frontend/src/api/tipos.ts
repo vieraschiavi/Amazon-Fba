@@ -128,10 +128,18 @@ export interface EstadoAsistente {
   ok: boolean; modo: string; proveedor: string | null; mensaje: string;
 }
 
+export interface ProveedorIA {
+  codigo: string; nombre: string;
+  clave_env: string; modelo_env: string;
+  tiene_clave: boolean; modelo: string;
+}
+
 export interface ConfigEstado {
   llm?: string; keepa?: string; email?: string; marketplace?: string;
   claves: Record<string, string>;
   ia_provider: string;
+  proveedores_ia: ProveedorIA[];
+  modelos_ia: Record<string, string[]>;
   acos_pct: number; umbral_verde: number; umbral_amarillo: number;
   [k: string]: unknown;
 }

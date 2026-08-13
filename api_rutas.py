@@ -47,6 +47,7 @@ from agents.listing import generar as generar_listing
 from agents.market_intel import market_intel
 from data import demanda_nativa
 from data import jungle_scout
+from data import modelos_ia
 from data import bsr as data_bsr
 from data import helium_productos
 from data import mercado as data_mercado
@@ -74,9 +75,15 @@ class PrefsIn(BaseModel):
 
 
 class ConfigIn(BaseModel):
-    ANTHROPIC_API_KEY: str | None = None
-    OPENAI_API_KEY: str | None = None
-    GEMINI_API_KEY: str | None = None
+    # extra="allow" para no repetir aca la lista de proveedores de IA: las
+    # claves y el modelo elegido de cada uno salen de config.PROVEEDORES_IA
+    # (ANTHROPIC_API_KEY, ANTHROPIC_MODEL, GROK_API_KEY, ...). Agregar un
+    # proveedor no obliga a tocar tambien este modelo. Lo que se acepta de
+    # verdad lo decide config.CLAVES_GUARDABLES: guardar_env() descarta
+    # cualquier cosa fuera de esa whitelist, asi que abrir el modelo no abre
+    # la escritura del .env.
+    model_config = {"extra": "allow"}
+
     IA_PROVIDER: str | None = None
     KEEPA_API_KEY: str | None = None
     JUNGLE_SCOUT_API_KEY: str | None = None
@@ -319,11 +326,31 @@ def prefs_put(p: PrefsIn):
     return prefs.guardar(**p.model_dump(exclude_none=True))
 
 
+def _proveedores_ia():
+    """Los proveedores de IA tal como los necesita el panel: ficha + si ya
+    tiene clave cargada + que modelo esta usando hoy."""
+    return [{"codigo": p["codigo"], "nombre": p["nombre"],
+             "clave_env": p["clave_env"], "modelo_env": p["modelo_env"],
+             "tiene_clave": bool(config.clave_ia(p["codigo"])),
+             "modelo": config.modelo_ia(p["codigo"])}
+            for p in config.PROVEEDORES_IA]
+
+
 @router.get("/config")
 def config_get():
     estado = config.estado_config()
-    claves = {k: config.mask(config.env(k)) for k in config.CLAVES_GUARDABLES}
+    # El modelo elegido NO es un secreto (es "gpt-4o-mini", no una clave) y el
+    # panel lo necesita en claro para que el selector arranque donde debe. Va
+    # el modelo EFECTIVO (el default cuando el usuario nunca eligio uno), que
+    # es el que se usa de verdad al preguntar — no el "" del .env vacio.
+    modelos_env = {p["modelo_env"]: config.modelo_ia(p["codigo"])
+                   for p in config.PROVEEDORES_IA}
+    claves = {k: (config.mask(config.env(k)) if k in config.CLAVES_SECRETAS
+                  else modelos_env.get(k, config.env(k)))
+              for k in config.CLAVES_GUARDABLES}
     return {**estado, "claves": claves, "ia_provider": config.IA_PROVIDER,
+            "proveedores_ia": _proveedores_ia(),
+            "modelos_ia": modelos_ia.disponibles(),
             "acos_pct": config.ACOS_PCT,
             "umbral_verde": config.UMBRAL_VERDE,
             "umbral_amarillo": config.UMBRAL_AMARILLO}
@@ -338,6 +365,14 @@ def config_post(c: ConfigIn):
 def config_conexiones(asin: str | None = None):
     import test_conexiones
     return {"resultados": test_conexiones.verificar_todo(asin or None)}
+
+
+@router.post("/config/modelos")
+def config_modelos_actualizar():
+    """Boton "Actualizar modelos": le pregunta a cada proveedor con clave
+    cargada que modelos ofrece HOY, con la clave del propio usuario. Los que
+    no tienen clave se saltan (no hay a quien preguntarle)."""
+    return modelos_ia.actualizar()
 
 
 @router.get("/demo/ejemplo")

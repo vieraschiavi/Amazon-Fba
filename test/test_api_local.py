@@ -29,6 +29,7 @@ os.environ["DB_PATH"] = os.path.join(_TMP, "test.db")
 from fastapi.testclient import TestClient  # noqa: E402
 
 import app as modapp  # noqa: E402
+import config  # noqa: E402
 from agents import exito, glosario, pricing, tutorial  # noqa: E402
 from agents import recomendador  # noqa: E402
 from agents import portafolio as agente_portafolio  # noqa: E402
@@ -134,8 +135,102 @@ def test_config_get_enmascara():
     assert r.status_code == 200
     d = r.json()
     assert "claves" in d and "umbral_verde" in d
-    for v in d["claves"].values():          # nunca claves en texto plano
-        assert "sk-" not in v or "…" in v or v == ""
+    for k, v in d["claves"].items():        # nunca claves en texto plano
+        if k in config.CLAVES_SECRETAS:
+            assert "sk-" not in v or "…" in v or v == ""
+
+
+def test_config_expone_proveedores_y_modelos():
+    """El panel arma el selector de proveedor/modelo con esto: si el backend
+    deja de mandarlo, la pantalla de Config queda sin nada que elegir."""
+    d = cliente.get("/api/config").json()
+    codigos = [p["codigo"] for p in d["proveedores_ia"]]
+    assert codigos == [p["codigo"] for p in config.PROVEEDORES_IA]
+    for p in d["proveedores_ia"]:
+        assert p["modelo"]                  # nunca vacio: siempre hay default
+        # el selector necesita al menos una opcion, aun sin haber actualizado
+        assert p["modelo"] in d["modelos_ia"][p["codigo"]]
+
+
+def test_config_modelo_elegido_no_va_enmascarado():
+    """El modelo ("gpt-4o-mini") no es un secreto y el selector necesita el
+    valor exacto para arrancar donde debe; la clave SI va enmascarada."""
+    d = cliente.get("/api/config").json()
+    assert d["claves"]["OPENAI_MODEL"] == config.modelo_ia("openai")
+    assert "*" not in d["claves"]["OPENAI_MODEL"]
+
+
+def test_guardar_clave_rige_sin_reiniciar():
+    """REGRESION: guardar una clave desde Config actualizaba el .env y
+    os.environ pero NO las globales del modulo, que se calculaban una sola vez
+    al importar. Resultado: pegabas tu clave, el programa seguia diciendo que
+    no habia clave, y solo tomaba efecto al reiniciar."""
+    previos = {k: getattr(config, k) for k in
+               ("ANTHROPIC_API_KEY", "ANTHROPIC_MODEL", "IA_PROVIDER")}
+    try:
+        config.guardar_env(ANTHROPIC_API_KEY="", IA_PROVIDER="claude")
+        config.ANTHROPIC_API_KEY = ""
+        assert config.ia_provider_activo()[0] is None
+
+        r = cliente.post("/api/config", json={"ANTHROPIC_API_KEY": "sk-ant-de-prueba"})
+        assert r.status_code == 200 and r.json()["ok"] is True
+        prov, clave, _ = config.ia_provider_activo()
+        assert (prov, clave) == ("claude", "sk-ant-de-prueba")
+
+        # y elegir otro modelo tambien rige en el momento (es lo que regula el gasto)
+        cliente.post("/api/config", json={"ANTHROPIC_MODEL": "claude-haiku-4-5-20251001"})
+        assert config.ia_provider_activo()[2] == "claude-haiku-4-5-20251001"
+    finally:
+        config.guardar_env(**{k: (v or "x") for k, v in previos.items()})
+        for k, v in previos.items():
+            setattr(config, k, v)
+
+
+def test_actualizar_modelos_sin_clave_no_inventa():
+    """Sin clave de un proveedor no hay a quien preguntarle: se dice, no se
+    completa con una lista escrita a mano (misma regla que el resto del sistema)."""
+    from data import modelos_ia
+    previos = {p["clave_env"]: getattr(config, p["clave_env"])
+               for p in config.PROVEEDORES_IA}
+    try:
+        for k in previos:
+            setattr(config, k, "")
+        d = cliente.post("/api/config/modelos").json()
+        assert len(d["resultados"]) == len(config.PROVEEDORES_IA)
+        for r in d["resultados"]:
+            assert r["ok"] is False and r["modelos"] == []
+            assert "sin clave" in r["mensaje"]
+        assert modelos_ia.listar("claude", clave="")["ok"] is False
+    finally:
+        for k, v in previos.items():
+            setattr(config, k, v)
+
+
+def test_actualizar_modelos_filtra_los_que_no_son_de_chat():
+    """OpenAI devuelve TODO su catalogo en el mismo endpoint (embeddings,
+    audio, imagenes). En el selector solo tienen que quedar los de chat."""
+    from data import modelos_ia
+    respuesta = {"data": [{"id": "gpt-4o"}, {"id": "gpt-4o-mini"}, {"id": "o3-mini"},
+                          {"id": "text-embedding-3-large"}, {"id": "whisper-1"},
+                          {"id": "dall-e-3"}, {"id": "tts-1"},
+                          {"id": "omni-moderation-latest"}]}
+    orig = modelos_ia._get_json
+    try:
+        modelos_ia._get_json = lambda url, headers, timeout=20: respuesta
+        r = modelos_ia.listar("openai", clave="sk-fake")
+        assert r["ok"] is True
+        assert r["modelos"] == ["gpt-4o", "gpt-4o-mini", "o3-mini"]
+    finally:
+        modelos_ia._get_json = orig
+
+
+def test_cada_proveedor_de_ia_sabe_responder():
+    """Guarda contra sumar un proveedor a la tabla y olvidarse de escribir su
+    funcion: quedaria elegible en el panel y reventaria con KeyError al usarlo."""
+    from agents import asistente
+    for p in config.PROVEEDORES_IA:
+        assert p["codigo"] in asistente._DISPATCH
+        assert p["codigo"] in asistente._NOMBRE_PROV
 
 
 # ---------------------- finanzas (passthrough exacto) ---------------------- #

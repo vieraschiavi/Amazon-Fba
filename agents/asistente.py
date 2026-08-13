@@ -19,6 +19,7 @@ Tres caminos, en orden (mismo patron honesto que agents/listing.py):
 """
 import os
 import sys
+import urllib.error
 
 _RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _RAIZ not in sys.path:
@@ -86,7 +87,7 @@ def _contexto_negocio():
     return "\n".join(lineas) if lineas else "Sin datos de negocio cargados todavia."
 
 
-_NOMBRE_PROV = {"claude": "Claude", "openai": "OpenAI (ChatGPT)", "gemini": "Gemini"}
+_NOMBRE_PROV = {p["codigo"]: p["nombre"] for p in config.PROVEEDORES_IA}
 
 
 def estado():
@@ -191,12 +192,40 @@ def _responder_claude(system, mensajes, clave, modelo, max_tokens):
     return "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
 
 
-def _responder_openai(system, mensajes, clave, modelo, max_tokens):
-    payload = {"model": modelo, "max_tokens": max_tokens,
-               "messages": [{"role": "system", "content": system}] + mensajes}
-    data = _http_json("https://api.openai.com/v1/chat/completions", payload,
-                      {"Authorization": "Bearer " + clave})
+def _responder_estilo_openai(url, system, mensajes, clave, modelo, max_tokens):
+    """Formato chat/completions de OpenAI. Lo hablan tambien xAI (Grok) y
+    DeepSeek, asi que los tres comparten esta funcion en vez de tener tres
+    copias iguales con otra URL."""
+    cuerpo = {"model": modelo,
+              "messages": [{"role": "system", "content": system}] + mensajes}
+    cab = {"Authorization": "Bearer " + clave}
+    try:
+        data = _http_json(url, {**cuerpo, "max_tokens": max_tokens}, cab)
+    except urllib.error.HTTPError as e:
+        # Los modelos de razonamiento (serie o1/o3 en adelante) rechazan
+        # max_tokens y exigen max_completion_tokens. Como ahora el usuario
+        # elige el modelo de una lista real, puede perfectamente elegir uno de
+        # esos: se reintenta con el nombre nuevo en vez de dejarlo sin
+        # responder. Cualquier otro error sube como antes.
+        if e.code != 400:
+            raise
+        data = _http_json(url, {**cuerpo, "max_completion_tokens": max_tokens}, cab)
     return (data.get("choices") or [{}])[0].get("message", {}).get("content", "")
+
+
+def _responder_openai(system, mensajes, clave, modelo, max_tokens):
+    return _responder_estilo_openai("https://api.openai.com/v1/chat/completions",
+                                    system, mensajes, clave, modelo, max_tokens)
+
+
+def _responder_grok(system, mensajes, clave, modelo, max_tokens):
+    return _responder_estilo_openai("https://api.x.ai/v1/chat/completions",
+                                    system, mensajes, clave, modelo, max_tokens)
+
+
+def _responder_deepseek(system, mensajes, clave, modelo, max_tokens):
+    return _responder_estilo_openai("https://api.deepseek.com/chat/completions",
+                                    system, mensajes, clave, modelo, max_tokens)
 
 
 def _responder_gemini(system, mensajes, clave, modelo, max_tokens):
@@ -216,7 +245,8 @@ def _responder_gemini(system, mensajes, clave, modelo, max_tokens):
 
 
 _DISPATCH = {"claude": _responder_claude, "openai": _responder_openai,
-             "gemini": _responder_gemini}
+             "gemini": _responder_gemini, "grok": _responder_grok,
+             "deepseek": _responder_deepseek}
 
 
 def responder(pregunta, historial=None, max_tokens=1400):
