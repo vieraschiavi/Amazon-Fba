@@ -10,7 +10,7 @@
 // Requiere ademas RESEND_API_KEY (api/_email.js) y el almacen (api/_demo.js)
 // -- si falta cualquiera de los dos, no manda nada y no rompe el cron.
 import { listaDemos, marcarRecordatorioEnviado, yaComproPrevio } from "./_demo.js";
-import { enviarEmail, emailConfigurado } from "./_email.js";
+import { enviarEmail, emailConfigurado, escaparHtml } from "./_email.js";
 import { almacenConfigurado } from "./_almacen.js";
 
 // La demo dura 7 dias (168 h; ver DIAS_DEMO en core/licencia.py y
@@ -20,7 +20,13 @@ const DIA_RECORDATORIO_DESDE_HORAS = 136; // ~dia 6: queda ~1 dia de demo
 const DIA_RECORDATORIO_HASTA_HORAS = 160; // no seguir mandando si el cron se salteo un dia
 
 function html(nombre) {
-  const saludo = nombre ? `Hola ${nombre},` : "Hola,";
+  // nombre viene de POST /api/creditos (registro de demo): CUALQUIERA puede
+  // registrar una demo con el email de OTRA persona y un "nombre" que en
+  // realidad es HTML/links (ver escaparHtml en _email.js) -- un dia despues,
+  // el cron manda ese HTML dentro de un mail real, firmado por el dominio
+  // legitimo. Se escapa antes de interpolar.
+  const nombreSeguro = escaparHtml(nombre);
+  const saludo = nombreSeguro ? `Hola ${nombreSeguro},` : "Hola,";
   return `
     <p>${saludo}</p>
     <p>Tu demo gratis de <b>MV FBA IA</b> vence <b>mañana</b> — todavía no vimos que hayas activado una licencia.</p>
