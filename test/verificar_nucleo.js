@@ -62,6 +62,20 @@ got.vendedores = {
   })),
 };
 
+// --- demanda / nichos sin API: la app movil trae las sugerencias de Amazon
+// con su internet, pero la PUNTUACION corre offline y tiene que dar EXACTO lo
+// mismo que la PC (si no, el mismo nicho mostraria demanda distinta segun donde
+// lo mires). Se parte del MISMO `hallazgos` fijo que uso Python (sin red). ---
+{
+  const dem = MV.analizarSugerencias(IN.demanda.seed, IN.demanda.hallazgos);
+  const est = MV.estimarDemanda(IN.demanda.seed, dem.keywords);
+  got.demanda = {
+    keywords: dem.keywords, nichos: dem.nichos,
+    amplitud: est.amplitud, top_interes: est.top_interes,
+    seed_directo: est.seed_directo, demanda_score: est.demanda_score, nivel: est.nivel,
+  };
+}
+
 const diffs = [];
 function walk(a, b, p) {
   if (a && b && typeof a === "object" && typeof b === "object" && !Array.isArray(a)) {
@@ -88,4 +102,5 @@ if (diffs.length) {
   process.exit(1);
 }
 console.log("OK: motor JS identico al motor Python en pricing, ganancias, exito, "
-  + "dedicacion, caja, curva BSR, parseo de BSR, potencial y vendedores.");
+  + "dedicacion, caja, curva BSR, parseo de BSR, potencial, vendedores y "
+  + "demanda/nichos sin API.");

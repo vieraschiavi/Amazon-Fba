@@ -139,7 +139,44 @@
         "precio": 25
       }
     ],
-    "vendedores": "B08XYZ1234  Bamboo board  #1,234 in Home & Kitchen   $24.99\nB07ABC5678  Board pro     #5,600 in Home & Kitchen   $19.99\nB09QWE1111  Eco bundle    #18,900 in Home & Kitchen  $31.50\nB01NOBSR99  Sin rank                                 $22.00"
+    "vendedores": "B08XYZ1234  Bamboo board  #1,234 in Home & Kitchen   $24.99\nB07ABC5678  Board pro     #5,600 in Home & Kitchen   $19.99\nB09QWE1111  Eco bundle    #18,900 in Home & Kitchen  $31.50\nB01NOBSR99  Sin rank                                 $22.00",
+    "demanda": {
+      "seed": "dog leash",
+      "hallazgos": {
+        "dog leash": {
+          "mejor_rank": 1,
+          "apariciones": 3
+        },
+        "dog leash for large dogs": {
+          "mejor_rank": 1,
+          "apariciones": 2
+        },
+        "dog leash retractable": {
+          "mejor_rank": 2,
+          "apariciones": 2
+        },
+        "dog leash for small dogs": {
+          "mejor_rank": 3,
+          "apariciones": 1
+        },
+        "dog leash hook": {
+          "mejor_rank": 2,
+          "apariciones": 1
+        },
+        "dog leash and collar set": {
+          "mejor_rank": 4,
+          "apariciones": 1
+        },
+        "dog leash holder for wall": {
+          "mejor_rank": 5,
+          "apariciones": 1
+        },
+        "dog harness": {
+          "mejor_rank": 7,
+          "apariciones": 1
+        }
+      }
+    }
   },
   "esperado": {
     "pricing": {
@@ -846,6 +883,101 @@
           "potencial_parcial": true
         }
       ]
+    },
+    "demanda": {
+      "keywords": [
+        {
+          "keyword": "dog leash",
+          "interes": 100,
+          "mejor_rank": 1,
+          "apariciones": 3
+        },
+        {
+          "keyword": "dog leash for large dogs",
+          "interes": 90,
+          "mejor_rank": 1,
+          "apariciones": 2
+        },
+        {
+          "keyword": "dog leash retractable",
+          "interes": 83,
+          "mejor_rank": 2,
+          "apariciones": 2
+        },
+        {
+          "keyword": "dog leash hook",
+          "interes": 73,
+          "mejor_rank": 2,
+          "apariciones": 1
+        },
+        {
+          "keyword": "dog leash for small dogs",
+          "interes": 66,
+          "mejor_rank": 3,
+          "apariciones": 1
+        },
+        {
+          "keyword": "dog leash and collar set",
+          "interes": 59,
+          "mejor_rank": 4,
+          "apariciones": 1
+        },
+        {
+          "keyword": "dog leash holder for wall",
+          "interes": 52,
+          "mejor_rank": 5,
+          "apariciones": 1
+        },
+        {
+          "keyword": "dog harness",
+          "interes": 38,
+          "mejor_rank": 7,
+          "apariciones": 1
+        }
+      ],
+      "nichos": [
+        {
+          "nicho": "dog leash for",
+          "keywords": [
+            "dog leash for large dogs",
+            "dog leash for small dogs"
+          ],
+          "interes_max": 90
+        },
+        {
+          "nicho": "dog leash retractable",
+          "keywords": [
+            "dog leash retractable"
+          ],
+          "interes_max": 83
+        },
+        {
+          "nicho": "dog leash hook",
+          "keywords": [
+            "dog leash hook"
+          ],
+          "interes_max": 73
+        },
+        {
+          "nicho": "dog leash and",
+          "keywords": [
+            "dog leash and collar set"
+          ],
+          "interes_max": 59
+        },
+        {
+          "nicho": "dog leash holder",
+          "keywords": [
+            "dog leash holder for wall"
+          ],
+          "interes_max": 52
+        }
+      ],
+      "amplitud": 8,
+      "top_interes": 100,
+      "seed_directo": true,
+      "demanda_score": 52,
+      "nivel": "BAJA"
     }
   }
 }

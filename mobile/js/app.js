@@ -524,13 +524,42 @@ async function mercadoRealKeepa(keyword, min, max) {
   if (!data || !data.ok || !(data.productos || []).length) return null;
   return resumenComp(data.productos);
 }
-async function keywordsAmazon(seed) {
-  // keywords reales via autocomplete publico de Amazon (necesita internet).
+async function sugerenciasAmazon(prefix) {
+  // Una consulta al autocompletado publico de Amazon (gratis, sin Keepa).
   const url = "https://completion.amazon.com/api/2017/suggestions?limit=11&prefix="
-    + encodeURIComponent(seed) + "&alias=aps&site-variant=desktop&mid=ATVPDKIKX0DER";
+    + encodeURIComponent(prefix) + "&alias=aps&site-variant=desktop&mid=ATVPDKIKX0DER";
   const txt = await pedirHTTP("GET", url, null, { Accept: "application/json" });
   const data = JSON.parse(txt);
-  return (data.suggestions || []).map((s) => s.value).filter(Boolean);
+  return (data.suggestions || [])
+    .filter((s) => s.type === "KEYWORD" && s.value)
+    .map((s) => s.value.trim().toLowerCase());
+}
+
+// Descubrimiento de keywords + demanda SIN API, igual que la PC
+// (data/motor_propio.expandir): seed directo (ranking) + seed+" a".."z"
+// (long-tail). Devuelve el mapa `hallazgos` {keyword: {mejor_rank, apariciones}}
+// que MV.analizarSugerencias/estimarDemanda puntuan -- la MISMA puntuacion que
+// el motor Python (paridad en test/verificar_nucleo.js). La red la pone el
+// celular; el analisis corre local. Concurrencia acotada para no castigar a
+// Amazon ni al telefono.
+async function investigarAmazon(seed) {
+  const ABC = "abcdefghijklmnopqrstuvwxyz".split("");
+  const prefijos = [seed].concat(ABC.map((l) => seed + " " + l));
+  const hallazgos = {};
+  function registrar(kw, rank) {
+    const d = hallazgos[kw] || (hallazgos[kw] = { mejor_rank: rank, apariciones: 0 });
+    d.apariciones += 1;
+    if (rank < d.mejor_rank) d.mejor_rank = rank;
+  }
+  const LOTE = 5; // 5 consultas a la vez: rapido en el cel, amable con Amazon
+  for (let i = 0; i < prefijos.length; i += LOTE) {
+    const grupo = prefijos.slice(i, i + LOTE);
+    const listas = await Promise.all(grupo.map((p) =>
+      sugerenciasAmazon(p).catch(() => [])));
+    listas.forEach((lista) =>
+      lista.forEach((kw, idx) => registrar(kw, idx + 1)));
+  }
+  return hallazgos;
 }
 $("#form-mercado").addEventListener("submit", async (ev) => {
   ev.preventDefault();
@@ -587,19 +616,35 @@ $("#form-mercado").addEventListener("submit", async (ev) => {
     <div id="kw-reales"></div>`;
   cont.innerHTML = html;
 
-  // keywords reales de Amazon: solo si hay internet; nunca bloquea lo de arriba.
+  // Demanda + nichos SIN API (autocompletado de Amazon): solo si hay internet;
+  // nunca bloquea el analisis de arriba. La misma puntuacion que la PC.
   const kwEl = $("#kw-reales");
-  kwEl.innerHTML = `<h2 class="titulo-seccion">Keywords reales de Amazon</h2><div class="card lista-vacia">Buscando en Amazon…</div>`;
+  kwEl.innerHTML = `<h2 class="titulo-seccion">Demanda y nichos (Amazon, gratis)</h2><div class="card lista-vacia">Explorando el autocompletado de Amazon…</div>`;
   try {
-    const kws = await keywordsAmazon(keyword);
-    if (kws.length) {
-      kwEl.innerHTML = `<h2 class="titulo-seccion">Keywords reales de Amazon</h2>
-        <div class="card"><div class="chips">${kws.map((k) => `<span class="chip">${escapar(k)}</span>`).join("")}</div>
-        <p class="ayuda-config">Del autocompletado publico de Amazon (lo que la gente busca de verdad).</p></div>`;
-    } else { kwEl.innerHTML = ""; }
+    const hallazgos = await investigarAmazon(keyword);
+    const analisis = MV.analizarSugerencias(keyword, hallazgos);
+    const dem = MV.estimarDemanda(keyword, analisis.keywords);
+    if (dem.ok) {
+      const tonoDem = { "MUY ALTA": "verde", ALTA: "verde", MEDIA: "amarillo", BAJA: "amarillo", NULA: "rojo" }[dem.nivel];
+      const topKw = analisis.keywords.slice(0, 12);
+      const topNichos = analisis.nichos.slice(0, 6);
+      kwEl.innerHTML = `<h2 class="titulo-seccion">Demanda y nichos (Amazon, gratis)</h2>
+        <div class="card">
+          <span class="badge ${tonoDem}"><span class="dot"></span>Demanda ${dem.nivel} — ${dem.demanda_score}/100</span>
+          <p style="font-size:13px;color:var(--slate);margin:8px 0">
+            <b>${dem.amplitud}</b> variantes reales que la gente busca en Amazon${dem.seed_directo ? " · el término exacto aparece en el autocompletado" : ""}.</p>
+          <div class="chips">${topKw.map((k) => `<span class="chip">${escapar(k.keyword)} <b style="opacity:.6">${k.interes}</b></span>`).join("")}</div>
+          ${topNichos.length ? `<p style="font-size:12px;color:var(--slate);margin:10px 0 4px"><b>Sub-nichos candidatos</b></p>
+          <div class="chips">${topNichos.map((n) => `<span class="chip">${escapar(n.nicho)} <b style="opacity:.6">${n.keywords.length}</b></span>`).join("")}</div>` : ""}
+          <p class="ayuda-config">Señal de demanda <b>relativa</b> (amplitud de autocompletado + ranking), gratis y sin Keepa. Sirve para comparar nichos entre sí, <b>no</b> es volumen absoluto de ventas: para el número fino de unidades/mes hace falta Keepa (BSR→ventas) o un CSV de Cerebro.</p>
+        </div>`;
+    } else {
+      kwEl.innerHTML = `<h2 class="titulo-seccion">Demanda y nichos (Amazon, gratis)</h2>
+        <div class="card lista-vacia">Amazon no devolvió sugerencias para «${escapar(keyword)}». Probá otro término más común (el sistema no inventa keywords).</div>`;
+    }
   } catch (e) {
-    kwEl.innerHTML = `<h2 class="titulo-seccion">Keywords reales de Amazon</h2>
-      <div class="card lista-vacia">Sin internet: mostramos el analisis del motor local. Conectá el celular a datos/WiFi para traer las keywords reales de Amazon.</div>`;
+    kwEl.innerHTML = `<h2 class="titulo-seccion">Demanda y nichos (Amazon, gratis)</h2>
+      <div class="card lista-vacia">Sin internet: mostramos el análisis del motor local. Conectá el celular a datos/WiFi para traer la demanda real de Amazon.</div>`;
   }
 });
 

@@ -22,6 +22,8 @@ from agents.dedicacion import estimar
 from agents.capital_planner import proyeccion_realista
 from data import bsr as bsr_mod
 from data.mercado import potencial_producto, vendedores_principales
+from data.motor_propio import analizar_hallazgos
+from data.demanda_nativa import _score as _score_demanda, _nivel as _nivel_demanda
 
 IN = {
     "pricing": {"prod": {"costo": 2.1, "flete": 0.8, "arancel_pct": 6, "prep": 0.5},
@@ -70,6 +72,25 @@ IN = {
                    "B07ABC5678  Board pro     #5,600 in Home & Kitchen   $19.99\n"
                    "B09QWE1111  Eco bundle    #18,900 in Home & Kitchen  $31.50\n"
                    "B01NOBSR99  Sin rank                                 $22.00"),
+    # Demanda/nichos sin API: la app movil trae las sugerencias de Amazon con
+    # SU internet, pero la PUNTUACION (score por keyword, agrupacion en nichos,
+    # score de demanda relativa) tiene que dar identico a la PC. `hallazgos` es
+    # lo que motor_propio.expandir() acumula (keyword -> mejor_rank+apariciones);
+    # aca se fija a mano un caso realista para que la prueba sea deterministica
+    # (sin pegarle a la red).
+    "demanda": {
+        "seed": "dog leash",
+        "hallazgos": {
+            "dog leash": {"mejor_rank": 1, "apariciones": 3},
+            "dog leash for large dogs": {"mejor_rank": 1, "apariciones": 2},
+            "dog leash retractable": {"mejor_rank": 2, "apariciones": 2},
+            "dog leash for small dogs": {"mejor_rank": 3, "apariciones": 1},
+            "dog leash hook": {"mejor_rank": 2, "apariciones": 1},
+            "dog leash and collar set": {"mejor_rank": 4, "apariciones": 1},
+            "dog leash holder for wall": {"mejor_rank": 5, "apariciones": 1},
+            "dog harness": {"mejor_rank": 7, "apariciones": 1},
+        },
+    },
 }
 
 esperado = {}
@@ -116,6 +137,24 @@ esperado["vendedores"] = {
                                      "ingreso_estim_mes", "potencial",
                                      "potencial_parcial")}
                   for p in _vend["productos"]],
+}
+
+# --- demanda / nichos sin API (la app movil replica la PUNTUACION offline) ---
+_seed = IN["demanda"]["seed"]
+_kws, _nichos = analizar_hallazgos(_seed, IN["demanda"]["hallazgos"])
+_amplitud = len(_kws)
+_top_interes = _kws[0]["interes"] if _kws else 0
+_seed_l = _seed.lower()
+_seed_directo = any(k["keyword"].lower() == _seed_l or k["keyword"].lower().startswith(_seed_l)
+                    for k in _kws[:15])
+esperado["demanda"] = {
+    "keywords": _kws,
+    "nichos": _nichos,
+    "amplitud": _amplitud,
+    "top_interes": _top_interes,
+    "seed_directo": _seed_directo,
+    "demanda_score": _score_demanda(_amplitud, _top_interes, _seed_directo),
+    "nivel": _nivel_demanda(_amplitud),
 }
 
 destino = os.path.join(_RAIZ, "test", "nucleo_referencia.json")

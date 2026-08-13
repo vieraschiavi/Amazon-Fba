@@ -78,9 +78,20 @@ const INVENTARIO = {
       "fmtNum(lo.unidades_compradas)", "fmtNum(lo.meses_para_venderlo)",
       're.mes_primer_cobro || "—"', "escapar(r.caveat)"],
   },
-  "mobile/js/app.js#keywords-amazon": {
-    motivo: "kws.map(k => ...escapar(k)...): cada keyword de Amazon pasa por escapar() adentro del map",
-    ok: ['kws.map((k) => `<span class="chip">${escapar(k)}</span>`).join("")'],
+  "mobile/js/app.js#demanda-nichos": {
+    motivo: "demanda/nichos sin API (autocompletado Amazon): tonoDem y dem.nivel son "
+      + "enums fijos del motor (verde/amarillo/rojo, MUY ALTA..NULA); demanda_score y "
+      + "amplitud son numeros calculados por MV (0-100 y un length); el ternario de "
+      + "seed_directo interpola texto literal de este archivo; en los dos .map cada "
+      + "keyword/nicho pasa por escapar() y los b interpolan numeros del motor (interes, length)",
+    ok: ["tonoDem", "dem.nivel", "dem.demanda_score", "dem.amplitud",
+      'dem.seed_directo ? " · el término exacto aparece en el autocompletado" : ""',
+      'topKw.map((k) => `<span class="chip">${escapar(k.keyword)} <b style="opacity:.6">${k.interes}</b></span>`).join("")',
+      'topNichos.map((n) => `<span class="chip">${escapar(n.nicho)} <b style="opacity:.6">${n.keywords.length}</b></span>`).join("")'],
+  },
+  "mobile/js/app.js#demanda-sin-resultados": {
+    motivo: "el seed que escribio el usuario, escapado, dentro del aviso de 'sin sugerencias'",
+    ok: ["escapar(keyword)"],
   },
   "mobile/js/app.js#conteo-config": {
     motivo: "conteos numericos propios (cantidad de productos/ventas guardadas en este telefono)",

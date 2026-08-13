@@ -518,6 +518,47 @@ def test_demanda_comparar_demo():
     assert scores == sorted(scores, reverse=True)
 
 
+def test_analizar_hallazgos_es_la_parte_pura_de_investigar():
+    """analizar_hallazgos() (la funcion que la app Android porta a JS para
+    puntuar demanda offline) tiene que ser EXACTAMENTE la parte de puntuacion
+    que usa investigar() -- no una copia que pueda divergir. Se fija un
+    `hallazgos` a mano (sin red) y se compara pieza por pieza."""
+    hallazgos = {
+        "dog leash": {"mejor_rank": 1, "apariciones": 3},
+        "dog leash retractable": {"mejor_rank": 2, "apariciones": 2},
+        "dog leash for small dogs": {"mejor_rank": 3, "apariciones": 1},
+        "dog harness": {"mejor_rank": 7, "apariciones": 1},
+    }
+    kws, nichos = motor_propio.analizar_hallazgos("dog leash", hallazgos)
+
+    # keywords ordenadas desc por interes; el seed exacto (rank 1, mas
+    # apariciones) tiene que quedar primero y con el interes mas alto
+    assert kws[0]["keyword"] == "dog leash"
+    assert kws[0]["interes"] == 100
+    assert [k["interes"] for k in kws] == sorted((k["interes"] for k in kws), reverse=True)
+    # cada interes en rango y con la forma esperada
+    for k in kws:
+        assert 0 <= k["interes"] <= 100
+        assert set(k.keys()) == {"keyword", "interes", "mejor_rank", "apariciones"}
+
+    # nichos: "dog harness" no empieza con "dog leash", asi que NO agrupa como
+    # sub-nicho del seed (queda fuera); los que si empiezan, agrupan por el
+    # modificador siguiente
+    etiquetas = {n["nicho"] for n in nichos}
+    assert "dog leash retractable" in etiquetas
+    assert all(n["nicho"].startswith("dog leash") for n in nichos)
+
+    # y lo central: investigar(demo) arma sus keywords/nichos con ESTA funcion
+    # (misma forma de salida), no con una logica aparte
+    demo = motor_propio.investigar("bamboo kitchen", demo=True)
+    kws_demo, nichos_demo = motor_propio.analizar_hallazgos(
+        "bamboo kitchen",
+        {k["keyword"]: {"mejor_rank": k["mejor_rank"], "apariciones": k["apariciones"]}
+         for k in demo["keywords"]})
+    # las claves de cada keyword coinciden (contrato estable para el port JS)
+    assert set(kws_demo[0].keys()) == {"keyword", "interes", "mejor_rank", "apariciones"}
+
+
 def test_cerebro_acepta_jungle_scout_csv(tmp_path=None):
     # el parser de CSV debe aceptar columnas de Jungle Scout, no solo Helium 10
     from data.cerebro import parse_cerebro_csv
