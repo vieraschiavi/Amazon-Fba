@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 app.py — API FastAPI de MV FBA IA (puente con n8n).
 Endpoints: /health, /webhook/message, /webhook/sale, /run/research, /dashboard,

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 core/notify.py — Alertas por email. Sin SMTP_USER/PASS -> DRY-RUN (registra, no envia).
 Toda alerta queda en la tabla alerts_outbox. ALERT_TO por defecto vieraschiavi@gmail.com.

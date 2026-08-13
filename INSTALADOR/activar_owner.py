@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 activar_owner.py — Deja una instalacion YA HECHA de MV FBA IA en edicion OWNER
 (plan Pro, sin limite de dias, sin pantalla de activacion), sin recompilar nada.

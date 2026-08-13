@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 config.py — Configuracion central del sistema FBA. Lee .env (sin pisar el entorno).
 Sin claves -> modo offline / dry-run (no inventa datos, no envia mails).

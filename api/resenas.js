@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/resenas.js — Reseñas de compradores para la landing (puntaje + texto).
 //
 // GET es publico (sin licencia ni header de app): la landing la llama para

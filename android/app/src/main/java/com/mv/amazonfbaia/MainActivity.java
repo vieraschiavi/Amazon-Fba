@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 package com.mv.amazonfbaia;
 
 import android.app.Activity;

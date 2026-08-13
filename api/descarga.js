@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/descarga.js — Descarga real del instalador de PC, la version portable
 // sin instalador, y el APK Android.
 //

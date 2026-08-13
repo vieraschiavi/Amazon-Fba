@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 data/keepa.py — Fuente programatica de mercado (Keepa API) para el sistema FBA.
 

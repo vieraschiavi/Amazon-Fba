@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/ventas.js — Reporte de atribucion: cuantas ventas y cuanto facturo cada
 // plan/canal (utm_source), para comparar contra el esfuerzo de redes
 // sociales que se invierte en cada uno de los proyectos.

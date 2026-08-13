@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 data/cerebro.py — Fuente de keywords estilo Helium 10 Cerebro para el sistema FBA.
 

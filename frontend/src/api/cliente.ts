@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // Cliente HTTP del SPA. Base relativa: en produccion FastAPI sirve el SPA y
 // la API desde el mismo origen (127.0.0.1:puerto); en dev Vite proxya a 8000.
 export class ErrorApi extends Error {

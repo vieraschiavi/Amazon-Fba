@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 data/modelos_ia.py — Lista los modelos disponibles de cada proveedor de IA
 usando la clave BYOK del usuario.

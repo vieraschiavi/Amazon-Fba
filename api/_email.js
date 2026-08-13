@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/_email.js — Cliente minimo (fetch puro, sin SDK) para Resend, usado
 // SOLO para el recordatorio de "tu demo vence mañana" (api/cron-recordatorio-demo.js).
 // El prefijo "_" hace que Vercel NO trate este archivo como una ruta.

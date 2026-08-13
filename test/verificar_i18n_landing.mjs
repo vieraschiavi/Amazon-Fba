@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 /* verificar_i18n_landing.mjs — Test de regresion del i18n de la landing.
  *
  * landing/index.html es trilingüe: cada texto vive en un data-t="clave" y el

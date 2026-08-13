@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // Layout SaaS: sidebar de navegacion agrupada + topbar con idioma, producto
 // activo y badge de licencia/demo.
 import { ReactNode, useEffect } from "react";

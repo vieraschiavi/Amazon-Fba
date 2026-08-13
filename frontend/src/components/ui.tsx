@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // Componentes atomicos del design system (spec visual: mobile/css/estilos.css
 // y el panel historico — navy/verde, KPI cards, badges de semaforo).
 import { useT } from "../i18n";

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 scripts/generar_video.py — Renderiza el video de 60s a un .mp4 compartible.
 

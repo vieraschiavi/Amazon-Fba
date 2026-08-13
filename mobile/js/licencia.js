@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // licencia.js — Registro y demo de 7 dias por usuario (PWA / Android / iOS).
 //
 // Nombre comercial: "MV FBA IA" (antes "MV Amazon FBA IA"; se saco "Amazon"

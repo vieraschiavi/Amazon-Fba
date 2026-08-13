@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/creditos.js — Deja que un cliente con licencia vea su saldo de
 // creditos de IA (ver api/_creditosia.js). Requiere {email, clave} de una
 // licencia REAL -- nunca expone el saldo de otra persona.

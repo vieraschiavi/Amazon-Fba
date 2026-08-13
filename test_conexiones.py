@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 test_conexiones.py — Verifica las conexiones del README y reporta verde/rojo.
 Chequea: (1) Keepa, (2) Anthropic/Claude, (3) SMTP/Gmail, (4) CSV de Cerebro.

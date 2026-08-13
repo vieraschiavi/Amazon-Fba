@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 import { useState } from "react";
 import { api, mensajeError } from "../api/cliente";
 import { GraficoLineas } from "../components/Graficos";

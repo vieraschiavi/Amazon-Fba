@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 data/jungle_scout.py — Fuente programatica de mercado via la API de Jungle Scout.
 

@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 /* verificar_owner_github.mjs — La licencia de dueño se autoriza probando
  * acceso al repo PRIVADO, y no de otra forma.
  *

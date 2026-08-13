@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 agents/traductor.py — Traduce una keyword/seed al idioma de un marketplace de
 Amazon, para investigar nichos en otros paises SIN escribir a mano en cada idioma.

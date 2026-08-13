@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 import { useEffect, useState } from "react";
 import { api, mensajeError, qs } from "../api/cliente";
 import type { ConfigEstado, ProveedorIA } from "../api/tipos";

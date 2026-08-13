@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/_revocacion.js — Revocacion real de licencia al reembolsar (limitacion
 // que habia quedado documentada como pendiente en api/reembolso.js).
 //

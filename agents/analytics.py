@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 agents/analytics.py — Registro de ventas, KPIs y mix (FBA).
 registrar_venta(...) -> guarda en orders + dispara alerta por email.

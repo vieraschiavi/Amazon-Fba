@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 /* verificar_escapar.js — Test de regresion de escapar() (mobile/js/seguro.js).
  *
  * escapar() es el unico punto por el que pasa un titulo de Amazon (Keepa/

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 styles.py — Sistema de diseño de MV FBA IA (cockpit BI).
 Paleta navy #1e3a8a + verde #8bc34a, tipografia Inter/Segoe UI, KPI cards con

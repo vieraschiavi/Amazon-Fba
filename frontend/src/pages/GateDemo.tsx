@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // Gate de demo/licencia. La verdad vive SERVER-SIDE (SQLite via
 // /api/licencia): el countdown usa dias_restantes del server, nunca el reloj
 // del cliente, y cerrar/abrir la app no resetea nada.

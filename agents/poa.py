@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 agents/poa.py — Generador de Plan de Accion (POA) para suspensiones de Amazon.
 

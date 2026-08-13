@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 import SwiftUI
 
 // MVAmazonFBAIAApp — punto de entrada de la app iOS.

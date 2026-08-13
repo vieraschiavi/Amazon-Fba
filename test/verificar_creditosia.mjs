@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 /* verificar_creditosia.mjs — Test de regresion de api/_creditosia.js contra
  * un servidor KV real (mock_kv_servidor.mjs emula la API REST de Upstash).
  *

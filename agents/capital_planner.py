@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 agents/capital_planner.py — Proyeccion realista de caja (FBA).
 Modela lead time, DD+7 (cobro retrasado), sell-through parcial, devoluciones,

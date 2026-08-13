@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/_licencia.js — Formula HMAC de licencia, compartida por licencia.js,
 // validar.js e ia.js (antes estaba triplicada; con la cuota de IA en juego,
 // un desvio entre copias podria dejar pasar a alguien sin licencia real).

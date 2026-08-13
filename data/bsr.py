@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 data/bsr.py — Estimacion de ventas a partir del BSR (Best Sellers Rank).
 

@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 /* verificar_sin_innerhtml_crudo.mjs — Barre TODO el codigo propio (mobile/,
  * landing/ -- excluye landing/app/ por ser build output de mobile/, y
  * cualquier vendor/node_modules) buscando asignaciones a innerHTML y, dentro

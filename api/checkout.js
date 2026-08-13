@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/checkout.js — Crea un pago para un plan, en MercadoPago (Checkout Pro,
 // cobra en pesos uruguayos pese a mostrar USD) o PayPal (cobra USD real, sin
 // conversion para el comprador — ver la aclaracion de moneda en la landing).

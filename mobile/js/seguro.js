@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 /* seguro.js — Unica funcion de escape de HTML de la PWA.
    Todo dato que llega de Amazon (Keepa/Jungle Scout), del usuario o de la
    propia API y termina insertado en el DOM via innerHTML (contenido O

@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/licencia.js — Verifica un pago de MercadoPago y emite la licencia.
 //
 // La página /gracias.html llama aquí con el payment_id que devuelve MercadoPago.

@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/_owner_github.js — Autoriza el build OWNER probando acceso al repo privado.
 //
 // POR QUE ASI

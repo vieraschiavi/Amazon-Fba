@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // Store global: idioma, licencia, prefs. Se hidrata del server al arrancar
 // (las prefs viven en SQLite via /api/prefs — el puerto puede variar entre
 // arranques, asi que localStorage no es confiable en el desktop).

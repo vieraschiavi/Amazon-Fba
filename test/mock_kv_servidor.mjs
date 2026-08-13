@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 /* mock_kv_servidor.mjs — Emulador MINIMO de la API REST de Upstash/Vercel KV,
  * para que los tests ejerciten api/_almacen.js, api/_seguridad.js y
  * api/_creditosia.js TAL CUAL corren en produccion (mismo fetch, mismo

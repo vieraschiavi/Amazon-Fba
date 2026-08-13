@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/_resenas.js — Reseñas de compradores REALES (puntaje 1-5 + comentario),
 // guardadas en el mismo almacen (Vercel KV/Upstash) que ya usa el saldo de
 // creditos y el registro de demos. Una reseña por payment_id (idempotente):

@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // Comparador de nichos por demanda relativa (gratis, autocompletado Amazon).
 // Reutilizado en Mercado y Recomendador — misma logica, un solo componente.
 import { useState } from "react";

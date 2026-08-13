@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """generar_referencia.py — Regenera test/nucleo_referencia.json desde el motor
 Python (agents/*). Corre estos casos y guarda su salida como "verdad" contra la
 que se valida el port JavaScript (test/verificar_nucleo.js).

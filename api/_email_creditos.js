@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/_email_creditos.js — Email post-compra con el saldo de creditos de IA:
 // "tenes N creditos, asi se usan". Best-effort sobre api/_email.js (Resend):
 // sin RESEND_API_KEY configurada es un no-op, y un fallo de envio NUNCA

@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 /* verificar_sw_precache.mjs — El service worker tiene que precachear TODO lo
  * que index.html carga.
  *

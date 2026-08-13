@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/_release.js — Resuelve la URL real de descarga de un asset de un
 // Release de GitHub. El repo es PRIVADO: el link "publico" de un Release
 // (github.com/.../releases/download/...) le da 404 a cualquier visitante

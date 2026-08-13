@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/paypal-retorno.js — El comprador vuelve aca desde PayPal despues de
 // aprobar (es el "return_url" de la orden creada en api/checkout.js).
 //

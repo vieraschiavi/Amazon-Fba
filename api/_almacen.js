@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/_almacen.js — Cliente minimo (fetch puro, sin SDK) para Vercel KV /
 // Upstash Redis via su API REST. El prefijo "_" hace que Vercel NO trate
 // este archivo como una ruta.

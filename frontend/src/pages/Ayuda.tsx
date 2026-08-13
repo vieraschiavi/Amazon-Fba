@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 import { useEffect, useState } from "react";
 import { api, qs } from "../api/cliente";
 import type { SeccionTutorial } from "../api/tipos";

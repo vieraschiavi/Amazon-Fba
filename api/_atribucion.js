@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/_atribucion.js — De donde vino cada venta (que red social/campana),
 // para poder comparar contra el esfuerzo de marketing que se invierte en cada
 // uno de los 4 proyectos. Sin esto no habia forma de saber si una venta vino

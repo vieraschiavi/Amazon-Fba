@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/_creditosia.js — Saldo de creditos de IA compartida (el asistente usa
 // la clave de Claude del negocio, no la del cliente). Reemplaza el modelo
 // anterior de cuota mensual fija (api/_cuotaia.js, plan "Pro IA" $34/mes que

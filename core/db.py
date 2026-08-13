@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# © 2026 Martín Viera. Todos los derechos reservados.
 """
 core/db.py — SQLite del sistema FBA. Esquema segun DOCUMENTACION.md.
 Helpers: init(reset=False), insert(table, **cols), rows(sql, params=()), connect().

@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 /* verificar_keystore_android.mjs — El keystore de firma de Android NUNCA
  * viaja en el repo, ni el .gradle ni el .sh tienen una contraseña de repuesto.
  *

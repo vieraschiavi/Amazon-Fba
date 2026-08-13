@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 /* verificar_instalador.mjs — El instalador de Windows tiene que ser
  * distribuible tal cual: sin documentacion interna adentro, con metadatos
  * profesionales, dejando elegir carpeta y desinstalando sin dejar residuos.

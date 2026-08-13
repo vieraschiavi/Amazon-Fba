@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/cron-recordatorio-demo.js — Corre una vez por dia (Vercel Cron, ver
 // vercel.json) y manda un email a quien este en el dia 6 de su demo de 7
 // dias (le queda 1 dia) y todavia no compro, para que no se le pase sin

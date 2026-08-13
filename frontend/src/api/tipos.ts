@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // Tipos de los contratos de la API local (passthrough de las funciones
 // Python — ver api_rutas.py). Solo los campos que la UI consume; el resto
 // viaja igual y se ignora sin romper.

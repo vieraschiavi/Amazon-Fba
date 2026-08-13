@@ -1,3 +1,4 @@
+// © 2026 Martín Viera. Todos los derechos reservados.
 // api/reembolso.js — Reembolso AUTOMATICO de la garantia de 7 dias, via
 // MercadoPago o PayPal segun como se pago.
 //
