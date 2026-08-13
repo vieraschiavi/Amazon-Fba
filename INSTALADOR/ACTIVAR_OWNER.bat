@@ -27,8 +27,37 @@ if not defined PROG if exist "%ProgramFiles(x86)%\MV FBA IA\app.py" set "PROG=%P
 if not defined PROG if exist "%LOCALAPPDATA%\Programs\MV FBA IA\app.py" set "PROG=%LOCALAPPDATA%\Programs\MV FBA IA\"
 if not defined PROG if exist "%USERPROFILE%\Desktop\MV FBA IA\app.py" set "PROG=%USERPROFILE%\Desktop\MV FBA IA\"
 
+rem Si nada de lo de arriba encontro nada -- por ejemplo, el usuario eligio
+rem una carpeta CUSTOM al instalar (el instalador deja elegir cualquiera,
+rem ver DisableDirPage=no en el .iss) -- se busca en el registro de Windows.
+rem Todo instalador de Inno Setup registra su instalacion en "Agregar o
+rem quitar programas" bajo una clave con el AppId del .iss, y esa entrada
+rem SIEMPRE trae InstallLocation apuntando a la carpeta real: es el mismo
+rem mecanismo que usa Windows para listar el programa en el panel de
+rem control, no algo que este instalador declare aparte. Mismo AppId que
+rem installer/MV_Amazon_FBA_IA.iss (test de regresion en
+rem test/test_activar_owner.py que los compara para que no se desincronicen).
+rem HKCU primero (instalacion "solo para mi", sin admin -- el caso mas
+rem comun, ver PrivilegesRequired=lowest), despues HKLM ("para todos").
+if not defined PROG (
+    set "REGPATH="
+    for /f "usebackq tokens=1,2,*" %%A in (`reg query "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{8F2C1A6E-7B4D-4E1A-9C3F-2D8E5A6B7C90}_is1" /v InstallLocation /reg:64 2^>nul`) do (
+        if /I "%%A"=="InstallLocation" set "REGPATH=%%C"
+    )
+    if defined REGPATH if exist "!REGPATH!\app.py" set "PROG=!REGPATH!\"
+)
+if not defined PROG (
+    set "REGPATH="
+    for /f "usebackq tokens=1,2,*" %%A in (`reg query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{8F2C1A6E-7B4D-4E1A-9C3F-2D8E5A6B7C90}_is1" /v InstallLocation /reg:64 2^>nul`) do (
+        if /I "%%A"=="InstallLocation" set "REGPATH=%%C"
+    )
+    if defined REGPATH if exist "!REGPATH!\app.py" set "PROG=!REGPATH!\"
+)
+
 if not defined PROG (
     echo  [X] No encontre la instalacion de MV FBA IA.
+    echo      Busque en el registro de Windows y en las rutas mas comunes,
+    echo      sin suerte.
     echo.
     echo      Copia ESTE archivo y activar_owner.py DENTRO de la carpeta
     echo      del programa ^(la que tiene app.py adentro^) y volve a abrirlo.

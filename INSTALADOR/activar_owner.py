@@ -58,8 +58,17 @@ EMAIL_POR_DEFECTO = "vieraschiavi@gmail.com"
 # invalido que haga fallar la activacion en silencio al abrir el programa.
 FORMATO_CLAVE = re.compile(r"^MVFBA(-[A-F0-9]{4}){4}$")
 
+# Mismo AppId que installer/MV_Amazon_FBA_IA.iss (linea "AppId={{...}"; las
+# llaves dobles son el escape de Inno Setup para una llave literal). Hay un
+# test de regresion (test_activar_owner.py::test_app_id_coincide_con_el_iss)
+# que lo compara contra el .iss para que esta constante nunca quede
+# desincronizada si el AppId cambia alla.
+APP_ID = "{8F2C1A6E-7B4D-4E1A-9C3F-2D8E5A6B7C90}"
+
 # Carpetas donde el instalador deja el programa (ver CarpetaPorDefecto en el
 # .iss): con permisos de admin va a Archivos de programa, si no al perfil.
+# Se mantienen como ULTIMO fallback -- ver _buscar_por_registro() abajo, que
+# encuentra la instalacion real sin importar donde la haya puesto el usuario.
 CANDIDATAS = [
     r"C:\Program Files\MV FBA IA",
     r"C:\Program Files (x86)\MV FBA IA",
@@ -74,12 +83,59 @@ def es_instalacion(ruta):
         and os.path.isfile(os.path.join(ruta, "core", "licencia.py"))
 
 
-def buscar_instalacion(preferida=None):
-    """Primero lo que pidio el usuario, después la carpeta desde donde se corre
-    esto (el caso normal: el .bat vive al lado del programa), y recien ahi las
-    rutas por defecto del instalador."""
+def _buscar_por_registro(winreg_mod=None):
+    """Encuentra DONDE SE INSTALO de verdad, leyendo el registro de Windows
+    -- funciona sin importar que carpeta haya elegido el usuario en la
+    pagina "elegir destino" del instalador (el .iss deja elegir cualquiera,
+    ver DisableDirPage=no), a diferencia de CANDIDATAS, que solo adivina las
+    4 rutas mas comunes.
+
+    Todo instalador de Inno Setup registra su instalacion en
+    "Agregar o quitar programas" bajo una clave con el AppId del .iss, y esa
+    entrada SIEMPRE trae "InstallLocation" apuntando a la carpeta real
+    ({app} en el .iss) -- es el mismo mecanismo que usa Windows para mostrar
+    el programa en el panel de control, no algo que este instalador tenga
+    que declarar aparte.
+
+    Revisa primero HKEY_CURRENT_USER (instalacion "solo para mi", sin admin
+    -- el caso mas comun, ver PrivilegesRequired=lowest) y despues
+    HKEY_LOCAL_MACHINE (instalacion "para todos los usuarios"). `winreg_mod`
+    existe para poder inyectar un modulo winreg FALSO desde los tests (en
+    Linux no existe winreg de verdad)."""
+    winreg = winreg_mod
+    if winreg is None:
+        try:
+            import winreg as winreg  # noqa: F401  -- solo existe en Windows
+        except ImportError:
+            return None
+
+    subclave = ("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\"
+                + APP_ID + "_is1")
+    for raiz in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE):
+        try:
+            with winreg.OpenKey(raiz, subclave) as clave:
+                valor, _tipo = winreg.QueryValueEx(clave, "InstallLocation")
+        except OSError:
+            continue          # esta rama no tiene la clave (no se instalo asi) -- probar la otra
+        valor = (valor or "").strip().rstrip("\\")
+        if es_instalacion(valor):
+            return os.path.abspath(valor)
+    return None
+
+
+def buscar_instalacion(preferida=None, winreg_mod=None):
+    """Orden: lo que pidio el usuario, la carpeta desde donde se corre esto
+    (el caso normal: el .bat vive al lado del programa), el registro de
+    Windows (encuentra CUALQUIER carpeta que el usuario haya elegido al
+    instalar), y recien al final las rutas mas comunes adivinadas a mano."""
     aqui = os.path.dirname(os.path.abspath(__file__))
-    for ruta in [preferida, aqui, os.getcwd()] + CANDIDATAS:
+    for ruta in [preferida, aqui, os.getcwd()]:
+        if es_instalacion(ruta):
+            return os.path.abspath(ruta)
+    por_registro = _buscar_por_registro(winreg_mod)
+    if por_registro:
+        return por_registro
+    for ruta in CANDIDATAS:
         if es_instalacion(ruta):
             return os.path.abspath(ruta)
     return None
@@ -139,11 +195,13 @@ def main():
     carpeta = buscar_instalacion(a.carpeta)
     if not carpeta:
         print("[X] No encontre una instalacion de MV FBA IA.")
-        print("    Copia este archivo (y ACTIVAR_OWNER.bat) DENTRO de la carpeta")
-        print("    del programa -- la que tiene app.py adentro -- y volve a correrlo.")
-        print("    Buscado en:")
+        print("    Busque en el registro de Windows (deberia encontrar CUALQUIER")
+        print("    carpeta que hayas elegido al instalar) y tambien en estas rutas:")
         for c in CANDIDATAS:
             print("      " + c)
+        print("    Si aun asi no aparece, copia este archivo (y ACTIVAR_OWNER.bat)")
+        print("    DENTRO de la carpeta del programa -- la que tiene app.py adentro")
+        print("    -- y volve a correrlo.")
         return 1
 
     print(f"    Instalacion: {carpeta}")
