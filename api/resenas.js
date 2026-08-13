@@ -9,7 +9,7 @@
 // PayPal (mismo criterio que api/reembolso.js) -- nunca se confia en el
 // plan/email que mande el cliente. Una reseña por pago (api/_resenas.js es
 // idempotente por payment_id), asi nadie infla el promedio repitiendo envios.
-import { aplicarCors, clienteValido } from "./_seguridad.js";
+import { aplicarCors, clienteValido, limitarPorIp } from "./_seguridad.js";
 import { obtenerOrden, leerOrden, paypalConfigurado } from "./_paypal.js";
 import { agregarResenaSiNueva, listarResenas, resumenResenas } from "./_resenas.js";
 
@@ -26,6 +26,12 @@ export default async function handler(req, res) {
 
   if (req.method !== "POST") return res.status(405).json({ error: "method" });
   if (!clienteValido(req)) return res.status(403).json({ error: "cliente_no_reconocido" });
+
+  // Sin esto, probar payment_id al azar contra este POST sirve para
+  // enumerar cuales estan aprobados (mismo riesgo que ya se mitigo en
+  // licencia.js/reembolso.js), aunque aca no haya plata de por medio.
+  const limite = await limitarPorIp(req, "resenas", 20, 3600);
+  if (!limite.permitido) return res.status(429).json({ error: "demasiados_intentos" });
 
   let body = req.body;
   if (typeof body === "string") { try { body = JSON.parse(body); } catch (e) { body = {}; } }

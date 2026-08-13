@@ -7,14 +7,34 @@
 // igual a la variable de entorno ADMIN_SECRET. Sin esa variable configurada,
 // responde 503 (mismo patron honesto que el resto del sistema: sin la pieza
 // que hace falta, la funcion no esta disponible en vez de fallar raro).
+import crypto from "crypto";
 import { ultimasVentas } from "./_atribucion.js";
+import { limitarPorIp } from "./_seguridad.js";
+
+// Comparacion en tiempo constante: "!==" corta apenas encuentra la primera
+// diferencia, asi que el tiempo de respuesta varia segun cuantos caracteres
+// iniciales acertó quien pregunta -- una filtracion de timing teorica que
+// timingSafeEqual no tiene (necesita buffers del MISMO largo, por eso el
+// chequeo de longitud primero, que no filtra nada mas alla de "no es del
+// mismo largo").
+function compararSeguro(a, b) {
+  const bufA = Buffer.from(String(a));
+  const bufB = Buffer.from(String(b));
+  return bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB);
+}
 
 export default async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "method" });
 
   const secreto = process.env.ADMIN_SECRET;
   if (!secreto) return res.status(503).json({ error: "admin_no_configurado" });
-  if (req.headers["x-admin-secret"] !== secreto) {
+
+  // Sin esto, alguien podia probar valores de x-admin-secret sin ningun
+  // freno de velocidad.
+  const limite = await limitarPorIp(req, "ventas-admin", 20, 3600);
+  if (!limite.permitido) return res.status(429).json({ error: "demasiados_intentos" });
+
+  if (!compararSeguro(req.headers["x-admin-secret"] || "", secreto)) {
     return res.status(403).json({ error: "no_autorizado" });
   }
 

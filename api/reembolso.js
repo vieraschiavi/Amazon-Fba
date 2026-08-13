@@ -23,7 +23,7 @@
 // almacen (Vercel KV/Upstash) que ya usa la cuota de IA -- si no esta
 // configurado, el reembolso igual se procesa (la plata se devuelve siempre),
 // simplemente no queda revocada la licencia.
-import { aplicarCors, clienteValido } from "./_seguridad.js";
+import { aplicarCors, clienteValido, limitarPorIp } from "./_seguridad.js";
 import { obtenerOrden, leerOrden, reembolsarCaptura, paypalConfigurado } from "./_paypal.js";
 import { revocarLicencia } from "./_revocacion.js";
 
@@ -34,6 +34,14 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST") return res.status(405).json({ error: "method" });
   if (!clienteValido(req)) return res.status(403).json({ error: "cliente_no_reconocido" });
+
+  // A diferencia de licencia.js (que SI tenia este freno), este endpoint
+  // mueve plata real y ademas contesta motivos distintos por caso
+  // (no_aprobado / email_no_coincide / fuera_de_plazo / ya_reembolsado):
+  // sin limite, esas respuestas sirven de oraculo para probar payment_id o
+  // emails candidatos sin fricción hasta acertar.
+  const limite = await limitarPorIp(req, "reembolso", 20, 3600);
+  if (!limite.permitido) return res.status(429).json({ error: "demasiados_intentos" });
 
   let body = req.body;
   if (typeof body === "string") { try { body = JSON.parse(body); } catch (e) { body = {}; } }
