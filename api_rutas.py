@@ -103,13 +103,24 @@ class InvestigacionIn(BaseModel):
 
 
 class RecomendadorIn(BaseModel):
+    # A diferencia de PricingIn/CajaIn (que limitan plata), esto limita TRABAJO:
+    # _pasada_amplia hace una request HTTP de autocompletado de Amazon POR
+    # CADA seed, con un sleep entre cada una -- y el endpoint es sincrono,
+    # asi que unas pocas requests con seeds/max_seeds grandes agotan el
+    # threadpool de Starlette y cuelgan el servidor entero para el usuario
+    # real. shortlist ademas gasta tokens PAGOS de Keepa/Jungle Scout por
+    # candidato si estan conectados: sin techo, una sola request (local, LAN,
+    # o disparada por una pagina de terceros si el CORS estuviera abierto)
+    # puede drenar en minutos la cuota mensual que el usuario paga de su
+    # bolsillo. Los topes (20) son generosos frente a los defaults (8/12/10):
+    # no cambian ningun uso normal, solo cortan el caso sin sentido.
     precio_min: float = 10.0
     precio_max: float = 50.0
     marketplace: str = "US"
-    seeds: list[str] | None = None
-    max_seeds: int = 8
-    shortlist: int = 12
-    top_n: int = 10
+    seeds: list[str] | None = Field(None, max_length=20)
+    max_seeds: int = Field(8, ge=1, le=20)
+    shortlist: int = Field(12, ge=1, le=20)
+    top_n: int = Field(10, ge=1, le=20)
     usar_keepa: bool = True
     demo: bool = False
 
@@ -394,15 +405,65 @@ def demo_ejemplo_quitar():
 
 
 # ============================ investigacion / mercado ============================ #
+CSV_MAX_BYTES = 20 * 1024 * 1024   # 20 MB: de sobra para un export de keywords/productos
+
+
+class ArchivoDemasiadoGrande(Exception):
+    pass
+
+
+async def _leer_csv_limitado(file):
+    """Lee un UploadFile en chunks, cortando ANTES de volcar mas de
+    CSV_MAX_BYTES a memoria/disco.
+
+    POR QUE EXISTE: file.read() sin tope no tenia ningun limite de tamaño --
+    un archivo gigante (repetido) podia llenar el disco del usuario. Content-
+    Length no es confiable (lo pone el cliente), asi que se corta leyendo de
+    a partes reales, no confiando en un header."""
+    partes, total = [], 0
+    while True:
+        chunk = await file.read(1024 * 1024)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > CSV_MAX_BYTES:
+            raise ArchivoDemasiadoGrande()
+        partes.append(chunk)
+    return b"".join(partes)
+
+
+def _csv_seguro(csv_path):
+    """Reduce cualquier `csv_path` que llegue del cliente a un NOMBRE de
+    archivo dentro de CEREBRO_CSV_DIR -- nunca una ruta.
+
+    POR QUE EXISTE: InvestigacionIn.csv_path viaja del cliente sin ninguna
+    validacion hasta cerebro_con_estado() -> open(). El upload legitimo
+    (POST /archivos/cerebro, ariba) ya sanea el NOMBRE con este mismo regex,
+    asi que el csv_path que manda el panel para un archivo que el subio
+    siempre queda igual con esto. Lo que se cierra es el otro camino: alguien
+    mandando "../../../../etc/passwd" o una ruta absoluta a cualquier archivo
+    del disco y leyendo su contenido a traves del mensaje de error (las
+    columnas que no matchean se devuelven en la respuesta)."""
+    if not csv_path:
+        return None
+    nombre = re.sub(r"[^A-Za-z0-9._-]", "_", os.path.basename(csv_path))
+    return os.path.join(config.CEREBRO_CSV_DIR, nombre) if nombre else None
+
+
 @router.post("/archivos/cerebro")
 async def subir_cerebro(file: UploadFile):
     nombre = re.sub(r"[^A-Za-z0-9._-]", "_", file.filename or "cerebro.csv")
     if not nombre.lower().endswith(".csv"):
         return {"ok": False, "mensaje": "Solo se aceptan archivos .csv de Cerebro."}
+    try:
+        contenido = await _leer_csv_limitado(file)
+    except ArchivoDemasiadoGrande:
+        return {"ok": False, "mensaje": f"El archivo supera el máximo de "
+                                        f"{CSV_MAX_BYTES // 1024 // 1024} MB."}
     os.makedirs(config.CEREBRO_CSV_DIR, exist_ok=True)
     destino = os.path.join(config.CEREBRO_CSV_DIR, nombre)
     with open(destino, "wb") as f:
-        f.write(await file.read())
+        f.write(contenido)
     return {"ok": True, "csv_path": destino, "nombre": nombre}
 
 
@@ -420,20 +481,28 @@ async def subir_vendedores_csv(file: UploadFile):
                 "ventas_estim_lider": 0,
                 "mensaje": "Solo se aceptan archivos .csv exportados de Helium 10 "
                            "(Xray/Black Box) o de Jungle Scout."}
+    try:
+        contenido = await _leer_csv_limitado(file)
+    except ArchivoDemasiadoGrande:
+        return {"ok": False, "productos": [], "ventas_estim_total": 0,
+                "ventas_estim_lider": 0,
+                "mensaje": f"El archivo supera el máximo de "
+                          f"{CSV_MAX_BYTES // 1024 // 1024} MB."}
     os.makedirs(config.CEREBRO_CSV_DIR, exist_ok=True)
     destino = os.path.join(config.CEREBRO_CSV_DIR, nombre)
     with open(destino, "wb") as f:
-        f.write(await file.read())
+        f.write(contenido)
     return helium_productos.vendedores_desde_csv(destino)
 
 
 @router.post("/investigacion")
 def investigacion(i: InvestigacionIn):
-    mi = market_intel(i.keyword, i.marketplace, csv_path=i.csv_path, demo=i.demo)
+    ruta = _csv_seguro(i.csv_path)
+    mi = market_intel(i.keyword, i.marketplace, csv_path=ruta, demo=i.demo)
     out = {"nicho": mi}
     if mi["ok"] and i.con_listing:
         out["listing"] = generar_listing(i.keyword, i.marketplace,
-                                         csv_path=i.csv_path, demo=i.demo)
+                                         csv_path=ruta, demo=i.demo)
     return out
 
 

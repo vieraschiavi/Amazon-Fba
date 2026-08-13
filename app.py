@@ -21,7 +21,6 @@ if _AQUI not in sys.path:
     sys.path.insert(0, _AQUI)
 
 from fastapi import FastAPI, Response
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 import config
@@ -44,12 +43,28 @@ from data import motor_propio
 db.init()
 app = FastAPI(title="MV FBA IA — API", version="2.0")
 
-# CORS abierto: la API corre en localhost y la consumen n8n y la app movil
-# (mobile/), que sirve desde otro origen (otro puerto o el navegador del
-# celular). No hay cookies/sesion de por medio (sin auth), asi que abrir el
-# origen no expone datos de otros usuarios.
-app.add_middleware(
-    CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+# SIN middleware de CORS a proposito -- ningun consumidor legitimo lo
+# necesita, y dejarlo abierto ("*") es lo que convertia cualquier pagina web
+# que el usuario tuviera abierta en el navegador en un atacante gratis:
+#   - El panel (frontend/) SIEMPRE pide con ruta relativa (ver
+#     frontend/src/api/cliente.ts) -- en la app de escritorio Electron carga
+#     el panel desde el mismo origen que sirve la API (127.0.0.1:puerto), y
+#     en desarrollo Vite PROXEA /api server-side (el navegador nunca le pide
+#     nada a uvicorn directamente). Mismo origen: el navegador ni evalua CORS.
+#   - n8n pega server-to-server (ver n8n/*.json, "http://localhost:8000/...").
+#     CORS es una politica que aplican los NAVEGADORES; a un cliente HTTP
+#     como n8n no le importan estos headers, nunca los necesito.
+#   - mobile/ NO habla con esta API: pega directo a
+#     https://amazon-fba-seven.vercel.app (ver mobile/js/licencia.js), un
+#     servidor completamente distinto con su propio CORS (api/_seguridad.js).
+# O sea: "*" no habilitaba a NINGUN consumidor real, solo a cualquier sitio
+# web de terceros que el dueño de la PC tuviera abierto mientras la app
+# corria -- con eso, y sin ningun otro chequeo de auth en /api/*, un sitio
+# cualquiera podia leer y modificar toda la base de negocio en background.
+# Sin este middleware, FastAPI no manda ningun header Access-Control-*, asi
+# que el navegador aplica su politica por defecto: mismo origen si, cualquier
+# otro origen no (y para POST/PUT/DELETE con JSON, ni siquiera llega a
+# mandarse -- el preflight lo corta antes).
 
 
 class MsgIn(BaseModel):
