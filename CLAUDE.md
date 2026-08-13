@@ -62,7 +62,7 @@ sistema lo dice en vez de simular un resultado.
 | Correr la API + panel | `python -m uvicorn app:app --host 0.0.0.0 --port 8000` (o `API.bat` / `INICIAR.bat` en Windows) |
 | Correr el panel Streamlit legado | `streamlit run dashboard_app.py` (o `LEGACY_STREAMLIT.bat`) |
 | Verificar conexiones (Keepa/Claude/SMTP/CSV) | `python test_conexiones.py` |
-| Tests (Python) | `python -m pytest test/test_api_local.py -q` |
+| Tests (Python) | `python -m pytest test/test_api_local.py test/test_activar_owner.py -q` |
 | Un test puntual | `python -m pytest test/test_api_local.py::test_legacy_health -v` |
 | Tests (JS: motor portado + seguridad + créditos) | `node test/verificar_nucleo.js && node test/verificar_escapar.js && node test/verificar_seguridad.mjs && node test/verificar_creditosia.mjs && node test/verificar_sin_innerhtml_crudo.mjs && node test/verificar_i18n_landing.mjs && node test/verificar_lanzadores.mjs && node test/verificar_sw_precache.mjs && node test/verificar_instalador.mjs && node test/verificar_licencia_dueno.mjs && node test/verificar_owner_github.mjs && node test/verificar_keystore_android.mjs && node test/verificar_licencia_secreto.mjs && node test/verificar_descarga_limite.mjs && node test/verificar_limite_endpoints_pago.mjs && node test/verificar_escapar_email_demo.mjs && node test/verificar_ventas_admin.mjs` (sin `npm install`, solo Node >= 18) |
 | Instalar deps del frontend | `cd frontend && npm install` |
@@ -112,7 +112,7 @@ sistema lo dice en vez de simular un resultado.
 2. **Cambio** — editá el mínimo necesario. Respetá la separación motor (`agents/`,
    `core/`, `data/`) vs. API (`app.py`, `api_rutas.py`) vs. UI (`dashboard_app.py`,
    `frontend/`, `mobile/`).
-3. **Test** — `python -m pytest test/test_api_local.py -q` (`/test`). No declares
+3. **Test** — `python -m pytest test/test_api_local.py test/test_activar_owner.py -q` (`/test`). No declares
    éxito sin correrlos.
 4. **Ship** — `/ship`: test → commit descriptivo → push → PR draft.
 
@@ -135,7 +135,7 @@ sistema lo dice en vez de simular un resultado.
 ## Do / Don't
 
 **Do**
-- Correr `python -m pytest test/test_api_local.py -q` antes de cerrar cualquier
+- Correr `python -m pytest test/test_api_local.py test/test_activar_owner.py -q` antes de cerrar cualquier
   cambio en `agents/`, `core/`, `data/` o `app.py`/`api_rutas.py`.
 - Usar `git status` / `git diff` para revisar antes de commitear.
 - Preferir editar la lógica en `agents/`/`core`/`data` y consumirla desde `app.py`,
