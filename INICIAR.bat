@@ -57,8 +57,16 @@ echo    ^(el mismo servidor sirve el panel web y la API para n8n^)
 echo    DEJA ESTA VENTANA ABIERTA mientras uses el sistema.
 echo  ============================================================
 echo.
+rem Bind a 127.0.0.1 (solo esta PC), NO a 0.0.0.0. La API /api/* no tiene
+rem autenticacion: con 0.0.0.0 cualquier equipo de la misma red (WiFi de
+rem cowork, cafe, hotel) podia leer/escribir toda la base y hasta el .env
+rem (POST /api/config). El panel y n8n corren en esta misma maquina, asi que
+rem localhost alcanza. Si de verdad necesitas exponerlo a otra maquina de tu
+rem red (n8n en otro host), poné antes de correr esto:  set MVFBA_HOST=0.0.0.0
+rem -- pero solo en una red de confianza, porque queda sin auth.
+if not defined MVFBA_HOST set "MVFBA_HOST=127.0.0.1"
 start "" "http://localhost:!PUERTO!/"
-"!PYTHON!" -m uvicorn app:app --host 0.0.0.0 --port !PUERTO!
+"!PYTHON!" -m uvicorn app:app --host !MVFBA_HOST! --port !PUERTO!
 echo.
 echo  (el panel se cerro)
 pause

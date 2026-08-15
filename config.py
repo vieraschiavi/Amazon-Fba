@@ -175,11 +175,17 @@ DB_PATH = env("DB_PATH", os.path.join(DIR_DATOS, "fba.db"))
 _migrar_legacy("fba.db", DB_PATH)
 
 # --- Email / alertas ---
-ALERT_TO = env("ALERT_TO", "vieraschiavi@gmail.com")
 SMTP_HOST = env("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(env("SMTP_PORT", "587"))
 SMTP_USER = env("SMTP_USER")
 SMTP_PASS = env("SMTP_PASS")
+# A donde van las alertas del NEGOCIO (ventas, consultas). Sin ALERT_TO
+# explicito cae al PROPIO email del usuario (el SMTP_USER que configuro para
+# enviar), NO a un email hardcodeado: este producto se vende a terceros y un
+# default fijo mandaba las alertas del negocio de cada cliente al inbox del
+# autor. Si tampoco hay SMTP configurado, queda vacio y las alertas viven
+# solo en la tabla alerts_outbox (dry-run), sin destino.
+ALERT_TO = env("ALERT_TO") or SMTP_USER
 
 # --- Pricing ---
 REFERRAL_PCT = env_f("REFERRAL_PCT", 15)               # comision Amazon %
@@ -221,7 +227,7 @@ def _refrescar_globals():
     for k in ("KEEPA_API_KEY", "JUNGLE_SCOUT_API_KEY", "JUNGLE_SCOUT_KEY_NAME",
               "SMTP_USER", "SMTP_PASS"):
         g[k] = env(k)
-    g["ALERT_TO"] = env("ALERT_TO", "vieraschiavi@gmail.com")
+    g["ALERT_TO"] = env("ALERT_TO") or env("SMTP_USER")
     g["CEREBRO_CSV_DIR"] = env("CEREBRO_CSV_DIR",
                                os.path.join(DIR_DATOS, "cerebro_exports"))
 

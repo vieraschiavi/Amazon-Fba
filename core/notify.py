@@ -3,7 +3,8 @@
 # © 2026 Martín Viera. Todos los derechos reservados.
 """
 core/notify.py — Alertas por email. Sin SMTP_USER/PASS -> DRY-RUN (registra, no envia).
-Toda alerta queda en la tabla alerts_outbox. ALERT_TO por defecto vieraschiavi@gmail.com.
+Toda alerta queda en la tabla alerts_outbox. ALERT_TO cae al propio SMTP_USER del
+usuario si no se configura uno aparte (ver config.py); nunca a un email fijo.
 """
 import os
 import smtplib

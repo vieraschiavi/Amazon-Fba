@@ -49,7 +49,15 @@ if not "!PUERTO!"=="8000" (
     echo   http://localhost:!PUERTO!  ^(estaban apuntando al 8000^).
     echo  ============================================================
 )
+rem Bind a 127.0.0.1 (solo esta PC), NO a 0.0.0.0. La API /api/* no tiene
+rem autenticacion: con 0.0.0.0 cualquier equipo de la misma red podia
+rem leer/escribir toda la base y el .env sin credenciales. Los workflows de
+rem n8n de este repo apuntan a http://localhost:8000 (n8n en la misma
+rem maquina), asi que localhost alcanza. Si corres n8n en OTRO host de tu red
+rem (Docker/otra PC), poné antes:  set MVFBA_HOST=0.0.0.0  -- solo en red de
+rem confianza, porque la API queda accesible sin auth para toda la LAN.
+if not defined MVFBA_HOST set "MVFBA_HOST=127.0.0.1"
 echo.
 echo  API en http://localhost:!PUERTO!  (Ctrl+C para cortar)
-"!PYTHON!" -m uvicorn app:app --host 0.0.0.0 --port !PUERTO!
+"!PYTHON!" -m uvicorn app:app --host !MVFBA_HOST! --port !PUERTO!
 pause
