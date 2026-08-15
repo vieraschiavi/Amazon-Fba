@@ -1,6 +1,6 @@
 // © 2026 Martín Viera. Todos los derechos reservados.
 import { useEffect, useState } from "react";
-import { api, qs } from "../api/cliente";
+import { api, mensajeError, qs } from "../api/cliente";
 import type { KeywordMotor } from "../api/tipos";
 import { Alerta, Badge, Boton, Campo, Card, FilaKpis, Kpi, Seccion, Selector, Spinner, Tabla, num } from "../components/ui";
 import { useT } from "../i18n";
@@ -34,6 +34,7 @@ export function Investigacion() {
   const [listing, setListing] = useState<Listing | null>(null);
   const [resCerebro, setResCerebro] = useState<ResCerebro | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     api.get<{ marketplaces: Mkt[] }>("/api/marketplaces")
@@ -41,9 +42,14 @@ export function Investigacion() {
   }, []);
 
   const subirCsv = async (archivo: File) => {
-    const d = await api.subir<{ ok: boolean; csv_path: string; nombre: string }>(
-      "/api/archivos/cerebro", archivo);
-    if (d.ok) { setCsvPath(d.csv_path); setCsvNombre(d.nombre); }
+    // Antes sin try/catch: si el upload fallaba, unhandled rejection y el
+    // usuario no sabia por que su archivo no aparecia.
+    try {
+      const d = await api.subir<{ ok: boolean; csv_path: string; nombre: string; mensaje?: string }>(
+        "/api/archivos/cerebro", archivo);
+      if (d.ok) { setCsvPath(d.csv_path); setCsvNombre(d.nombre); setError(""); }
+      else setError(d.mensaje || t("comun.error"));
+    } catch (e) { setError(mensajeError(e)); }
   };
 
   const investigar = async () => {
@@ -63,7 +69,8 @@ export function Investigacion() {
         setResCerebro(d);
         setListing(d.listing ?? null);
       }
-    } catch { /* mantiene lo anterior */ }
+      setError("");
+    } catch (e) { setError(mensajeError(e)); }
     setOcupado(false);
   };
 
@@ -97,6 +104,7 @@ export function Investigacion() {
           <Boton onClick={() => void investigar()} disabled={ocupado}>{t("inv_btn")}</Boton>
         </div>
         {ocupado && <Spinner texto={t("comun.cargando")} />}
+        {error && <Alerta tipo="error">{error}</Alerta>}
       </Card>
 
       {resMotor && (resMotor.ok ? (

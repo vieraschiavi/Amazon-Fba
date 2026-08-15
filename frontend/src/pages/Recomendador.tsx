@@ -1,6 +1,6 @@
 // © 2026 Martín Viera. Todos los derechos reservados.
 import { useEffect, useState } from "react";
-import { api } from "../api/cliente";
+import { api, mensajeError } from "../api/cliente";
 import type { Oportunidad } from "../api/tipos";
 import { ComparadorNichos } from "../components/ComparadorNichos";
 import { Alerta, Badge, Boton, CampoNumero, Card, FilaKpis, Kpi, Seccion, Selector, Spinner, Tabla, usd, num } from "../components/ui";
@@ -25,6 +25,7 @@ export function Recomendador() {
   const [mkts, setMkts] = useState<Mkt[]>([]);
   const [res, setRes] = useState<Resultado | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     api.get<{ marketplaces: Mkt[] }>("/api/marketplaces")
@@ -37,8 +38,8 @@ export function Recomendador() {
       const d = await api.post<Resultado>("/api/recomendador/escanear", {
         precio_min: min, precio_max: max, marketplace: mkt, demo: modoDemo,
       }, 180000);
-      setRes(d);
-    } catch { /* mantiene lo anterior */ }
+      setRes(d); setError("");
+    } catch (e) { setError(mensajeError(e)); }
     setOcupado(false);
   };
 
@@ -55,6 +56,7 @@ export function Recomendador() {
           <Boton onClick={() => void escanear()} disabled={ocupado}>{t("rec_btn")}</Boton>
         </div>
         {ocupado && <Spinner texto={t("rec.escaneando_categorias_motor_propio")} />}
+        {error && <Alerta tipo="error">{error}</Alerta>}
       </Card>
 
       {res && (res.ok ? (

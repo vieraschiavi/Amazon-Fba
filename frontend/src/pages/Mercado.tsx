@@ -1,6 +1,6 @@
 // © 2026 Martín Viera. Todos los derechos reservados.
 import { useState } from "react";
-import { api, qs } from "../api/cliente";
+import { api, mensajeError, qs } from "../api/cliente";
 import type { OrdenCampo, ProductoEstrella, ResVendedores, VendedorPrincipal } from "../api/tipos";
 import { ComparadorNichos } from "../components/ComparadorNichos";
 import { Alerta, Badge, Boton, Campo, CampoNumero, Card, FilaKpis, Kpi, Seccion, Spinner, Tabla, usd, num, pct } from "../components/ui";
@@ -48,6 +48,10 @@ export function Mercado() {
   const [vendTexto, setVendTexto] = useState("");
   const [vend, setVend] = useState<ResVendedores | null>(null);
   const [rankeando, setRankeando] = useState(false);
+  // Un solo estado de error para las 5 acciones de la pagina (son secuenciales,
+  // el usuario dispara una a la vez). Antes las 5 tragaban el error en
+  // silencio -- la pagina mas grande del panel no reportaba ni uno.
+  const [error, setError] = useState("");
   // Orden de la tabla de productos del nicho. El pedido: precio, ranking de
   // ventas, potencial y calificacion, ascendente y descendente.
   const [orden, setOrden] = useState<OrdenCampo>("potencial");
@@ -58,8 +62,8 @@ export function Mercado() {
     try {
       const d = await api.post<ResVendedores>("/api/mercado/vendedores",
                                               { texto: vendTexto });
-      setVend(d);
-    } catch { /* mantiene */ }
+      setVend(d); setError("");
+    } catch (e) { setError(mensajeError(e)); }
     setRankeando(false);
   };
 
@@ -67,8 +71,8 @@ export function Mercado() {
     setRankeando(true);
     try {
       const d = await api.subir<ResVendedores>("/api/mercado/vendedores-csv", archivo);
-      setVend(d);
-    } catch { /* mantiene */ }
+      setVend(d); setError("");
+    } catch (e) { setError(mensajeError(e)); }
     setRankeando(false);
   };
 
@@ -116,8 +120,8 @@ export function Mercado() {
       const d = await api.get<ResMercado>(
         `/mercado/estrellas${qs({ keyword: kw, precio_min: min, precio_max: max, demo: modoDemo })}`,
         90000);
-      setRes(d);
-    } catch { /* mantiene */ }
+      setRes(d); setError("");
+    } catch (e) { setError(mensajeError(e)); }
     setOcupado(false);
   };
 
@@ -126,8 +130,8 @@ export function Mercado() {
     try {
       const d = await api.get<Demanda>(
         `/api/demanda${qs({ keyword: kw, demo: modoDemo })}`, 90000);
-      setDemanda(d);
-    } catch { /* mantiene */ }
+      setDemanda(d); setError("");
+    } catch (e) { setError(mensajeError(e)); }
     setMidiendoDemanda(false);
   };
 
@@ -138,8 +142,8 @@ export function Mercado() {
       const d = await api.get<{ evaluacion: Evaluacion; narrativa?: { texto: string; modo: string } }>(
         `/api/exito${qs({ keyword: kw, precio: precioObj, margen_pct: margen || undefined, demo: modoDemo, con_narrativa: true })}`,
         120000);
-      setEv(d);
-    } catch { /* mantiene */ }
+      setEv(d); setError("");
+    } catch (e) { setError(mensajeError(e)); }
     setEvaluando(false);
   };
 
@@ -147,6 +151,7 @@ export function Mercado() {
   return (
     <>
       <Seccion titulo={t("mk_titulo")} sub={t("mk_sub")} />
+      {error && <Alerta tipo="error">{error}</Alerta>}
       <Card className="mb-4">
         <div className="flex gap-3 items-end flex-wrap">
           <Campo label={t("mk.producto_keyword")} value={kw} onChange={(e) => setKw(e.target.value)} className="w-72" />

@@ -46,6 +46,7 @@ function SelectorProductoActivo() {
       value={activo?.id ?? ""}
       onChange={(e) => elegir(e.target.value ? parseInt(e.target.value, 10) : null)}
       title={t("top.producto_activo")}
+      aria-label={t("top.producto_activo")}
       className="max-w-[230px]"
     >
       <option value="">{t("top.sin_producto")}</option>

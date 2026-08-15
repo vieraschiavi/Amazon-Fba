@@ -1,6 +1,6 @@
 // © 2026 Martín Viera. Todos los derechos reservados.
 import { useEffect, useState } from "react";
-import { api } from "../api/cliente";
+import { api, mensajeError } from "../api/cliente";
 import { Alerta, Badge, Boton, Campo, CampoNumero, Card, Seccion, Selector, Spinner, Tabla } from "../components/ui";
 import { useT } from "../i18n";
 import { useApp } from "../stores/app";
@@ -106,6 +106,7 @@ function GeneradorPoa() {
   const [motivo, setMotivo] = useState("");
   const [ocupado, setOcupado] = useState(false);
   const [res, setRes] = useState<PoaResp | null>(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     api.get<{ tipos: Record<string, string> }>("/api/poa/tipos")
@@ -114,9 +115,13 @@ function GeneradorPoa() {
   }, []);
 
   const generar = async () => {
+    // Antes: .catch(()=>null) -> res=null, spinner off, pantalla igual sin
+    // ninguna explicacion de por que no aparecio el plan.
     setOcupado(true);
-    const d = await api.post<PoaResp>("/api/poa", { motivo, tipo, idioma }, 60000).catch(() => null);
-    setRes(d);
+    try {
+      setRes(await api.post<PoaResp>("/api/poa", { motivo, tipo, idioma }, 60000));
+      setError("");
+    } catch (e) { setError(mensajeError(e)); }
     setOcupado(false);
   };
 
@@ -144,10 +149,11 @@ function GeneradorPoa() {
         <span className="text-[11px] font-bold uppercase tracking-wide text-muted">{t("hr_poa_motivo")}</span>
         <textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} rows={3}
                   placeholder={t("hr_poa_motivo_ph")}
-                  className="border border-line rounded-lg px-3 py-2 text-[13.5px] bg-card focus:outline-none focus:border-navy" />
+                  className="border border-line rounded-lg px-3 py-2 text-[13.5px] bg-card focus:border-navy" />
       </label>
 
       {ocupado && <Spinner texto={t("hr.generando")} />}
+      {error && <Alerta tipo="error">{error}</Alerta>}
       {res && res.ok && (
         <div className="mt-4">
           <div className="flex items-center gap-3 mb-2">

@@ -78,9 +78,12 @@ export function Semaforo({ valor }: { valor: string }) {
   return <Badge texto={(etiqueta === clave ? valor : etiqueta).toUpperCase()} tono={valor} />;
 }
 
-export function Boton({ children, onClick, tipo = "primario", disabled = false, className = "" }: {
+export function Boton({ children, onClick, tipo = "primario", disabled = false, className = "", ariaLabel }: {
   children: ReactNode; onClick?: () => void;
   tipo?: "primario" | "fantasma" | "peligro"; disabled?: boolean; className?: string;
+  // Nombre accesible para botones de solo-icono (ej. el ➤ de enviar): sin
+  // esto un lector de pantalla anuncia "boton" o el glifo, no la accion.
+  ariaLabel?: string;
 }) {
   const estilos = {
     primario: "bg-navy text-white hover:bg-navy-deep",
@@ -91,6 +94,7 @@ export function Boton({ children, onClick, tipo = "primario", disabled = false, 
     <button
       onClick={onClick}
       disabled={disabled}
+      aria-label={ariaLabel}
       className={`px-4 py-2 rounded-lg font-bold text-[13.5px] transition-colors disabled:opacity-50 disabled:cursor-default ${estilos} ${className}`}
     >
       {children}
@@ -105,7 +109,7 @@ export function Campo(props: InputHTMLAttributes<HTMLInputElement> & { label: st
       <span className="text-[11px] font-bold uppercase tracking-wide text-muted truncate">{label}</span>
       <input
         {...rest}
-        className={`border border-line rounded-lg px-3 py-2 text-[13.5px] bg-card focus:outline-none focus:border-navy ${className}`}
+        className={`border border-line rounded-lg px-3 py-2 text-[13.5px] bg-card focus:border-navy ${className}`}
       />
     </label>
   );
@@ -130,7 +134,7 @@ export function Selector(props: SelectHTMLAttributes<HTMLSelectElement> & { labe
   const sel = (
     <select
       {...rest}
-      className={`border border-line rounded-lg px-3 py-2 text-[13.5px] bg-card focus:outline-none focus:border-navy ${className}`}
+      className={`border border-line rounded-lg px-3 py-2 text-[13.5px] bg-card focus:border-navy ${className}`}
     >
       {children}
     </select>
