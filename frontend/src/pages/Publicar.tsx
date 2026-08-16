@@ -1,7 +1,7 @@
 // © 2026 Martín Viera. Todos los derechos reservados.
 import { useState } from "react";
-import { api } from "../api/cliente";
-import { Boton, Campo, CampoNumero, Card, Seccion, Spinner } from "../components/ui";
+import { api, mensajeError } from "../api/cliente";
+import { Alerta, Boton, Campo, CampoNumero, Card, Seccion, Spinner } from "../components/ui";
 import { useT } from "../i18n";
 import { useApp } from "../stores/app";
 import { useProductoActivo } from "../stores/productoActivo";
@@ -21,6 +21,7 @@ export function Publicar() {
   const [html, setHtml] = useState("");
   const [paquete, setPaquete] = useState<Paquete | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  const [error, setError] = useState("");
 
   const armar = async () => {
     if (!nombre.trim()) return;
@@ -32,7 +33,8 @@ export function Publicar() {
       }, 120000);
       setPaquete(d.paquete);
       setHtml(d.html);
-    } catch { /* mantiene */ }
+      setError("");
+    } catch (e) { setError(mensajeError(e)); }
     setOcupado(false);
   };
 
@@ -62,6 +64,7 @@ export function Publicar() {
           {html && <Boton tipo="fantasma" onClick={descargar}>{t("comun.descargar")} HTML</Boton>}
         </div>
         {ocupado && <Spinner texto={t("comun.cargando")} />}
+        {error && <Alerta tipo="error">{error}</Alerta>}
       </Card>
 
       {paquete && html && (

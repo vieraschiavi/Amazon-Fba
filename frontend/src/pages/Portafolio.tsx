@@ -1,9 +1,9 @@
 // © 2026 Martín Viera. Todos los derechos reservados.
 import { useEffect, useState } from "react";
-import { api } from "../api/cliente";
+import { api, mensajeError } from "../api/cliente";
 import type { Producto, ResumenPortafolio, FilaProyeccion, EstimacionVentas } from "../api/tipos";
 import { GraficoLineas } from "../components/Graficos";
-import { Badge, Boton, Card, FilaKpis, Kpi, Seccion, Selector, Semaforo, Tabla, usd, num, pct } from "../components/ui";
+import { Alerta, Badge, Boton, Card, FilaKpis, Kpi, Seccion, Selector, Semaforo, Tabla, usd, num, pct } from "../components/ui";
 import { useT } from "../i18n";
 import { useProductoActivo } from "../stores/productoActivo";
 
@@ -25,9 +25,15 @@ export function Portafolio() {
   const [estimMsg, setEstimMsg] = useState<string>("");
   // BSR publico de Amazon: el camino GRATIS para estimar sin ninguna API.
   const [bsrTexto, setBsrTexto] = useState("");
+  // Distingue "portafolio vacio" de "no se pudo cargar" (antes ambos se veian
+  // igual: si la carga fallaba se mostraba "guarda un producto", mintiendo).
+  const [errorCarga, setErrorCarga] = useState("");
+  const [error, setError] = useState("");
 
   const cargar = () => {
-    api.get<ResumenPortafolio>("/portfolio").then(setResumen).catch(() => {});
+    api.get<ResumenPortafolio>("/portfolio")
+      .then((d) => { setResumen(d); setErrorCarga(""); })
+      .catch((e) => setErrorCarga(mensajeError(e)));
   };
   useEffect(cargar, []);
 
@@ -57,10 +63,16 @@ export function Portafolio() {
   }, [sel]);
 
   const quitar = async (pid: number) => {
-    await api.del(`/api/productos/${pid}`);
-    setSel("");
-    cargar();
-    await recargarActivo();
+    // Antes sin try/catch: si el borrado fallaba, promesa rechazada sin
+    // capturar y cero feedback en una accion destructiva.
+    try {
+      await api.del(`/api/productos/${pid}`);
+      setSel(""); setError("");
+      cargar();
+      await recargarActivo();
+    } catch (e) {
+      setError(mensajeError(e));
+    }
   };
 
   const filasProy = (analisis?.proyeccion?.filas as FilaProyeccion[] | undefined) ?? [];
@@ -68,6 +80,8 @@ export function Portafolio() {
   return (
     <>
       <Seccion titulo={t("pf_titulo")} sub={t("pf_sub")} />
+      {errorCarga && <Alerta tipo="error">{errorCarga}</Alerta>}
+      {error && <Alerta tipo="error">{error}</Alerta>}
       {resumen && resumen.n_productos > 0 && (
         <FilaKpis>
           <Kpi label={t("pf.productos_activos")} valor={String(resumen.n_productos)}
@@ -84,7 +98,10 @@ export function Portafolio() {
       )}
 
       <Card className="mb-4">
-        {!resumen || resumen.n_productos === 0 ? (
+        {errorCarga && !resumen ? (
+          // Fallo la carga: NO decir "vacio, guarda un producto" (mentiria).
+          <p className="text-muted text-[13px]">{t("comun.error_carga")}</p>
+        ) : !resumen || resumen.n_productos === 0 ? (
           <p className="text-muted text-[13px]">
             {resumen?.mensaje || t("comun.sin_datos")} — guardá un producto desde Pricing.
           </p>

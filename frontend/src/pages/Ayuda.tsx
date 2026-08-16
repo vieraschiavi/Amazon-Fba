@@ -1,9 +1,9 @@
 // © 2026 Martín Viera. Todos los derechos reservados.
 import { useEffect, useState } from "react";
-import { api, qs } from "../api/cliente";
+import { api, mensajeError, qs } from "../api/cliente";
 import type { SeccionTutorial } from "../api/tipos";
 import { Chat } from "../components/Chat";
-import { Card, Campo, Seccion, Spinner } from "../components/ui";
+import { Alerta, Card, Campo, Seccion, Spinner } from "../components/ui";
 import { useT } from "../i18n";
 import { useApp } from "../stores/app";
 
@@ -14,12 +14,19 @@ function Tutorial() {
   const idioma = useApp((s) => s.idioma);
   const [secciones, setSecciones] = useState<SeccionTutorial[]>([]);
   const [abierta, setAbierta] = useState<string>("flujo");
+  // Antes, si la carga fallaba, .catch(()=>{}) dejaba `secciones` vacio para
+  // SIEMPRE y el spinner giraba eternamente. Ahora se registra el error y se
+  // muestra un aviso con salida, en vez de un spinner infinito.
+  const [error, setError] = useState("");
 
   useEffect(() => {
+    setError("");
     api.get<{ secciones: SeccionTutorial[] }>(`/api/tutorial${qs({ idioma })}`)
-      .then((d) => setSecciones(d.secciones)).catch(() => {});
+      .then((d) => setSecciones(d.secciones))
+      .catch((e) => setError(mensajeError(e)));
   }, [idioma]);
 
+  if (error && !secciones.length) return <Alerta tipo="error">{error}</Alerta>;
   if (!secciones.length) return <Spinner texto={t("comun.cargando")} />;
   return (
     <div className="flex flex-col gap-2">

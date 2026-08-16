@@ -1,6 +1,6 @@
 // © 2026 Martín Viera. Todos los derechos reservados.
 import { useEffect, useState } from "react";
-import { api } from "../api/cliente";
+import { api, mensajeError } from "../api/cliente";
 import type { ItemRestock, PanelRestock } from "../api/tipos";
 import { Alerta, Badge, Boton, CampoNumero, Card, FilaKpis, Kpi, Seccion, Selector, Spinner, Tabla, num, usd } from "../components/ui";
 import { useT } from "../i18n";
@@ -26,12 +26,14 @@ export function Inventario() {
   const [stock, setStock] = useState(0);
   const [lead, setLead] = useState(60);
   const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState("");
+  const [guardado, setGuardado] = useState(false);
 
   const cargar = () => {
     api.get<PanelRestock>("/api/inventario/panel").then((d) => {
-      setPanel(d);
+      setPanel(d); setError("");
       if (pid === null && d.items.length) setPid(d.items[0].id);
-    }).catch(() => {});
+    }).catch((e) => setError(mensajeError(e)));
   };
   useEffect(cargar, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -44,9 +46,19 @@ export function Inventario() {
   const guardar = async () => {
     if (pid === null) return;
     setGuardando(true);
-    await api.post(`/api/inventario/stock/${pid}`, { stock, lead_time_dias: lead }).catch(() => {});
-    setGuardando(false);
-    cargar();
+    // Antes esto tragaba el error (.catch(()=>{})): si la API rechazaba el
+    // stock/lead o fallaba, el spinner paraba y NADA avisaba que no se guardo.
+    // Es una escritura -- el silencio es peor que en una lectura.
+    try {
+      await api.post(`/api/inventario/stock/${pid}`, { stock, lead_time_dias: lead });
+      setError(""); setGuardado(true);
+      setTimeout(() => setGuardado(false), 2500);
+      cargar();
+    } catch (e) {
+      setError(mensajeError(e));
+    } finally {
+      setGuardando(false);
+    }
   };
 
   const r = panel?.resumen;
@@ -70,8 +82,10 @@ export function Inventario() {
             <CampoNumero label={t("rs.stock_actual_u")} value={stock} onValor={(v) => setStock(Math.max(0, Math.round(v)))} className="w-32" />
             <CampoNumero label={t("rs.lead_time_dias")} value={lead} onValor={(v) => setLead(Math.max(1, Math.round(v)))} className="w-32" />
             <Boton onClick={() => void guardar()} disabled={guardando || pid === null}>{t("rs_form_btn")}</Boton>
+            {guardado && <Badge texto={t("comun.guardado")} tono="verde" />}
           </div>
         )}
+        {error && <Alerta tipo="error">{error}</Alerta>}
       </Card>
 
       {!panel ? <Spinner texto={t("comun.cargando")} /> : (

@@ -25,8 +25,14 @@ import { Publicar } from "./pages/Publicar";
 
 export default function App() {
   const { cargado, licencia, hidratar } = useApp();
+  const idioma = useApp((s) => s.idioma);
 
   useEffect(() => { void hidratar(); }, [hidratar]);
+
+  // El <html lang> tiene que seguir al idioma activo: index.html lo fija en
+  // "es" y nada lo actualizaba, asi que en English/Portugues los lectores de
+  // pantalla seguian usando pronunciacion española (WCAG 3.1.1).
+  useEffect(() => { document.documentElement.lang = idioma; }, [idioma]);
 
   if (!cargado) {
     return <div className="h-full flex items-center justify-center"><Spinner texto="MV FBA IA" /></div>;

@@ -8,8 +8,13 @@
   --color-navy-deep: #152a63;
   --color-navy-soft: #eef2fb;
   --color-green: #8bc34a;
-  --color-green-ink: #3f9142;
-  --color-amber: #d97706;
+  /* green-ink y amber SOLO para TEXTO chico (badges, semaforo, "✓"): se
+     oscurecen para pasar contraste AA (4.5:1) sobre fondo casi blanco. Los
+     valores viejos (#3f9142 ~3.9:1, #d97706 ~3.6:1) fallaban AA en 11px. El
+     verde/ambar de RELLENO (barras, chips) sigue siendo el brillante de arriba;
+     esto es solo la tinta del texto. Mismo criterio que ya usa mobile. */
+  --color-green-ink: #2f7d33;
+  --color-amber: #b45309;
   --color-red: #dc2626;
   --color-ink: #16213a;
   --color-muted: #64748b;
@@ -32,6 +37,20 @@ body {
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { background: #c3cbdc; border-radius: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
+
+/* Foco de teclado VISIBLE en todo control interactivo. Antes los campos
+   usaban focus:outline-none + un cambio sutil de borde (~1px): para quien
+   navega solo con teclado el indicador era casi invisible (WCAG 2.4.7).
+   :focus-visible solo aparece con teclado, no al hacer click con el mouse. */
+:focus-visible {
+  outline: 2px solid var(--color-navy);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* Pero NO mostrar anillo al hacer click con el mouse (solo con teclado) --
+   patron canonico accesible. Sin esto, cada input mostraria el anillo del
+   navegador tambien al clickearlo. */
+:focus:not(:focus-visible) { outline: none; }
 
 /* Numeros tabulares para KPIs y tablas */
 .tabular { font-variant-numeric: tabular-nums; }

@@ -75,9 +75,9 @@ export function Chat({ endpoint, sugeridas }: {
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
           placeholder={t("chat.escribi")}
-          className="flex-1 border border-line rounded-full px-4 py-2.5 text-[13.5px] bg-card focus:outline-none focus:border-navy"
+          className="flex-1 border border-line rounded-full px-4 py-2.5 text-[13.5px] bg-card focus:border-navy"
         />
-        <Boton disabled={pensando || !texto.trim()}>➤</Boton>
+        <Boton disabled={pensando || !texto.trim()} ariaLabel={t("chat.enviar")}>➤</Boton>
       </form>
       {historial.length > 0 && (
         <button onClick={() => setHistorial([])}

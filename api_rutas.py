@@ -17,13 +17,14 @@ import base64
 import os
 import re
 import sys
+from typing import Annotated
 
 _AQUI = os.path.dirname(os.path.abspath(__file__))
 if _AQUI not in sys.path:
     sys.path.insert(0, _AQUI)
 
-from fastapi import APIRouter, Body, Response, UploadFile
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Body, Query, Response, UploadFile
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 
 import config
 import generar_pitch
@@ -58,6 +59,53 @@ router = APIRouter(prefix="/api")
 
 
 # ============================ modelos ============================ #
+class _Entrada(BaseModel):
+    """Base de los modelos con campos numericos que alimentan los motores de
+    calculo (pricing, caja, inversores, ventas...).
+
+    allow_inf_nan=False: sin esto, mandar "Infinity"/"-Infinity"/"NaN" en un
+    campo float PASA la validacion ge=0 (inf >= 0 es True) y despues desborda
+    el motor -> el resultado es inf -> FastAPI muere al serializarlo a JSON
+    ("Out of range float values are not JSON compliant") -> HTTP 500. Peor:
+    en /api/ventas (el unico que ESCRIBE en la base) la fila con precio=inf se
+    PERSISTIA antes de fallar la serializacion, y a partir de ahi /dashboard
+    quedaba roto con 500 permanente hasta limpiar la fila a mano. Con esto,
+    inf/nan se rechazan en el parseo -> 422 con el campo señalado, igual que
+    cualquier otro valor invalido. El motor nunca ve un no-finito."""
+    model_config = ConfigDict(allow_inf_nan=False)
+
+
+# Cotas SUPERIORES de dominio. allow_inf_nan corta inf/nan, pero un input
+# FINITO extremo (precio=1e308, capital=1e308) sigue desbordando el motor a inf
+# al multiplicarse -> 500 al serializar (y en /api/ventas, fila inf PERSISTIDA
+# -> dashboard roto). Estos techos son absurdamente amplios para FBA (un
+# operador real no maneja mil millones de dolares ni diez millones de unidades
+# por mes), asi que no rechazan ningun valor legitimo: solo cierran el
+# desborde. Con precio<=1e9 y unidades<=1e7, el peor producto es 1e16, lejos
+# del limite de float (1.8e308).
+MAX_USD = 1e9            # cualquier campo en dolares (capital, precio, costo, ticket, aporte)
+MAX_UNID = 10_000_000    # unidades/mes (techo de demanda, unidades de una venta)
+MAX_PROD = 1000          # cantidad de productos en un portafolio/escenario
+
+
+def _no_denormal(v: float) -> float:
+    """El landed cost es un DIVISOR: `int(budget // landed)` en caja y
+    `total_cap / (landed * pipeline)` en inversores. Un landed positivo pero
+    absurdamente chico (1e-300) hace desbordar la division a inf ->
+    int(inf) lanza OverflowError -> 500. landed=0 sigue siendo valido (el
+    motor lo trata como "sin costo": 0 unidades, no divide); un costo real de
+    sourcing es de centavos como minimo. Este validador solo rechaza la franja
+    imposible 0 < landed < 1e-6, no toca ningun valor legitimo."""
+    if 0 < v < 1e-6:
+        raise ValueError("costo por unidad demasiado chico: usá 0 o un número realista")
+    return v
+
+
+# Un costo por unidad (landed): 0 o un valor realista, nunca un denormal que
+# desborde la division. Se usa via Annotated para no repetir el validador.
+Landed = Annotated[float, AfterValidator(_no_denormal)]
+
+
 class RegistroIn(BaseModel):
     nombre: str = ""
     email: str
@@ -102,7 +150,7 @@ class InvestigacionIn(BaseModel):
     con_listing: bool = True
 
 
-class RecomendadorIn(BaseModel):
+class RecomendadorIn(_Entrada):
     # A diferencia de PricingIn/CajaIn (que limitan plata), esto limita TRABAJO:
     # _pasada_amplia hace una request HTTP de autocompletado de Amazon POR
     # CADA seed, con un sleep entre cada una -- y el endpoint es sincrono,
@@ -114,8 +162,8 @@ class RecomendadorIn(BaseModel):
     # puede drenar en minutos la cuota mensual que el usuario paga de su
     # bolsillo. Los topes (20) son generosos frente a los defaults (8/12/10):
     # no cambian ningun uso normal, solo cortan el caso sin sentido.
-    precio_min: float = 10.0
-    precio_max: float = 50.0
+    precio_min: float = Field(10.0, le=MAX_USD)
+    precio_max: float = Field(50.0, le=MAX_USD)
     marketplace: str = "US"
     seeds: list[str] | None = Field(None, max_length=20)
     max_seeds: int = Field(8, ge=1, le=20)
@@ -125,7 +173,7 @@ class RecomendadorIn(BaseModel):
     demo: bool = False
 
 
-class PricingIn(BaseModel):
+class PricingIn(_Entrada):
     # Todo lo que entra aca es plata o un porcentaje de costo: nada puede ser
     # negativo. Sin estos limites, un error de tipeo del usuario (-50 en vez de
     # 50) devolvia HTTP 200 con "precio: -90.0" y un semaforo en rojo, o sea un
@@ -136,21 +184,21 @@ class PricingIn(BaseModel):
     # El limite va ACA (frontera de la API) y no en agents/pricing.py a
     # proposito: la formula de pricing no se toca. landed_cost() sigue siendo
     # la misma; lo unico que cambia es que ya no se la llama con basura.
-    costo: float = Field(0.0, ge=0)
-    flete: float = Field(0.0, ge=0)
-    arancel_pct: float = Field(0.0, ge=0)
-    prep: float = Field(0.0, ge=0)
-    fba_fee: float | None = Field(None, ge=0)
+    costo: float = Field(0.0, ge=0, le=MAX_USD)
+    flete: float = Field(0.0, ge=0, le=MAX_USD)
+    arancel_pct: float = Field(0.0, ge=0, le=MAX_USD)
+    prep: float = Field(0.0, ge=0, le=MAX_USD)
+    fba_fee: float | None = Field(None, ge=0, le=MAX_USD)
     # El codigo ya ignora una competencia <= 0 (ver pricing.evaluar), asi que
     # ge=0 no cambia ningun comportamiento valido: solo rechaza el disparate.
-    precio_competencia: float | None = Field(None, ge=0)
+    precio_competencia: float | None = Field(None, ge=0, le=MAX_USD)
     # Margen objetivo en PORCENTAJE (config.TARGET_MARGIN = 25.0, no 0.25).
     # Un margen >= 100% es imposible por definicion -- el margen es una parte
     # del precio -- y hace que precio_objetivo() no pueda converger.
     margen_obj: float | None = Field(None, ge=0, lt=100)
 
 
-class CajaIn(BaseModel):
+class CajaIn(_Entrada):
     # Mismo criterio que PricingIn: los imposibles se rechazan en la frontera,
     # el motor (agents/capital_planner.py) NO se toca.
     #
@@ -160,55 +208,55 @@ class CajaIn(BaseModel):
     # y el min() se queda con ese negativo gigante. techo_demanda=-50 daba
     # "vendidas": -50. Numeros imposibles presentados como una proyeccion real,
     # que es justo lo que el techo de demanda existe para evitar.
-    budget: float = Field(..., ge=0)
-    landed: float = Field(..., ge=0)
-    precio: float = Field(..., ge=0)
+    budget: float = Field(..., ge=0, le=MAX_USD)
+    landed: Landed = Field(..., ge=0, le=MAX_USD)
+    precio: float = Field(..., ge=0, le=MAX_USD)
     # net_unit SIN limite inferior a proposito: un neto negativo es un caso
     # legitimo a modelar (vender a perdida para liquidar stock), no un error.
-    net_unit: float
+    net_unit: float = Field(..., ge=-MAX_USD, le=MAX_USD)
     # Fracciones, no porcentajes (default 0.5 = 50%, 0.05 = 5%): el motor hace
     # `disponible * sell_through` y `1 - devoluciones`.
     sell_through: float = Field(0.5, ge=0, le=1)
     devoluciones: float = Field(0.05, ge=0, le=1)
     lead_time_meses: int = Field(2, ge=0)
     payout_delay_meses: int = Field(1, ge=0)
-    techo_demanda: int = Field(290, ge=0)
+    techo_demanda: int = Field(290, ge=0, le=MAX_UNID)
     # meses=100000 generaba 100.000 filas en una sola request (memoria y CPU
     # por una entrada sin sentido). 120 = 10 años, de sobra para una
     # proyeccion de caja; abajo de 1 no hay nada que proyectar.
     meses: int = Field(12, ge=1, le=120)
 
 
-class EscenarioInversorIn(BaseModel):
+class EscenarioInversorIn(_Entrada):
     # capital_propio negativo daba "unidades_mes": -455 y "facturacion":
     # -10909; techo=-1 daba "facturacion": -24. Facturacion negativa no existe.
-    capital_propio: float = Field(..., ge=0)
-    n_productos: int = Field(1, ge=1)
-    techo: int = Field(290, ge=0)
-    precio: float = Field(24.0, ge=0)
-    net_unit: float = 6.9          # puede ser negativo (ver CajaIn)
-    landed: float = Field(5.5, ge=0)
-    capital_inversor: float = Field(0.0, ge=0)
+    capital_propio: float = Field(..., ge=0, le=MAX_USD)
+    n_productos: int = Field(1, ge=1, le=MAX_PROD)
+    techo: int = Field(290, ge=0, le=MAX_UNID)
+    precio: float = Field(24.0, ge=0, le=MAX_USD)
+    net_unit: float = Field(6.9, ge=-MAX_USD, le=MAX_USD)  # puede ser negativo (ver CajaIn)
+    landed: Landed = Field(5.5, ge=0, le=MAX_USD)
+    capital_inversor: float = Field(0.0, ge=0, le=MAX_USD)
     # Comision del inversor sobre la facturacion que financia su capital: una
     # parte de la facturacion, nunca mas del 100% ni negativa.
     pct_facturacion: float = Field(10.0, ge=0, le=100)
     pipeline_meses: int = Field(4, ge=1)
 
 
-class RetornoInversorIn(BaseModel):
-    ticket: float = Field(1000.0, ge=0)
+class RetornoInversorIn(_Entrada):
+    ticket: float = Field(1000.0, ge=0, le=MAX_USD)
     pct_facturacion: float = Field(10.0, ge=0, le=100)
-    techo: int = Field(290, ge=0)
-    precio: float = Field(24.0, ge=0)
-    landed: float = Field(5.5, ge=0)
+    techo: int = Field(290, ge=0, le=MAX_UNID)
+    precio: float = Field(24.0, ge=0, le=MAX_USD)
+    landed: Landed = Field(5.5, ge=0, le=MAX_USD)
     meses: int = Field(24, ge=1, le=120)
-    productos_financia: float = Field(1.0, ge=0)
+    productos_financia: float = Field(1.0, ge=0, le=MAX_PROD)
     pipeline_meses: int = Field(4, ge=1)
     devoluciones: float = Field(0.05, ge=0, le=1)
     mes_arranque: int = Field(2, ge=1)
 
 
-class InteresCompuestoIn(BaseModel):
+class InteresCompuestoIn(_Entrada):
     # Este era el peor de la familia: no devolvia un numero raro, CRASHEABA.
     # anios=10000 hacia desbordar el capital a inf, y FastAPI moria al
     # serializar con "ValueError: Out of range float values are not JSON
@@ -218,25 +266,25 @@ class InteresCompuestoIn(BaseModel):
     # Los topes se eligieron VERIFICANDO que el peor caso permitido siga
     # dando un float finito: aporte 1e9 + 1e9/mes al 1000% durante 50 años
     # da 6.48e61, que serializa bien.
-    aporte_inicial: float = Field(..., ge=0)
-    aporte_periodico: float = Field(0.0, ge=0)
+    aporte_inicial: float = Field(..., ge=0, le=MAX_USD)
+    aporte_periodico: float = Field(0.0, ge=0, le=MAX_USD)
     # Una tasa negativa es un escenario legitimo (un mal año); no se puede
     # perder mas del 100% del capital en un periodo. El techo de 1000% anual
     # (10x por año) ya es absurdo de sobra para una proyeccion real.
     tasa_anual_pct: float = Field(60.0, ge=-100, le=1000)
     anios: int = Field(5, ge=1, le=50)
-    techo_capital: float = Field(0.0, ge=0)
+    techo_capital: float = Field(0.0, ge=0, le=MAX_USD)
     frecuencia: str = "mensual"
 
 
-class PlanPortafolioIn(BaseModel):
+class PlanPortafolioIn(_Entrada):
     # objetivo_mensual=-3000 devolvia 200 con "alcanzado": True -- decia que
     # un objetivo de sueldo NEGATIVO estaba cumplido.
-    objetivo_mensual: float = Field(..., ge=0)
-    capital_propio: float = Field(..., ge=0)
-    techo: int = Field(290, ge=0)
-    precio: float = Field(24.0, ge=0)
-    net_unit: float = 6.9          # puede ser negativo (ver CajaIn)
+    objetivo_mensual: float = Field(..., ge=0, le=MAX_USD)
+    capital_propio: float = Field(..., ge=0, le=MAX_USD)
+    techo: int = Field(290, ge=0, le=MAX_UNID)
+    precio: float = Field(24.0, ge=0, le=MAX_USD)
+    net_unit: float = Field(6.9, ge=-MAX_USD, le=MAX_USD)  # puede ser negativo (ver CajaIn)
     usar_inversores: bool = False
     pct_comision: float = Field(5.0, ge=0, le=100)
 
@@ -247,29 +295,34 @@ class ChatIn(BaseModel):
     idioma: str = "es"
 
 
-class ProductoUpdateIn(BaseModel):
+class ProductoUpdateIn(_Entrada):
+    # Los mismos ge=0 que PricingIn: este es el OTRO camino que alimenta el
+    # motor de pricing (editar un producto guardado), y sin los limites
+    # aceptaba costo=-999 -> el analisis mostraba landed=-1057 y precio=-2107,
+    # un precio negativo presentado como resultado valido. La validacion tiene
+    # que ser la misma en los dos caminos que llegan al mismo motor.
     nombre: str | None = None
     asin: str | None = None
-    costo: float | None = None
-    flete: float | None = None
-    arancel_pct: float | None = None
-    prep: float | None = None
-    fba_fee: float | None = None
-    precio_competencia: float | None = None
-    techo_demanda: int | None = None
+    costo: float | None = Field(None, ge=0, le=MAX_USD)
+    flete: float | None = Field(None, ge=0, le=MAX_USD)
+    arancel_pct: float | None = Field(None, ge=0, le=MAX_USD)
+    prep: float | None = Field(None, ge=0, le=MAX_USD)
+    fba_fee: float | None = Field(None, ge=0, le=MAX_USD)
+    precio_competencia: float | None = Field(None, ge=0, le=MAX_USD)
+    techo_demanda: int | None = Field(None, ge=0, le=MAX_UNID)
     notas: str | None = None
     activo: int | None = None
 
 
-class PublicarIn(BaseModel):
+class PublicarIn(_Entrada):
     nombre: str
-    costo: float = 0.0
-    flete: float = 0.0
-    arancel_pct: float = 0.0
-    prep: float = 0.0
-    fba_fee: float | None = None
-    precio_competencia: float | None = None
-    techo_demanda: int = 290
+    costo: float = Field(0.0, ge=0, le=MAX_USD)
+    flete: float = Field(0.0, ge=0, le=MAX_USD)
+    arancel_pct: float = Field(0.0, ge=0, le=MAX_USD)
+    prep: float = Field(0.0, ge=0, le=MAX_USD)
+    fba_fee: float | None = Field(None, ge=0, le=MAX_USD)
+    precio_competencia: float | None = Field(None, ge=0, le=MAX_USD)
+    techo_demanda: int = Field(290, ge=0, le=MAX_UNID)
     usar_motor_propio: bool = True
     demo: bool = False
 
@@ -279,7 +332,7 @@ class KitCreativoIn(BaseModel):
     bullets: list[str] = []
 
 
-class VentaIn(BaseModel):
+class VentaIn(_Entrada):
     # El unico de la familia que ESCRIBE EN LA BASE: unidades=-500 creaba una
     # fila real con ingreso -12000 y mandaba un mail diciendo "Vendiste -500
     # unidades de ...". Eso no es una respuesta rara que se descarta: queda
@@ -289,24 +342,46 @@ class VentaIn(BaseModel):
     # `ingreso = unidades * precio`), asi que una venta negativa no es una
     # funcion no documentada -- es entrada sin validar.
     asin: str
-    unidades: int = Field(..., ge=1)      # una venta de 0 unidades no es una venta
-    precio: float = Field(..., ge=0)      # 0 = muestra/regalo, es real
-    # neto_unitario SIN limite: vender a perdida es un caso legitimo.
-    neto_unitario: float
+    unidades: int = Field(..., ge=1, le=MAX_UNID)  # una venta de 0 unidades no es una venta
+    precio: float = Field(..., ge=0, le=MAX_USD)  # 0 = muestra/regalo, es real
+    # neto_unitario SIN limite INFERIOR (vender a perdida es legitimo); el
+    # techo evita que unidades*neto desborde y se guarde inf en la base.
+    neto_unitario: float = Field(..., ge=-MAX_USD, le=MAX_USD)
     pais: str = "US"
     segmento: str = "general"
     product_id: int | None = None
 
 
-class StockIn(BaseModel):
-    stock: int
-    lead_time_dias: int | None = None
+class StockIn(_Entrada):
+    # Stock y lead time NEGATIVOS no existen fisicamente; sin ge=0 se
+    # persistian igual (stock=-999, lead_time=-50) y despues la proyeccion de
+    # caja/inventario los tomaba como validos.
+    stock: int = Field(..., ge=0)
+    lead_time_dias: int | None = Field(None, ge=0)
 
 
 class PoaIn(BaseModel):
     motivo: str = ""
     tipo: str = "otro"
     idioma: str = "es"
+
+
+class BsrIn(_Entrada):
+    # Antes era Body(dict) sin tipar: mandar bsr como lista/objeto/bool
+    # llegaba crudo a data_bsr.estimar() -> parsear_bloque() hacia
+    # operaciones de string sobre un tipo inesperado -> HTTP 500. Tipado como
+    # str|float, un tipo que no sea eso da 422. El frontend manda un string
+    # (el bloque de texto pegado de Amazon); un BSR numerico suelto tambien
+    # sirve (estimar() acepta int/float).
+    bsr: str | float | None = None
+    categoria: str | None = None
+
+
+class VendedoresTextoIn(_Entrada):
+    # Igual que BsrIn: era Body(dict) sin tipar y un texto no-string reventaba
+    # vendedores_principales(). El frontend manda {"texto": "<un competidor
+    # por linea>"}.
+    texto: str = ""
 
 
 # ============================ licencia / demo ============================ #
@@ -597,21 +672,20 @@ def recomendador_escanear(r: RecomendadorIn):
 
 
 @router.post("/mercado/vendedores")
-def mercado_vendedores(body: dict = Body(default=None)):
+def mercado_vendedores(body: VendedoresTextoIn):
     """Vendedores principales de un nicho SIN ninguna API paga.
 
     El cliente manda {"texto": "<un competidor por linea, con ASIN y BSR>"} y
     devuelve cada uno con sus ventas/mes estimadas por la curva del BSR, su
     cuota entre los pegados y el ingreso/mes estimado. Las lineas sin BSR se
     listan sin numero: no se inventa nada."""
-    return data_mercado.vendedores_principales((body or {}).get("texto"))
+    return data_mercado.vendedores_principales(body.texto)
 
 
 @router.post("/mercado/bsr")
-def mercado_bsr(body: dict = Body(default=None)):
+def mercado_bsr(body: BsrIn):
     """Convierte un BSR publico de Amazon en ventas/mes estimadas (gratis)."""
-    datos = body or {}
-    return data_bsr.estimar(datos.get("bsr"), datos.get("categoria"))
+    return data_bsr.estimar(body.bsr, body.categoria)
 
 
 @router.get("/exito")
@@ -645,8 +719,14 @@ def pricing_post(p: PricingIn):
 
 
 @router.get("/pricing/acos")
-def pricing_acos(margen_actual_pct: float, margen_minimo_pct: float,
-                 acos_supuesto_pct: float | None = None):
+def pricing_acos(
+        # Query float sin cotas aceptaba "Infinity"/"nan" -> inf en la
+        # respuesta -> 500 al serializar. Las cotas finitas (absurdamente
+        # anchas para un porcentaje real) rechazan inf con 422; nan falla la
+        # comparacion ge/le y tambien da 422.
+        margen_actual_pct: float = Query(..., ge=-1e6, le=1e6),
+        margen_minimo_pct: float = Query(..., ge=-1e6, le=1e6),
+        acos_supuesto_pct: float | None = Query(None, ge=0, le=1e6)):
     return {"acos_maximo": pricing.acos_bancable(margen_actual_pct,
                                                  margen_minimo_pct,
                                                  acos_supuesto_pct)}
@@ -682,9 +762,18 @@ def inversores_retorno(r: RetornoInversorIn):
 
 
 @router.get("/plan/pitch")
-def plan_pitch(ticket: float = 1000, pct: float = 10.0, techo: int = 290,
-               precio: float = 24.0, landed: float = 5.5, meses: int = 24,
-               productos_financia: float = 1.0):
+def plan_pitch(
+        # Cotas finitas: sin ellas, ?ticket=Infinity embebia "$inf" en el HTML
+        # del pitch, y ?meses=1000000 generaba una sola respuesta de ~11 MB
+        # (una fila por mes). meses topado en 120 = 10 años, igual que
+        # CajaIn/RetornoInversorIn; el resto ge=0 con techo amplio.
+        ticket: float = Query(1000, ge=0, le=1e9),
+        pct: float = Query(10.0, ge=0, le=100),
+        techo: int = Query(290, ge=0, le=1_000_000),
+        precio: float = Query(24.0, ge=0, le=1e9),
+        landed: float = Query(5.5, ge=0, le=1e9),
+        meses: int = Query(24, ge=1, le=120),
+        productos_financia: float = Query(1.0, ge=0, le=1e6)):
     html = generar_pitch.html_pitch(ticket=ticket, pct=pct, techo=techo,
                                     precio=precio, landed=landed, meses=meses,
                                     productos_financia=productos_financia)
@@ -723,16 +812,17 @@ def productos_baja(pid: int):
 
 
 @router.post("/productos/{pid}/estimar-ventas")
-def productos_estimar_ventas(pid: int, body: dict = Body(default=None)):
+def productos_estimar_ventas(pid: int, body: BsrIn | None = None):
     """Estima las ventas/mes de mercado del producto y las guarda en su ficha.
 
     Fuentes, en orden: Jungle Scout, Keepa, y -- GRATIS, sin ninguna API -- el
     BSR publico de la pagina de Amazon que mande el cliente en el body
     ({"bsr": "#1,234 in Home & Kitchen"} o {"bsr": 1234, "categoria": "..."}).
-    Sin ASIN, sin clave y sin BSR: avisa y no inventa un numero."""
-    datos = body or {}
-    return productos.estimar_ventas(pid, bsr=datos.get("bsr"),
-                                    categoria=datos.get("categoria"))
+    El body es OPCIONAL: sin el, usa las APIs (Jungle Scout/Keepa) por ASIN.
+    Sin ASIN, sin clave y sin BSR: avisa y no inventa un numero. Sigue tipado
+    (BsrIn) para que un bsr que no sea str/float de 422, no 500."""
+    return productos.estimar_ventas(pid, bsr=body.bsr if body else None,
+                                    categoria=body.categoria if body else None)
 
 
 @router.post("/ventas")

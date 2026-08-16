@@ -612,6 +612,83 @@ def test_recomendador_rechaza_imposibles():
         assert r.status_code == 422, f"{campo}={valor} deberia rechazarse"
 
 
+def test_infinito_y_overflow_nunca_dan_500():
+    """REGRESION (familia entera): un campo float con ge=0 pero SIN cota
+    superior aceptaba "Infinity" (inf >= 0 es True) o un finito extremo
+    (1e308) que se multiplica y DESBORDA a inf dentro del motor. FastAPI
+    entonces muere al serializar inf a JSON -> HTTP 500. El peor caso:
+    POST /api/ventas persistia la fila con precio=inf ANTES de fallar, y
+    /dashboard quedaba roto con 500 permanente hasta limpiar la base a mano.
+
+    El fix (allow_inf_nan=False + cotas le= de dominio + validador de
+    divisor denormal) tiene que devolver 422 en TODOS estos casos, nunca 500,
+    y no debe quedar ninguna fila corrupta en la base."""
+    casos = [
+        ("POST", "/api/ventas", {"asin": "X", "unidades": 1, "precio": "Infinity", "neto_unitario": 1}),
+        ("POST", "/api/ventas", {"asin": "X", "unidades": 1_000_000_000, "precio": 1e300, "neto_unitario": 1e300}),
+        ("POST", "/api/pricing", {"costo": 1e308, "flete": 1e308, "arancel_pct": 1e6, "prep": 0.5}),
+        ("POST", "/api/caja/proyeccion", {"budget": 1e300, "landed": 1e-300, "precio": 1e308, "net_unit": 6.9}),
+        # divisor denormal: landed positivo pero absurdamente chico -> budget//landed desborda
+        ("POST", "/api/caja/proyeccion", {"budget": 1e9, "landed": 1e-300, "precio": 24, "net_unit": 6.9}),
+        ("POST", "/api/inversores/escenario", {"capital_propio": 1e308, "precio": 1e308, "landed": 1e-300}),
+        ("POST", "/api/inversores/retorno", {"ticket": 1e308, "precio": 1e308, "landed": 1e-300}),
+        ("POST", "/api/plan/interes-compuesto", {"aporte_inicial": 1e308, "aporte_periodico": 1e308, "tasa_anual_pct": 1000, "anios": 50}),
+        ("POST", "/api/plan/portafolio", {"objetivo_mensual": 1e308, "capital_propio": 1e308, "precio": 1e308}),
+        ("PUT", "/api/productos/1", {"costo": 1e308}),
+    ]
+    for metodo, ruta, body in casos:
+        r = cliente.request(metodo, ruta, json=body)
+        assert r.status_code == 422, f"{metodo} {ruta} con {body} dio {r.status_code}, se esperaba 422"
+
+    # query params float: inf tambien tiene que dar 422, no 500
+    assert cliente.get("/api/pricing/acos",
+                       params={"margen_actual_pct": "inf", "margen_minimo_pct": 5}).status_code == 422
+    assert cliente.get("/api/plan/pitch", params={"ticket": "Infinity"}).status_code == 422
+    # meses gigante generaba una respuesta de ~11 MB (una fila por mes)
+    assert cliente.get("/api/plan/pitch", params={"meses": 1_000_000}).status_code == 422
+
+    # el dashboard sigue sano y NO se persistio ninguna fila con inf
+    assert cliente.get("/dashboard").status_code == 200
+    import config
+    import sqlite3
+    con = sqlite3.connect(config.DB_PATH)
+    corruptas = [row for row in con.execute("SELECT id, precio, ingreso FROM orders")
+                 if any(str(v) in ("inf", "-inf", "nan") for v in row[1:])]
+    con.close()
+    assert corruptas == [], f"quedaron filas corruptas en la base: {corruptas}"
+
+
+def test_body_dict_valida_tipo_no_crashea():
+    """REGRESION: /api/mercado/bsr, /api/mercado/vendedores y
+    /api/productos/{id}/estimar-ventas usaban Body(dict) sin tipar -- mandar
+    bsr/texto como lista/objeto/bool llegaba crudo al motor y lo reventaba
+    (500). Ahora son modelos tipados (bsr: str|float, texto: str) -> 422."""
+    for body in ({"bsr": [1, 2, 3]}, {"bsr": {"a": 1}}):
+        assert cliente.post("/api/mercado/bsr", json=body).status_code == 422
+        assert cliente.post("/api/productos/1/estimar-ventas", json=body).status_code == 422
+    for body in ({"texto": ["a", "b"]}, {"texto": 123}):
+        assert cliente.post("/api/mercado/vendedores", json=body).status_code == 422
+    # el uso legitimo (string) sigue andando: un BSR suelto y un bloque de texto
+    assert cliente.post("/api/mercado/bsr", json={"bsr": 1234}).status_code == 200
+    assert cliente.post("/api/mercado/vendedores",
+                        json={"texto": "B0 #1,234 in Home & Kitchen $24"}).status_code == 200
+
+
+def test_stock_y_producto_rechazan_negativos():
+    """REGRESION: StockIn no tenia ge=0 (stock=-999/lead=-50 se persistian) y
+    ProductoUpdateIn no tenia los ge=0 que PricingIn si agrego -> costo=-999
+    daba landed/precio negativos como resultado 'valido'. Los dos caminos que
+    alimentan el motor de pricing tienen que validar igual."""
+    assert cliente.post("/api/inventario/stock/1",
+                        json={"stock": -5, "lead_time_dias": 30}).status_code == 422
+    assert cliente.post("/api/inventario/stock/1",
+                        json={"stock": 5, "lead_time_dias": -1}).status_code == 422
+    assert cliente.put("/api/productos/1", json={"costo": -999}).status_code == 422
+    # valores validos siguen pasando
+    assert cliente.post("/api/inventario/stock/1",
+                        json={"stock": 100, "lead_time_dias": 45}).status_code in (200, 404)
+
+
 def test_recomendador_narrativa_top_offline():
     """Sin ANTHROPIC_API_KEY, narrativa_top devuelve un resumen deterministico
     del top 1 -- nunca vacio, nunca lanza."""
