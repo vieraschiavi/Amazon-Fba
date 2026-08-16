@@ -37,6 +37,11 @@
   .btn-b{background:#fff;color:var(--navy-700);border:1.5px solid var(--line)}
   .pasos{font-size:13.5px;color:#475569;line-height:1.6;margin-top:20px;background:#f8fafc;border-radius:12px;padding:14px 16px}
   .pasos b{color:var(--ink)}
+  .ayuda-win summary{cursor:pointer;font-weight:700;color:var(--ink);list-style:none}
+  .ayuda-win summary::-webkit-details-marker{display:none}
+  .ayuda-win-cuerpo{margin-top:10px}
+  .ayuda-win-cuerpo p{margin:0 0 8px}
+  .ayuda-win code{background:#eef2f7;border-radius:5px;padding:1px 5px;font-size:12.5px}
   .err{background:#fef2f2;color:#991b1b;border-radius:12px;padding:16px;font-size:14px}
   .foot{margin-top:22px;font-size:12.5px;color:#94a3b8;text-align:center}
   a.link{color:#8a5407;font-weight:700}
@@ -106,6 +111,19 @@ function mostrarAprobado(d){
       <a class="btn btn-b" href="/api/descarga?payment_id=${encodeURIComponent(d._pid || "")}${d._proc ? "&proc=" + encodeURIComponent(d._proc) : ""}">💻 Programa para PC (Windows)</a>
       <a class="btn btn-b" href="/api/descarga?tipo=bat&payment_id=${encodeURIComponent(d._pid || "")}${d._proc ? "&proc=" + encodeURIComponent(d._proc) : ""}">📦 PC sin instalador (.zip, si tu empresa bloquea .exe)</a>
     </div>
+    <details class="pasos ayuda-win">
+      <summary>💻 En Windows aparece <b>“Windows protegió tu PC”</b>? (es normal)</summary>
+      <div class="ayuda-win-cuerpo">
+        <p>El programa es nuevo y todavía no está firmado con un certificado pago,
+        así que Windows muestra un aviso azul la primera vez. <b>No es un virus</b> —
+        podés instalarlo sin problema:</p>
+        1. En el aviso azul, hacé clic en <b>Más información</b>.<br>
+        2. Después apretá <b>Ejecutar de todas formas</b>.<br>
+        3. El instalador te deja <b>elegir la carpeta</b> donde instalarlo y seguir normal.<br>
+        <p style="margin-top:10px">Si tu empresa bloquea los <code>.exe</code>, usá la
+        opción <b>PC sin instalador (.zip)</b> de arriba: se descomprime y se abre con doble clic.</p>
+      </div>
+    </details>
     <div class="pasos">
       <b>Cómo activarla:</b><br>
       1. Instalá la app (Android) o el programa (PC).<br>

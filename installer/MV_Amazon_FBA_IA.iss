@@ -50,6 +50,10 @@ DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 ; Siempre mostrar la pagina de "elegir carpeta", tambien al actualizar.
 DisableDirPage=no
+; Ademas, repetir la carpeta elegida en la pagina "Todo listo para instalar":
+; asi el usuario CONFIRMA a la vista donde va a quedar el programa antes de
+; apretar Instalar, y no hay dudas de que se pudo elegir el destino.
+AlwaysShowDirOnReadyPage=yes
 ; Arranca sin pedir admin, pero deja elegir "para todos los usuarios" en un
 ; dialogo al inicio (ahi si eleva permisos).
 PrivilegesRequired=lowest
