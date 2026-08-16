@@ -101,6 +101,21 @@ def init(reset=False):
             con.execute(ddl)
         _migrar(con)
         con.commit()
+    except sqlite3.OperationalError as e:
+        # "database or disk is full" es un problema del DISCO, no del programa,
+        # pero sqlite lo tira como un traceback crudo que no le dice nada a
+        # quien compro esto. Se traduce a algo accionable, diciendo DONDE
+        # escribe la base -- que no es la carpeta de instalacion: va a
+        # %LOCALAPPDATA% (ver _dir_datos en config.py), asi que el disco que
+        # hay que liberar suele ser C: aunque el programa este instalado en D:.
+        if "disk is full" in str(e).lower():
+            raise RuntimeError(
+                "No hay espacio en el disco para la base de datos.\n"
+                f"La base se guarda en: {config.DB_PATH}\n"
+                "Liberá espacio en ese disco (normalmente C:, aunque hayas "
+                "instalado el programa en otro) y volvé a abrir el programa."
+            ) from e
+        raise
     finally:
         con.close()
 
