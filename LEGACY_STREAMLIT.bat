@@ -6,9 +6,29 @@ title MV FBA IA
 
 echo.
 echo  ============================================================
-echo    MV AMAZON FBA IA - Cockpit inteligente Amazon FBA
-echo    Panel + API + base de datos, todo con un doble clic.
+echo    PANEL VIEJO (Streamlit) - VERSION OBSOLETA
 echo  ============================================================
+echo.
+echo   Esto NO es el programa MV FBA IA que se vende.
+echo   Es el panel LEGACY de Streamlit: se abre en el navegador,
+echo   se ve distinto y ya no recibe mejoras. No se instala en el
+echo   producto final.
+echo.
+echo   El programa REAL es una aplicacion de escritorio (React +
+echo   Electron): ventana propia, sin navegador ni consola.
+echo   Se instala con MV_Amazon_FBA_IA_Setup.exe y te deja elegir
+echo   la carpeta de instalacion.
+echo.
+echo      https://github.com/vieraschiavi/Amazon-Fba/releases/tag/pc-latest
+echo.
+echo   Si bajaste el CODIGO (Amazon-Fba-main) y solo queres probar
+echo   el programa real desde aca, cerra esta ventana y abri:
+echo      INICIAR.bat        (panel nuevo React en el navegador)
+echo.
+echo  ============================================================
+echo.
+choice /C SN /N /M "  Abrir igual el panel VIEJO de Streamlit? (S/N): "
+if errorlevel 2 exit /b 0
 echo.
 
 rem Runtime embebido si esta; si no, Python del sistema (ver _entorno.bat).
