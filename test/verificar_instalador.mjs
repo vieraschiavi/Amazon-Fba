@@ -161,6 +161,39 @@ if (/\$salida = Join-Path \(Get-Location\)\.Path/.test(WF)) {
   ok("  la carpeta de salida del owner es una ruta absoluta");
 } else falla("la salida del .exe owner es relativa: ISCC puede escribirla en otro lado");
 
+// --- 6c) el bloque owner NUNCA puede voltear el build ---
+// Corre en CADA push a main y depende de un servidor EXTERNO (le pide la
+// licencia del dueño). Sin esto, un 503 pasajero de ese servidor dejaba main
+// en rojo aunque el instalador de clientes hubiera salido perfecto -- y el de
+// clientes ya esta publicado a esa altura, asi que el rojo no protege nada.
+const PASOS_OWNER = [
+  "Escribir licencia owner",
+  "Verificar que el build owner lleva la licencia adentro",
+  "Compilar instalador owner",
+  "Armar la version portable owner",
+  "Publicar instalador owner como Release",
+];
+for (const nombre of PASOS_OWNER) {
+  const i = WF.indexOf(`- name: ${nombre}`);
+  if (i < 0) { falla(`falta el paso owner "${nombre}"`); continue; }
+  const sig = WF.indexOf("\n      - name: ", i + 10);
+  const bloque = WF.slice(i, sig < 0 ? WF.length : sig);
+  if (/continue-on-error: true/.test(bloque)) ok(`  "${nombre}" no voltea el build`);
+  else {
+    falla(`el paso owner "${nombre}" puede voltear el build: un fallo del ` +
+          `servidor de licencias dejaria main en rojo sin culpa del codigo`);
+  }
+}
+if (/name: Resumen del build owner/.test(WF)) {
+  ok("un build owner salteado queda a la vista en el resumen del run");
+} else falla("sin paso de resumen, un owner salteado pasaria en silencio");
+
+// Los pasos que pegan contra servicios externos (npm, python.org, PyPI,
+// chocolatey) reintentan: un corte pasajero no puede poner el PR en rojo.
+const reintentos = (WF.match(/Reintentar \{/g) || []).length;
+if (reintentos >= 6) ok(`${reintentos} pasos de red reintentan antes de fallar`);
+else falla(`solo ${reintentos} pasos reintentan: un 503 pasajero voltea el PR`);
+
 // --- 7) la app tiene que abrir como PROGRAMA, no como pagina web ---
 // Se abre con Electron, que trae su propio Chromium adentro. Antes se usaba
 // pywebview sobre el runtime WebView2 de Edge, que es un componente del

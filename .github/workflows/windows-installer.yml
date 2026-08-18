@@ -55,9 +55,33 @@ jobs:
 
       - name: Compilar panel web (frontend/dist)
         working-directory: frontend
+        shell: pwsh
         run: |
-          npm ci
+          $ErrorActionPreference = "Stop"
+          # Reintentos: estos pasos pegan contra servicios externos (registry
+          # de npm, python.org, PyPI, chocolatey). Un 503 o un corte transitorio
+          # ponia el PR en rojo sin que hubiera nada mal en el codigo.
+          function Reintentar([scriptblock]$accion, [string]$que) {
+            for ($i = 1; $i -le 3; $i++) {
+              # Se resetea ANTES: los cmdlets de PowerShell no tocan
+              # $LASTEXITCODE, asi que sin esto heredarian el codigo de un
+              # comando nativo anterior y un exito se leeria como fallo.
+              $global:LASTEXITCODE = 0
+              try {
+                & $accion
+                if ($LASTEXITCODE -eq 0) { return }
+                throw "codigo de salida $LASTEXITCODE"
+              } catch {
+                if ($i -eq 3) { throw "$que fallo tras 3 intentos: $($_.Exception.Message)" }
+                Write-Host "::warning::$que fallo (intento $i), reintento: $($_.Exception.Message)"
+                Start-Sleep -Seconds ($i * 10)
+                $global:LASTEXITCODE = 0
+              }
+            }
+          }
+          Reintentar { npm ci } "npm ci"
           npm run build
+          if ($LASTEXITCODE -ne 0) { throw "npm run build fallo" }
 
       # La app de escritorio es Electron: trae su propio Chromium adentro, asi
       # que la ventana abre igual en cualquier Windows. Antes se usaba pywebview
@@ -66,7 +90,29 @@ jobs:
       - name: Compilar la app de escritorio (Electron)
         working-directory: electron
         run: |
-          npm install --no-audit --no-fund
+          $ErrorActionPreference = "Stop"
+          # Reintentos: estos pasos pegan contra servicios externos (registry
+          # de npm, python.org, PyPI, chocolatey). Un 503 o un corte transitorio
+          # ponia el PR en rojo sin que hubiera nada mal en el codigo.
+          function Reintentar([scriptblock]$accion, [string]$que) {
+            for ($i = 1; $i -le 3; $i++) {
+              # Se resetea ANTES: los cmdlets de PowerShell no tocan
+              # $LASTEXITCODE, asi que sin esto heredarian el codigo de un
+              # comando nativo anterior y un exito se leeria como fallo.
+              $global:LASTEXITCODE = 0
+              try {
+                & $accion
+                if ($LASTEXITCODE -eq 0) { return }
+                throw "codigo de salida $LASTEXITCODE"
+              } catch {
+                if ($i -eq 3) { throw "$que fallo tras 3 intentos: $($_.Exception.Message)" }
+                Write-Host "::warning::$que fallo (intento $i), reintento: $($_.Exception.Message)"
+                Start-Sleep -Seconds ($i * 10)
+                $global:LASTEXITCODE = 0
+              }
+            }
+          }
+          Reintentar { npm install --no-audit --no-fund } "npm install"
           npx --yes @electron/packager . "MV FBA IA" --platform=win32 --arch=x64 `
               --out=../electron-dist --overwrite --icon=../installer/assets/icon.ico `
               --app-version=1.3.0
@@ -86,7 +132,31 @@ jobs:
           if ($mb -lt 100) { throw "El empaquetado de Electron quedo incompleto ($mb MB)" }
 
       - name: Instalar Inno Setup
-        run: choco install innosetup --no-progress -y
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          # Reintentos: estos pasos pegan contra servicios externos (registry
+          # de npm, python.org, PyPI, chocolatey). Un 503 o un corte transitorio
+          # ponia el PR en rojo sin que hubiera nada mal en el codigo.
+          function Reintentar([scriptblock]$accion, [string]$que) {
+            for ($i = 1; $i -le 3; $i++) {
+              # Se resetea ANTES: los cmdlets de PowerShell no tocan
+              # $LASTEXITCODE, asi que sin esto heredarian el codigo de un
+              # comando nativo anterior y un exito se leeria como fallo.
+              $global:LASTEXITCODE = 0
+              try {
+                & $accion
+                if ($LASTEXITCODE -eq 0) { return }
+                throw "codigo de salida $LASTEXITCODE"
+              } catch {
+                if ($i -eq 3) { throw "$que fallo tras 3 intentos: $($_.Exception.Message)" }
+                Write-Host "::warning::$que fallo (intento $i), reintento: $($_.Exception.Message)"
+                Start-Sleep -Seconds ($i * 10)
+                $global:LASTEXITCODE = 0
+              }
+            }
+          }
+          Reintentar { choco install innosetup --no-progress -y } "choco install innosetup"
 
       # A partir de aca se arma el runtime de Python EMBEBIDO (paquete oficial
       # de python.org) que se bundlea en el instalador -- el cliente no
@@ -100,7 +170,28 @@ jobs:
           $ErrorActionPreference = "Stop"
           $pyVersion = "3.11.9"
           $zipUrl = "https://www.python.org/ftp/python/$pyVersion/python-$pyVersion-embed-amd64.zip"
-          Invoke-WebRequest -Uri $zipUrl -OutFile python-embed.zip
+          # Reintentos: estos pasos pegan contra servicios externos (registry
+          # de npm, python.org, PyPI, chocolatey). Un 503 o un corte transitorio
+          # ponia el PR en rojo sin que hubiera nada mal en el codigo.
+          function Reintentar([scriptblock]$accion, [string]$que) {
+            for ($i = 1; $i -le 3; $i++) {
+              # Se resetea ANTES: los cmdlets de PowerShell no tocan
+              # $LASTEXITCODE, asi que sin esto heredarian el codigo de un
+              # comando nativo anterior y un exito se leeria como fallo.
+              $global:LASTEXITCODE = 0
+              try {
+                & $accion
+                if ($LASTEXITCODE -eq 0) { return }
+                throw "codigo de salida $LASTEXITCODE"
+              } catch {
+                if ($i -eq 3) { throw "$que fallo tras 3 intentos: $($_.Exception.Message)" }
+                Write-Host "::warning::$que fallo (intento $i), reintento: $($_.Exception.Message)"
+                Start-Sleep -Seconds ($i * 10)
+                $global:LASTEXITCODE = 0
+              }
+            }
+          }
+          Reintentar { Invoke-WebRequest -Uri $zipUrl -OutFile python-embed.zip } "descarga de Python embebido"
           Expand-Archive -Path python-embed.zip -DestinationPath runtime -Force
           Remove-Item python-embed.zip
 
@@ -131,7 +222,28 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          Invoke-WebRequest -Uri "https://bootstrap.pypa.io/get-pip.py" -OutFile get-pip.py
+          # Reintentos: estos pasos pegan contra servicios externos (registry
+          # de npm, python.org, PyPI, chocolatey). Un 503 o un corte transitorio
+          # ponia el PR en rojo sin que hubiera nada mal en el codigo.
+          function Reintentar([scriptblock]$accion, [string]$que) {
+            for ($i = 1; $i -le 3; $i++) {
+              # Se resetea ANTES: los cmdlets de PowerShell no tocan
+              # $LASTEXITCODE, asi que sin esto heredarian el codigo de un
+              # comando nativo anterior y un exito se leeria como fallo.
+              $global:LASTEXITCODE = 0
+              try {
+                & $accion
+                if ($LASTEXITCODE -eq 0) { return }
+                throw "codigo de salida $LASTEXITCODE"
+              } catch {
+                if ($i -eq 3) { throw "$que fallo tras 3 intentos: $($_.Exception.Message)" }
+                Write-Host "::warning::$que fallo (intento $i), reintento: $($_.Exception.Message)"
+                Start-Sleep -Seconds ($i * 10)
+                $global:LASTEXITCODE = 0
+              }
+            }
+          }
+          Reintentar { Invoke-WebRequest -Uri "https://bootstrap.pypa.io/get-pip.py" -OutFile get-pip.py } "descarga de get-pip"
           runtime\python.exe get-pip.py --no-warn-script-location
           Remove-Item get-pip.py
 
@@ -139,7 +251,28 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          runtime\python.exe -m pip install --no-warn-script-location -r requirements-desktop.txt
+          # Reintentos: estos pasos pegan contra servicios externos (registry
+          # de npm, python.org, PyPI, chocolatey). Un 503 o un corte transitorio
+          # ponia el PR en rojo sin que hubiera nada mal en el codigo.
+          function Reintentar([scriptblock]$accion, [string]$que) {
+            for ($i = 1; $i -le 3; $i++) {
+              # Se resetea ANTES: los cmdlets de PowerShell no tocan
+              # $LASTEXITCODE, asi que sin esto heredarian el codigo de un
+              # comando nativo anterior y un exito se leeria como fallo.
+              $global:LASTEXITCODE = 0
+              try {
+                & $accion
+                if ($LASTEXITCODE -eq 0) { return }
+                throw "codigo de salida $LASTEXITCODE"
+              } catch {
+                if ($i -eq 3) { throw "$que fallo tras 3 intentos: $($_.Exception.Message)" }
+                Write-Host "::warning::$que fallo (intento $i), reintento: $($_.Exception.Message)"
+                Start-Sleep -Seconds ($i * 10)
+                $global:LASTEXITCODE = 0
+              }
+            }
+          }
+          Reintentar { runtime\python.exe -m pip install --no-warn-script-location -r requirements-desktop.txt } "pip install"
 
 
       # webview.platforms.edgechromium fuerza la carga real de pythonnet/
@@ -335,7 +468,9 @@ jobs:
       #      ese email es exactamente el OWNER_EMAIL configurado en Vercel.
       #   2. Sin owner_email -> se usan los secrets de siempre (compatibilidad).
       - name: Escribir licencia owner (build interno)
+        id: owner_lic
         if: github.ref == 'refs/heads/main' || github.event.inputs.owner == 'true'
+        continue-on-error: true
         shell: pwsh
         env:
           OWNER_EMAIL_INPUT: ${{ github.event.inputs.owner_email || 'vieraschiavi@gmail.com' }}
@@ -397,7 +532,9 @@ jobs:
       # no estuviera, compilaria igual -- y se publicaria en owner-latest un
       # instalador que NO viene pre-activado, con cara de owner. Se corta antes.
       - name: Verificar que el build owner lleva la licencia adentro
-        if: github.ref == 'refs/heads/main' || github.event.inputs.owner == 'true'
+        id: owner_ver
+        if: (github.ref == 'refs/heads/main' || github.event.inputs.owner == 'true') && steps.owner_lic.outcome == 'success'
+        continue-on-error: true
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
@@ -418,7 +555,9 @@ jobs:
       # frontend, el Electron y el runtime ya compilados -- solo vuelve a
       # correr ISCC, que son un par de minutos.
       - name: Compilar instalador owner
-        if: github.ref == 'refs/heads/main' || github.event.inputs.owner == 'true'
+        id: owner_exe
+        if: (github.ref == 'refs/heads/main' || github.event.inputs.owner == 'true') && steps.owner_ver.outcome == 'success'
+        continue-on-error: true
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
@@ -440,7 +579,9 @@ jobs:
       # Portable owner: se le agrega la licencia al MISMO staging que ya armo
       # la version de clientes y se re-comprime con otro nombre.
       - name: Armar la version portable owner (.zip)
-        if: github.ref == 'refs/heads/main' || github.event.inputs.owner == 'true'
+        id: owner_zip
+        if: (github.ref == 'refs/heads/main' || github.event.inputs.owner == 'true') && steps.owner_exe.outcome == 'success'
+        continue-on-error: true
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
@@ -456,7 +597,9 @@ jobs:
       # baja directo desde la pagina de Releases del repo privado (esta logueado
       # como dueño, sin 404). No lo consume api/descarga.js.
       - name: Publicar instalador owner como Release
-        if: github.ref == 'refs/heads/main' || github.event.inputs.owner == 'true'
+        id: owner_pub
+        if: (github.ref == 'refs/heads/main' || github.event.inputs.owner == 'true') && steps.owner_zip.outcome == 'success'
+        continue-on-error: true
         uses: softprops/action-gh-release@v2
         with:
           tag_name: owner-latest
@@ -470,6 +613,29 @@ jobs:
             installer/Output/owner/MV_Amazon_FBA_IA_Owner_Setup.exe
             portable-dist/MV_FBA_IA_Portable_Owner.zip
           make_latest: "false"
+
+      # El bloque owner es "best effort": no puede voltear el build, porque el
+      # instalador de CLIENTES ya se compilo y se publico antes. Pero un
+      # salteo SILENCIOSO seria peor -- el dueño creeria que tiene un .exe
+      # fresco en owner-latest cuando en realidad quedo el de la vez pasada.
+      # Este paso deja el estado a la vista en el resumen del run.
+      - name: Resumen del build owner
+        if: github.ref == 'refs/heads/main' || github.event.inputs.owner == 'true'
+        shell: pwsh
+        run: |
+          $pub = "${{ steps.owner_pub.outcome }}"
+          $lic = "${{ steps.owner_lic.outcome }}"
+          $exe = "${{ steps.owner_exe.outcome }}"
+          if ($pub -eq "success") {
+            Write-Host "Instalador owner publicado en el Release owner-latest."
+            "- Instalador **owner** publicado en ``owner-latest``." | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          } else {
+            $donde = if ($lic -ne "success") { "pedir la licencia al servidor" }
+                     elseif ($exe -ne "success") { "compilar el .exe" }
+                     else { "publicar el Release" }
+            Write-Host "::warning::El build owner no se completo (fallo al $donde). El Release owner-latest sigue con la version anterior. El instalador de CLIENTES no se vio afectado."
+            "- ATENCION: el build **owner** no se completo (fallo al $donde). ``owner-latest`` quedo con la version anterior." | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          }
 
       # El artifact es solo una conveniencia para descargar desde Actions; la
       # distribucion real a clientes es el Release pc-latest (paso siguiente),
