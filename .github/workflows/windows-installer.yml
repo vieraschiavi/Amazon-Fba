@@ -422,9 +422,17 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /O"installer\Output\owner" installer\MV_Amazon_FBA_IA.iss
-          Move-Item -Force installer\Output\owner\MV_Amazon_FBA_IA_Setup.exe `
-                          installer\Output\owner\MV_Amazon_FBA_IA_Owner_Setup.exe
+          # Ruta ABSOLUTA a proposito: el OutputDir del .iss se resuelve contra
+          # la carpeta del script (installer\), pero el /O de la linea de
+          # comandos se resuelve contra el directorio actual. Con una ruta
+          # relativa el .exe podia terminar en installer\installer\Output\owner
+          # y el Move-Item de abajo fallaba sin explicar por que.
+          $salida = Join-Path (Get-Location).Path "installer\Output\owner"
+          New-Item -ItemType Directory -Force -Path $salida | Out-Null
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /O"$salida" installer\MV_Amazon_FBA_IA.iss
+          if ($LASTEXITCODE -ne 0) { throw "ISCC fallo compilando el instalador owner ($LASTEXITCODE)" }
+          Move-Item -Force (Join-Path $salida "MV_Amazon_FBA_IA_Setup.exe") `
+                           (Join-Path $salida "MV_Amazon_FBA_IA_Owner_Setup.exe")
           $mb = [math]::Round((Get-Item "installer\Output\owner\MV_Amazon_FBA_IA_Owner_Setup.exe").Length / 1MB)
           Write-Host "Instalador owner: $mb MB"
           if ($mb -lt 50) { throw "El instalador owner quedo chico ($mb MB)" }

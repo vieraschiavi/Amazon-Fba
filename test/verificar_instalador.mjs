@@ -151,9 +151,15 @@ if (posLic < 0 || posCompilaCliente < 0 || posPubCliente < 0) {
         "de CLIENTES: saldria pre-activado como Pro (se regala el producto)");
 }
 // Y el .exe owner se compila en su propia carpeta para no pisar el de clientes.
-if (/ISCC\.exe" \/O"installer\\Output\\owner"/.test(WF)) {
+if (/ISCC\.exe" \/O"\$salida"/.test(WF) && /installer\\Output\\owner/.test(WF)) {
   ok("el .exe owner se compila en Output\\owner (no pisa el de clientes)");
 } else falla("el .exe owner se compilaria sobre el de clientes");
+// El /O de ISCC se resuelve contra el directorio actual y el OutputDir del
+// .iss contra la carpeta del script: con una ruta relativa el .exe termina en
+// otro lado y el paso muere en el Move-Item, sin decir por que.
+if (/\$salida = Join-Path \(Get-Location\)\.Path/.test(WF)) {
+  ok("  la carpeta de salida del owner es una ruta absoluta");
+} else falla("la salida del .exe owner es relativa: ISCC puede escribirla en otro lado");
 
 // --- 7) la app tiene que abrir como PROGRAMA, no como pagina web ---
 // Se abre con Electron, que trae su propio Chromium adentro. Antes se usaba
