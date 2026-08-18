@@ -951,7 +951,7 @@ async function responderProxy(preg) {
 function pintarSaldoChat(n) {
   const chip = $("#chat-saldo");
   if (!chip) return;
-  const texto = `⚡ ${fmtNum(Math.floor(n))} créditos`;
+  const texto = `${fmtNum(Math.floor(n))} créditos`;
   const cambio = chip.textContent && chip.textContent !== texto;
   chip.textContent = texto;
   chip.classList.remove("oculto");
@@ -1155,10 +1155,10 @@ function pintarNudgeDemo() {
   const url = "https://mvfbaia.com/#precios";
   if (st.diasRestantes <= 1) {
     el.className = "demo-nudge urgente";
-    el.innerHTML = `<span><b>⏳</b>${escapar(t.ultimo)}</span><a href="${url}" target="_blank" rel="noopener">${escapar(t.cta)}</a>`;
+    el.innerHTML = `<span>${escapar(t.ultimo)}</span><a href="${url}" target="_blank" rel="noopener">${escapar(t.cta)}</a>`;
   } else if (st.diasRestantes === 2) {
     el.className = "demo-nudge";
-    el.innerHTML = `<span><b>👋</b>${escapar(t.quedan2)}</span><a href="${url}" target="_blank" rel="noopener">${escapar(t.cta)}</a>`;
+    el.innerHTML = `<span>${escapar(t.quedan2)}</span><a href="${url}" target="_blank" rel="noopener">${escapar(t.cta)}</a>`;
   } else {
     el.classList.add("oculto");
   }

@@ -68,6 +68,21 @@ if (/^\s*DefaultDirName=\{code:CarpetaPorDefecto\}/im.test(ISS)) {
 } else falla("DefaultDirName ya no usa {code:CarpetaPorDefecto}");
 if (/^\s*DisableDirPage=no/im.test(ISS)) ok("la pagina de elegir carpeta SIEMPRE se muestra");
 else falla("DisableDirPage deberia ser 'no': el usuario tiene que poder elegir disco/carpeta");
+if (/^\s*AlwaysShowDirOnReadyPage=yes/im.test(ISS)) {
+  ok("la carpeta elegida se repite en la pagina final de confirmacion");
+} else falla("falta AlwaysShowDirOnReadyPage=yes: el usuario no confirma donde instala");
+// El default NO puede caer siempre en C:. En una maquina con C: chico y D:
+// grande, proponer C: es el peor lugar: ahi va tambien %LOCALAPPDATA%, donde
+// se guarda la base -- ya hubo un "database or disk is full" real por eso.
+if (/function DiscoConEspacio/.test(ISS) && /Ord\('D'\) to Ord\('Z'\)/.test(ISS)) {
+  ok("el destino por defecto busca un disco distinto de C: con espacio");
+} else falla("el instalador volveria a proponer C: siempre como destino");
+if (/DRIVE_FIXED\s*=\s*3/.test(ISS) && /GetDriveTypeW@kernel32\.dll/.test(ISS)) {
+  ok("  solo considera discos internos (ni pendrive, ni red, ni CD)");
+} else {
+  falla("sin filtrar por DRIVE_FIXED el default podria caer en un pendrive o " +
+        "una unidad de red: al desconectarse el programa queda roto");
+}
 if (/^\s*PrivilegesRequiredOverridesAllowed=dialog/im.test(ISS)) {
   ok("deja elegir instalar para todos los usuarios o solo para mi");
 } else falla("falta PrivilegesRequiredOverridesAllowed=dialog");
@@ -109,8 +124,75 @@ else if (/inputs\.owner != 'true'/.test(pubClientes)) {
 } else falla("pc-latest podria publicarse desde un build OWNER: pisaria a los clientes");
 if (!pubOwner) falla("el workflow ya no publica el Release owner-latest");
 else if (/inputs\.owner == 'true'/.test(pubOwner)) {
-  ok("owner-latest solo se publica en un build owner");
-} else falla("owner-latest se publicaria en un build normal");
+  ok("owner-latest se publica en el build owner");
+} else falla("owner-latest ya no se publicaria en un build owner");
+// El dueño tiene que tener SIEMPRE un instalador propio fresco para probar el
+// programa completo, sin depender de acordarse de lanzar el workflow a mano
+// (que era el estado anterior: owner-latest no existia y INSTALAR_OWNER.bat
+// abria un 404).
+if (pubOwner && /refs\/heads\/main/.test(pubOwner)) {
+  ok("owner-latest se republica solo en cada push a main");
+} else falla("owner-latest solo saldria a mano: el dueño se queda sin instalador");
+
+// --- 6b) el instalador de CLIENTES no puede salir pre-activado ---
+// Garantia clave del build owner automatico: owner_licencia.json se escribe
+// DESPUES de compilar y publicar el .exe de clientes. Si algun dia alguien
+// reordena los pasos, el instalador que compra un cliente saldria con la
+// licencia Pro del dueño adentro -- se regala el producto.
+const posLic = WF.indexOf("Escribir licencia owner");
+const posCompilaCliente = WF.indexOf("- name: Compilar instalador\n");
+const posPubCliente = WF.indexOf("tag_name: pc-latest");
+if (posLic < 0 || posCompilaCliente < 0 || posPubCliente < 0) {
+  falla("no encuentro los pasos de compilar/publicar cliente y escribir la licencia owner");
+} else if (posCompilaCliente < posLic && posPubCliente < posLic) {
+  ok("la licencia owner se escribe DESPUES de compilar y publicar el de clientes");
+} else {
+  falla("owner_licencia.json se escribiria ANTES de compilar/publicar el instalador " +
+        "de CLIENTES: saldria pre-activado como Pro (se regala el producto)");
+}
+// Y el .exe owner se compila en su propia carpeta para no pisar el de clientes.
+if (/ISCC\.exe" \/O"\$salida"/.test(WF) && /installer\\Output\\owner/.test(WF)) {
+  ok("el .exe owner se compila en Output\\owner (no pisa el de clientes)");
+} else falla("el .exe owner se compilaria sobre el de clientes");
+// El /O de ISCC se resuelve contra el directorio actual y el OutputDir del
+// .iss contra la carpeta del script: con una ruta relativa el .exe termina en
+// otro lado y el paso muere en el Move-Item, sin decir por que.
+if (/\$salida = Join-Path \(Get-Location\)\.Path/.test(WF)) {
+  ok("  la carpeta de salida del owner es una ruta absoluta");
+} else falla("la salida del .exe owner es relativa: ISCC puede escribirla en otro lado");
+
+// --- 6c) el bloque owner NUNCA puede voltear el build ---
+// Corre en CADA push a main y depende de un servidor EXTERNO (le pide la
+// licencia del dueño). Sin esto, un 503 pasajero de ese servidor dejaba main
+// en rojo aunque el instalador de clientes hubiera salido perfecto -- y el de
+// clientes ya esta publicado a esa altura, asi que el rojo no protege nada.
+const PASOS_OWNER = [
+  "Escribir licencia owner",
+  "Verificar que el build owner lleva la licencia adentro",
+  "Compilar instalador owner",
+  "Armar la version portable owner",
+  "Publicar instalador owner como Release",
+];
+for (const nombre of PASOS_OWNER) {
+  const i = WF.indexOf(`- name: ${nombre}`);
+  if (i < 0) { falla(`falta el paso owner "${nombre}"`); continue; }
+  const sig = WF.indexOf("\n      - name: ", i + 10);
+  const bloque = WF.slice(i, sig < 0 ? WF.length : sig);
+  if (/continue-on-error: true/.test(bloque)) ok(`  "${nombre}" no voltea el build`);
+  else {
+    falla(`el paso owner "${nombre}" puede voltear el build: un fallo del ` +
+          `servidor de licencias dejaria main en rojo sin culpa del codigo`);
+  }
+}
+if (/name: Resumen del build owner/.test(WF)) {
+  ok("un build owner salteado queda a la vista en el resumen del run");
+} else falla("sin paso de resumen, un owner salteado pasaria en silencio");
+
+// Los pasos que pegan contra servicios externos (npm, python.org, PyPI,
+// chocolatey) reintentan: un corte pasajero no puede poner el PR en rojo.
+const reintentos = (WF.match(/Reintentar \{/g) || []).length;
+if (reintentos >= 6) ok(`${reintentos} pasos de red reintentan antes de fallar`);
+else falla(`solo ${reintentos} pasos reintentan: un 503 pasajero voltea el PR`);
 
 // --- 7) la app tiene que abrir como PROGRAMA, no como pagina web ---
 // Se abre con Electron, que trae su propio Chromium adentro. Antes se usaba

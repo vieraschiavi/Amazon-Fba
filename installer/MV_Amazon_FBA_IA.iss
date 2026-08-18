@@ -150,14 +150,61 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\desktop\MV FBA IA.exe"; Wor
 Filename: "{app}\desktop\MV FBA IA.exe"; WorkingDir: "{app}\desktop"; Description: "Abrir {#MyAppName} ahora"; Flags: postinstall skipifsilent nowait runasoriginaluser
 
 [Code]
+const
+  DRIVE_FIXED = 3;   // disco interno: ni USB, ni red, ni CD, ni RAM disk
+
 var
   BorrarDatosDelUsuario: Boolean;
+
+// GetDriveType de la API de Windows. Sin esto habria que adivinar el tipo de
+// unidad por el espacio libre, y el default podria caer en un pendrive o en
+// una unidad de red mapeada -- que al desconectarse dejaria el programa roto.
+function GetDriveType(lpRootPathName: String): Cardinal;
+  external 'GetDriveTypeW@kernel32.dll stdcall';
+
+// Primer disco INTERNO distinto de C: con espacio de sobra.
+//
+// POR QUE: el default caia siempre en C:, que es justo el disco que se llena
+// -- ahi va tambien %LOCALAPPDATA%, donde el programa guarda la base (ver
+// _dir_datos() en config.py). En una maquina con C: chico y D: grande, el
+// instalador proponia el peor lugar posible y ya hubo un caso real de
+// "database or disk is full" por eso.
+//
+// Se exigen 5 GB libres y DRIVE_FIXED: alcanza para descartar unidades de
+// red, pendrives, lectoras y unidades no listas. Si no aparece ninguna, se
+// vuelve al comportamiento de antes (C:). El usuario SIEMPRE puede cambiarlo:
+// la pagina de destino se muestra igual (DisableDirPage=no).
+function DiscoConEspacio(): String;
+var
+  i: Integer;
+  Raiz: String;
+  Libre, Total: Cardinal;
+begin
+  Result := '';
+  for i := Ord('D') to Ord('Z') do
+  begin
+    Raiz := Chr(i) + ':\';
+    if GetDriveType(Raiz) = DRIVE_FIXED then
+      // True -> los valores vuelven en MB, asi que 5000 son 5 GB.
+      if GetSpaceOnDisk(Raiz, True, Libre, Total) then
+        if (Total > 0) and (Libre >= 5000) then
+        begin
+          Result := Raiz;
+          Exit;
+        end;
+  end;
+end;
 
 // Carpeta propuesta al abrir la pagina de destino. Se calcula aca en vez de
 // usar la constante autopf, que puede fallar y abortar la instalacion.
 function CarpetaPorDefecto(Param: String): String;
+var
+  Disco: String;
 begin
-  if IsAdminInstallMode then
+  Disco := DiscoConEspacio();
+  if Disco <> '' then
+    Result := Disco + 'MV FBA IA'
+  else if IsAdminInstallMode then
     Result := ExpandConstant('{commonpf}\MV FBA IA')
   else
     Result := ExpandConstant('{localappdata}\Programs\MV FBA IA');
