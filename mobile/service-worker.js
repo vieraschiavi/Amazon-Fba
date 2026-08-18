@@ -19,7 +19,7 @@
 //     escapar() quedaba sin definir -> la app rompia entera al primer render.
 //     Lo cubre test/verificar_sw_precache.mjs para que no vuelva a pasar.
 //   - El bump purga el cache viejo: nucleo.js suma la estimacion por BSR.
-const CACHE = "mv-fba-ia-shell-v4";
+const CACHE = "mv-fba-ia-shell-v5";
 const SHELL = [
   "./",
   "./index.html",

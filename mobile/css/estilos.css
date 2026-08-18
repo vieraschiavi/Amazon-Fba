@@ -364,7 +364,6 @@ a { color: inherit; }
   color: var(--ink); list-style: none; display: flex; align-items: center; gap: 8px;
 }
 .tip-keepa > summary::-webkit-details-marker { display: none; }
-.tip-keepa > summary::before { content: "💡"; }
 .tip-keepa[open] > summary { border-bottom: 1px solid var(--line); }
 .tip-cuerpo { padding: 12px 14px; font-size: 13px; color: var(--slate); line-height: 1.55; }
 .tip-cuerpo p { margin: 0 0 9px; }
