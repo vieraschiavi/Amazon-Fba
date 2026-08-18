@@ -22,15 +22,17 @@ echo    MV_Amazon_FBA_IA_Owner_Setup.exe   instalador con icono/desinstalador
 echo    MV_FBA_IA_Portable_Owner.zip       version sin instalador (descomprimir
 echo                                       y correr INICIAR.bat)
 echo.
-echo  Si la pagina da 404, el build owner todavia no se corrio:
+echo  El build owner se republica SOLO en cada push a main, asi que
+echo  siempre hay un instalador fresco ahi. Si por algun motivo la
+echo  pagina diera 404, se puede lanzar a mano:
 echo    GitHub ^> Actions ^> "Windows Installer" ^> Run workflow
 echo    ^> tildar "owner" ^> Run
 echo.
 
 start "" "%RELEASE%"
 
-echo  ¿Dio 404? Presioná una tecla para abrir tambien la pagina del
-echo  workflow y lanzarlo. Si la descarga ya arranco, cerrá esta ventana.
+echo  Si la descarga ya arranco, cerra esta ventana. Si dio 404,
+echo  presiona una tecla para abrir la pagina del workflow y lanzarlo.
 pause >nul
 start "" "%ACTIONS%"
 exit /b 0

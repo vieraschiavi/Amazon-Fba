@@ -96,7 +96,7 @@ function params(){ const p = new URLSearchParams(location.search); const o={}; f
 function escaparHtml(s){ const d = document.createElement("div"); d.textContent = String(s||""); return d.innerHTML; }
 
 function mostrarAprobado(d){
-  $("#titulo").textContent = "¡Gracias por tu compra! 🎉";
+  $("#titulo").textContent = "¡Gracias por tu compra!";
   $("#sub").innerHTML = "Tu pago se aprobó. Esta es tu <b>licencia</b> — guardala y usala en la app con el <b>mismo email</b> con el que pagaste.";
   const email = d.email ? `<p class="email-note">Licencia a nombre de <b>${escaparHtml(d.email)}</b>. Ingresá ese email al activar.</p>` : "";
   $("#contenido").innerHTML = `
@@ -107,12 +107,12 @@ function mostrarAprobado(d){
       ${email}
     </div>
     <div class="dl">
-      <a class="btn btn-a" href="/api/descarga?tipo=apk&payment_id=${encodeURIComponent(d._pid || "")}${d._proc ? "&proc=" + encodeURIComponent(d._proc) : ""}">⬇️ Descargar app Android (APK)</a>
-      <a class="btn btn-b" href="/api/descarga?payment_id=${encodeURIComponent(d._pid || "")}${d._proc ? "&proc=" + encodeURIComponent(d._proc) : ""}">💻 Programa para PC (Windows)</a>
-      <a class="btn btn-b" href="/api/descarga?tipo=bat&payment_id=${encodeURIComponent(d._pid || "")}${d._proc ? "&proc=" + encodeURIComponent(d._proc) : ""}">📦 PC sin instalador (.zip, si tu empresa bloquea .exe)</a>
+      <a class="btn btn-a" href="/api/descarga?tipo=apk&payment_id=${encodeURIComponent(d._pid || "")}${d._proc ? "&proc=" + encodeURIComponent(d._proc) : ""}">↓ Descargar app Android (APK)</a>
+      <a class="btn btn-b" href="/api/descarga?payment_id=${encodeURIComponent(d._pid || "")}${d._proc ? "&proc=" + encodeURIComponent(d._proc) : ""}">↓ Programa para PC (Windows)</a>
+      <a class="btn btn-b" href="/api/descarga?tipo=bat&payment_id=${encodeURIComponent(d._pid || "")}${d._proc ? "&proc=" + encodeURIComponent(d._proc) : ""}">↓ PC sin instalador (.zip, si tu empresa bloquea .exe)</a>
     </div>
     <details class="pasos ayuda-win">
-      <summary>💻 En Windows aparece <b>“Windows protegió tu PC”</b>? (es normal)</summary>
+      <summary>En Windows aparece <b>“Windows protegió tu PC”</b>? (es normal)</summary>
       <div class="ayuda-win-cuerpo">
         <p>El programa es nuevo y todavía no está firmado con un certificado pago,
         así que Windows muestra un aviso azul la primera vez. <b>No es un virus</b> —

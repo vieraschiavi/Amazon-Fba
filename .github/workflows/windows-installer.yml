@@ -175,97 +175,6 @@ jobs:
           if (-not $ok) { throw "app.py no respondio /health con el runtime embebido" }
           Write-Host "functional-smoke-ok"
 
-      # Build OWNER (solo con workflow_dispatch + owner=true): escribe la
-      # licencia del dueño. El .iss la incluye con skipifsourcedoesntexist, asi
-      # que el build normal la ignora. Con este archivo presente, el programa se
-      # auto-activa como Pro en el primer arranque (validando contra el
-      # servidor, no es un bypass).
-      #
-      # Dos caminos, en este orden:
-      #   1. owner_email cargado a mano al lanzar el workflow -> la clave se
-      #      pide sola a /api/licencia?dueno=1. Con poner el mail alcanza: no
-      #      hay que configurar ningun secret. El servidor solo la entrega si
-      #      ese email es exactamente el OWNER_EMAIL configurado en Vercel.
-      #   2. Sin owner_email -> se usan los secrets de siempre (compatibilidad).
-      - name: Escribir licencia owner (build interno)
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.owner == 'true'
-        shell: pwsh
-        env:
-          OWNER_EMAIL_INPUT: ${{ github.event.inputs.owner_email }}
-          # Token efimero que Actions genera para este job: prueba acceso al
-          # repo privado. Es lo unico que hace falta -- sin configurar secrets.
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OWNER_BUILD_TOKEN: ${{ secrets.OWNER_BUILD_TOKEN }}
-          OWNER_LICENSE_EMAIL: ${{ secrets.OWNER_LICENSE_EMAIL }}
-          OWNER_LICENSE_KEY: ${{ secrets.OWNER_LICENSE_KEY }}
-        run: |
-          $ErrorActionPreference = "Stop"
-          # Interpolado a string: si la variable no viene, queda "" en vez de
-          # $null -- llamar .Trim() sobre $null tira "You cannot call a method
-          # on a null-valued expression" y el paso moriria en vez de caer al
-          # camino de los secrets.
-          $email = "$($env:OWNER_EMAIL_INPUT)".Trim()
-          if ($email) {
-            # Ni el email ni la clave se imprimen: quedarian en el log del
-            # workflow, y con ese email cualquiera puede pedirle una licencia
-            # Pro al servidor.
-            Write-Host "::add-mask::$email"
-            # No hace falta configurar NADA: la autorizacion es el acceso al
-            # repo privado. Se manda el GITHUB_TOKEN que Actions da solo y el
-            # servidor verifica contra la API de GitHub que ese token pueda
-            # leer este repo. Quien corre el workflow ya es el dueño.
-            # OWNER_BUILD_TOKEN queda como via alternativa opcional.
-            Write-Host "Pidiendo la licencia de dueño al servidor"
-            $url = "https://mvfbaia.com/api/licencia?dueno=1&email=" + [uri]::EscapeDataString($email)
-            $cabeceras = @{ "x-mv-app" = "mvfba-web-1"; "x-mv-github-token" = $env:GITHUB_TOKEN }
-            if ($env:OWNER_BUILD_TOKEN) { $cabeceras["x-mv-owner-build"] = $env:OWNER_BUILD_TOKEN }
-            try {
-              $r = Invoke-RestMethod -Uri $url -TimeoutSec 30 -Headers $cabeceras
-            } catch {
-              throw ("El servidor rechazo la licencia de dueño para '$email'. " +
-                     "Tiene que ser EXACTAMENTE el mismo email que OWNER_EMAIL en Vercel. " +
-                     "Detalle: " + $_.Exception.Message)
-            }
-            if (-not $r.licencia) { throw "El servidor no devolvio ninguna licencia para '$email'." }
-            $clave = $r.licencia
-            # La clave nunca se imprime: se enmascara el log por las dudas.
-            Write-Host "::add-mask::$clave"
-            Write-Host "Licencia de dueño obtenida (plan: $($r.plan))"
-          }
-          elseif ($env:OWNER_LICENSE_EMAIL -and $env:OWNER_LICENSE_KEY) {
-            $email = $env:OWNER_LICENSE_EMAIL
-            $clave = $env:OWNER_LICENSE_KEY
-            Write-Host "Usando los secrets OWNER_LICENSE_EMAIL / OWNER_LICENSE_KEY"
-          }
-          else {
-            throw ("Para el build owner: cargá tu email en el campo 'owner_email' al " +
-                   "lanzar el workflow (con eso alcanza), o configura los secrets " +
-                   "OWNER_LICENSE_EMAIL / OWNER_LICENSE_KEY.")
-          }
-          $obj = @{ email = $email; clave = $clave }
-          $obj | ConvertTo-Json | Set-Content -Path owner_licencia.json -Encoding UTF8
-
-      # Guarda contra el peor final silencioso del build owner: el .iss incluye
-      # owner_licencia.json con skipifsourcedoesntexist, asi que si el archivo
-      # no estuviera, compilaria igual -- y se publicaria en owner-latest un
-      # instalador que NO viene pre-activado, con cara de owner. Se corta antes.
-      - name: Verificar que el build owner lleva la licencia adentro
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.owner == 'true'
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-          if (-not (Test-Path owner_licencia.json)) {
-            throw "Build owner sin owner_licencia.json: el instalador saldria SIN pre-activar."
-          }
-          $d = Get-Content owner_licencia.json -Raw | ConvertFrom-Json
-          if (-not $d.email -or -not $d.clave) {
-            throw "owner_licencia.json existe pero le falta email o clave."
-          }
-          if ($d.clave -notmatch '^MVFBA(-[A-F0-9]{4}){4}$') {
-            throw "La clave de owner no tiene el formato MVFBA-XXXX-XXXX-XXXX-XXXX."
-          }
-          Write-Host "owner_licencia.json OK (formato de clave valido)"
-
       # Version "sin instalador": el MISMO app.py, el MISMO runtime embebido
       # (ya probado arriba con el smoke test funcional) y la MISMA base de
       # licencia que el .exe -- solo que en un .zip que se descomprime y se
@@ -384,36 +293,6 @@ jobs:
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\MV_Amazon_FBA_IA.iss
         shell: pwsh
 
-      # Build owner: renombra el .exe para no confundirlo con el de clientes.
-      - name: Renombrar instalador owner
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.owner == 'true'
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-          Move-Item -Force installer\Output\MV_Amazon_FBA_IA_Setup.exe installer\Output\MV_Amazon_FBA_IA_Owner_Setup.exe
-
-      # El artifact es solo una conveniencia para descargar desde Actions; la
-      # distribucion real a clientes es el Release pc-latest (paso siguiente),
-      # que no consume la cuota de almacenamiento de artifacts. Por eso este
-      # paso no voltea el build si la cuota esta llena, y retiene poco.
-      - name: Publicar EXE como artifact
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: MV-Amazon-FBA-IA-instalador-windows
-          path: installer/Output/MV_Amazon_FBA_IA_*Setup.exe
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Publicar version portable como artifact
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: MV-Amazon-FBA-IA-portable-sin-instalador
-          path: portable-dist/MV_FBA_IA_Portable*.zip
-          if-no-files-found: error
-          retention-days: 7
-
       # Publica/actualiza el Release "pc-latest" con las DOS versiones para
       # CLIENTES (el .exe con instalador y el .zip portable sin instalador),
       # para que la descarga gated (api/descarga.js, tras pago verificado) las
@@ -435,11 +314,141 @@ jobs:
             portable-dist/MV_FBA_IA_Portable.zip
           make_latest: "false"
 
+      # ----------------------- BLOQUE OWNER -----------------------
+      # Corre en CADA push a main (y tambien a mano con owner=true), asi
+      # SIEMPRE hay un instalador owner fresco en el Release owner-latest
+      # para probar el programa completo. Va DESPUES de compilar y publicar
+      # el de clientes: owner_licencia.json todavia no existia cuando se
+      # armo ese .exe, asi que el instalador de clientes NUNCA puede salir
+      # pre-activado. Esa separacion es la garantia de seguridad.
+      #
+      # Build OWNER: escribe la
+      # licencia del dueño. El .iss la incluye con skipifsourcedoesntexist, asi
+      # que el build normal la ignora. Con este archivo presente, el programa se
+      # auto-activa como Pro en el primer arranque (validando contra el
+      # servidor, no es un bypass).
+      #
+      # Dos caminos, en este orden:
+      #   1. owner_email cargado a mano al lanzar el workflow -> la clave se
+      #      pide sola a /api/licencia?dueno=1. Con poner el mail alcanza: no
+      #      hay que configurar ningun secret. El servidor solo la entrega si
+      #      ese email es exactamente el OWNER_EMAIL configurado en Vercel.
+      #   2. Sin owner_email -> se usan los secrets de siempre (compatibilidad).
+      - name: Escribir licencia owner (build interno)
+        if: github.ref == 'refs/heads/main' || github.event.inputs.owner == 'true'
+        shell: pwsh
+        env:
+          OWNER_EMAIL_INPUT: ${{ github.event.inputs.owner_email || 'vieraschiavi@gmail.com' }}
+          # Token efimero que Actions genera para este job: prueba acceso al
+          # repo privado. Es lo unico que hace falta -- sin configurar secrets.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER_BUILD_TOKEN: ${{ secrets.OWNER_BUILD_TOKEN }}
+          OWNER_LICENSE_EMAIL: ${{ secrets.OWNER_LICENSE_EMAIL }}
+          OWNER_LICENSE_KEY: ${{ secrets.OWNER_LICENSE_KEY }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          # Interpolado a string: si la variable no viene, queda "" en vez de
+          # $null -- llamar .Trim() sobre $null tira "You cannot call a method
+          # on a null-valued expression" y el paso moriria en vez de caer al
+          # camino de los secrets.
+          $email = "$($env:OWNER_EMAIL_INPUT)".Trim()
+          if ($email) {
+            # Ni el email ni la clave se imprimen: quedarian en el log del
+            # workflow, y con ese email cualquiera puede pedirle una licencia
+            # Pro al servidor.
+            Write-Host "::add-mask::$email"
+            # No hace falta configurar NADA: la autorizacion es el acceso al
+            # repo privado. Se manda el GITHUB_TOKEN que Actions da solo y el
+            # servidor verifica contra la API de GitHub que ese token pueda
+            # leer este repo. Quien corre el workflow ya es el dueño.
+            # OWNER_BUILD_TOKEN queda como via alternativa opcional.
+            Write-Host "Pidiendo la licencia de dueño al servidor"
+            $url = "https://mvfbaia.com/api/licencia?dueno=1&email=" + [uri]::EscapeDataString($email)
+            $cabeceras = @{ "x-mv-app" = "mvfba-web-1"; "x-mv-github-token" = $env:GITHUB_TOKEN }
+            if ($env:OWNER_BUILD_TOKEN) { $cabeceras["x-mv-owner-build"] = $env:OWNER_BUILD_TOKEN }
+            try {
+              $r = Invoke-RestMethod -Uri $url -TimeoutSec 30 -Headers $cabeceras
+            } catch {
+              throw ("El servidor rechazo la licencia de dueño para '$email'. " +
+                     "Tiene que ser EXACTAMENTE el mismo email que OWNER_EMAIL en Vercel. " +
+                     "Detalle: " + $_.Exception.Message)
+            }
+            if (-not $r.licencia) { throw "El servidor no devolvio ninguna licencia para '$email'." }
+            $clave = $r.licencia
+            # La clave nunca se imprime: se enmascara el log por las dudas.
+            Write-Host "::add-mask::$clave"
+            Write-Host "Licencia de dueño obtenida (plan: $($r.plan))"
+          }
+          elseif ($env:OWNER_LICENSE_EMAIL -and $env:OWNER_LICENSE_KEY) {
+            $email = $env:OWNER_LICENSE_EMAIL
+            $clave = $env:OWNER_LICENSE_KEY
+            Write-Host "Usando los secrets OWNER_LICENSE_EMAIL / OWNER_LICENSE_KEY"
+          }
+          else {
+            throw ("Para el build owner: cargá tu email en el campo 'owner_email' al " +
+                   "lanzar el workflow (con eso alcanza), o configura los secrets " +
+                   "OWNER_LICENSE_EMAIL / OWNER_LICENSE_KEY.")
+          }
+          $obj = @{ email = $email; clave = $clave }
+          $obj | ConvertTo-Json | Set-Content -Path owner_licencia.json -Encoding UTF8
+
+      # Guarda contra el peor final silencioso del build owner: el .iss incluye
+      # owner_licencia.json con skipifsourcedoesntexist, asi que si el archivo
+      # no estuviera, compilaria igual -- y se publicaria en owner-latest un
+      # instalador que NO viene pre-activado, con cara de owner. Se corta antes.
+      - name: Verificar que el build owner lleva la licencia adentro
+        if: github.ref == 'refs/heads/main' || github.event.inputs.owner == 'true'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          if (-not (Test-Path owner_licencia.json)) {
+            throw "Build owner sin owner_licencia.json: el instalador saldria SIN pre-activar."
+          }
+          $d = Get-Content owner_licencia.json -Raw | ConvertFrom-Json
+          if (-not $d.email -or -not $d.clave) {
+            throw "owner_licencia.json existe pero le falta email o clave."
+          }
+          if ($d.clave -notmatch '^MVFBA(-[A-F0-9]{4}){4}$') {
+            throw "La clave de owner no tiene el formato MVFBA-XXXX-XXXX-XXXX-XXXX."
+          }
+          Write-Host "owner_licencia.json OK (formato de clave valido)"
+
+      # El .exe owner se compila en SU PROPIA carpeta de salida (/O): asi no
+      # pisa el de clientes, que ya quedo publicado en pc-latest. Reusa el
+      # frontend, el Electron y el runtime ya compilados -- solo vuelve a
+      # correr ISCC, que son un par de minutos.
+      - name: Compilar instalador owner
+        if: github.ref == 'refs/heads/main' || github.event.inputs.owner == 'true'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /O"installer\Output\owner" installer\MV_Amazon_FBA_IA.iss
+          Move-Item -Force installer\Output\owner\MV_Amazon_FBA_IA_Setup.exe `
+                          installer\Output\owner\MV_Amazon_FBA_IA_Owner_Setup.exe
+          $mb = [math]::Round((Get-Item "installer\Output\owner\MV_Amazon_FBA_IA_Owner_Setup.exe").Length / 1MB)
+          Write-Host "Instalador owner: $mb MB"
+          if ($mb -lt 50) { throw "El instalador owner quedo chico ($mb MB)" }
+
+      # Portable owner: se le agrega la licencia al MISMO staging que ya armo
+      # la version de clientes y se re-comprime con otro nombre.
+      - name: Armar la version portable owner (.zip)
+        if: github.ref == 'refs/heads/main' || github.event.inputs.owner == 'true'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $dst = "portable-dist\MV FBA IA"
+          if (-not (Test-Path $dst)) { throw "no existe el staging de la version portable" }
+          Copy-Item owner_licencia.json -Destination $dst -Force
+          Compress-Archive -Path "$dst\*" -DestinationPath "portable-dist\MV_FBA_IA_Portable_Owner.zip" -Force
+          $mb = [math]::Round((Get-Item "portable-dist\MV_FBA_IA_Portable_Owner.zip").Length / 1MB)
+          Write-Host "Portable owner: $mb MB"
+          if ($mb -lt 20) { throw "El .zip portable owner quedo chico ($mb MB)" }
+
       # Build owner: publica en un Release SEPARADO (owner-latest), que el dueño
       # baja directo desde la pagina de Releases del repo privado (esta logueado
       # como dueño, sin 404). No lo consume api/descarga.js.
       - name: Publicar instalador owner como Release
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.owner == 'true'
+        if: github.ref == 'refs/heads/main' || github.event.inputs.owner == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: owner-latest
@@ -450,6 +459,28 @@ jobs:
             arranque). NO distribuir — es para uso propio. Incluye el .exe y
             la version portable .zip, las dos pre-activadas.
           files: |
-            installer/Output/MV_Amazon_FBA_IA_Owner_Setup.exe
+            installer/Output/owner/MV_Amazon_FBA_IA_Owner_Setup.exe
             portable-dist/MV_FBA_IA_Portable_Owner.zip
           make_latest: "false"
+
+      # El artifact es solo una conveniencia para descargar desde Actions; la
+      # distribucion real a clientes es el Release pc-latest (paso siguiente),
+      # que no consume la cuota de almacenamiento de artifacts. Por eso este
+      # paso no voltea el build si la cuota esta llena, y retiene poco.
+      - name: Publicar EXE como artifact
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: MV-Amazon-FBA-IA-instalador-windows
+          path: installer/Output/**/MV_Amazon_FBA_IA_*Setup.exe
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Publicar version portable como artifact
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: MV-Amazon-FBA-IA-portable-sin-instalador
+          path: portable-dist/MV_FBA_IA_Portable*.zip
+          if-no-files-found: error
+          retention-days: 7
