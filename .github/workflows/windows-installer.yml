@@ -474,29 +474,37 @@ jobs:
         shell: pwsh
         env:
           OWNER_EMAIL_INPUT: ${{ github.event.inputs.owner_email || 'vieraschiavi@gmail.com' }}
-          # Token efimero que Actions genera para este job: prueba acceso al
-          # repo privado. Es lo unico que hace falta -- sin configurar secrets.
+          # Token efimero de Actions. OJO: con el repo PUBLICO no alcanza --
+          # es un installation token y la API NO devuelve "permissions" para
+          # el, asi que la verificacion de escritura del servidor da false.
+          # Sirve solo si el repo es privado.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OWNER_BUILD_TOKEN: ${{ secrets.OWNER_BUILD_TOKEN }}
           OWNER_LICENSE_EMAIL: ${{ secrets.OWNER_LICENSE_EMAIL }}
           OWNER_LICENSE_KEY: ${{ secrets.OWNER_LICENSE_KEY }}
         run: |
           $ErrorActionPreference = "Stop"
-          # Interpolado a string: si la variable no viene, queda "" en vez de
-          # $null -- llamar .Trim() sobre $null tira "You cannot call a method
-          # on a null-valued expression" y el paso moriria en vez de caer al
-          # camino de los secrets.
           $email = "$($env:OWNER_EMAIL_INPUT)".Trim()
-          if ($email) {
+
+          # ORDEN: primero los secrets, despues el servidor.
+          #
+          # Antes era al reves y, peor, la rama de los secrets era CODIGO
+          # MUERTO: el email pasó a tener un valor por defecto, con lo cual
+          # "if ($email)" daba siempre verdadero y nunca se llegaba al
+          # elseif. Con los secrets primero, el build owner no depende de que
+          # la web este arriba ni de que el token pase la verificacion.
+          if ($env:OWNER_LICENSE_EMAIL -and $env:OWNER_LICENSE_KEY) {
+            $email = $env:OWNER_LICENSE_EMAIL
+            $clave = $env:OWNER_LICENSE_KEY
+            Write-Host "::add-mask::$email"
+            Write-Host "::add-mask::$clave"
+            Write-Host "Licencia de dueño tomada de los secrets OWNER_LICENSE_EMAIL/KEY"
+          }
+          elseif ($email) {
             # Ni el email ni la clave se imprimen: quedarian en el log del
             # workflow, y con ese email cualquiera puede pedirle una licencia
             # Pro al servidor.
             Write-Host "::add-mask::$email"
-            # No hace falta configurar NADA: la autorizacion es el acceso al
-            # repo privado. Se manda el GITHUB_TOKEN que Actions da solo y el
-            # servidor verifica contra la API de GitHub que ese token pueda
-            # leer este repo. Quien corre el workflow ya es el dueño.
-            # OWNER_BUILD_TOKEN queda como via alternativa opcional.
             Write-Host "Pidiendo la licencia de dueño al servidor"
             $url = "https://mvfbaia.com/api/licencia?dueno=1&email=" + [uri]::EscapeDataString($email)
             $cabeceras = @{ "x-mv-app" = "mvfba-web-1"; "x-mv-github-token" = $env:GITHUB_TOKEN }
@@ -504,25 +512,30 @@ jobs:
             try {
               $r = Invoke-RestMethod -Uri $url -TimeoutSec 30 -Headers $cabeceras
             } catch {
-              throw ("El servidor rechazo la licencia de dueño para '$email'. " +
-                     "Tiene que ser EXACTAMENTE el mismo email que OWNER_EMAIL en Vercel. " +
-                     "Detalle: " + $_.Exception.Message)
+              # El CUERPO de la respuesta dice cual de las dos barreras fallo
+              # (no_autorizado_repo vs email_no_coincide). Sin esto el mensaje
+              # culpaba siempre al email, aunque el problema fuera el token --
+              # que es exactamente lo que paso en el primer build owner real.
+              $detalle = $_.Exception.Message
+              if ($_.ErrorDetails -and $_.ErrorDetails.Message) {
+                $detalle = $detalle + " | respuesta del servidor: " + $_.ErrorDetails.Message
+              }
+              throw ("El servidor rechazo la licencia de dueño. " +
+                     "Si dice no_autorizado_repo, el token no probo acceso de escritura al repo " +
+                     "(con el repo PUBLICO el GITHUB_TOKEN de Actions no trae 'permissions': " +
+                     "hay que configurar OWNER_BUILD_TOKEN, o los secrets OWNER_LICENSE_EMAIL/KEY). " +
+                     "Si dice email_no_coincide, no es el mismo email que OWNER_EMAIL en Vercel. " +
+                     "Detalle: " + $detalle)
             }
-            if (-not $r.licencia) { throw "El servidor no devolvio ninguna licencia para '$email'." }
+            if (-not $r.licencia) { throw "El servidor no devolvio ninguna licencia." }
             $clave = $r.licencia
-            # La clave nunca se imprime: se enmascara el log por las dudas.
             Write-Host "::add-mask::$clave"
             Write-Host "Licencia de dueño obtenida (plan: $($r.plan))"
           }
-          elseif ($env:OWNER_LICENSE_EMAIL -and $env:OWNER_LICENSE_KEY) {
-            $email = $env:OWNER_LICENSE_EMAIL
-            $clave = $env:OWNER_LICENSE_KEY
-            Write-Host "Usando los secrets OWNER_LICENSE_EMAIL / OWNER_LICENSE_KEY"
-          }
           else {
-            throw ("Para el build owner: cargá tu email en el campo 'owner_email' al " +
-                   "lanzar el workflow (con eso alcanza), o configura los secrets " +
-                   "OWNER_LICENSE_EMAIL / OWNER_LICENSE_KEY.")
+            throw ("Para el build owner: configura los secrets OWNER_LICENSE_EMAIL / " +
+                   "OWNER_LICENSE_KEY, o cargá tu email en el campo 'owner_email' al " +
+                   "lanzar el workflow.")
           }
           $obj = @{ email = $email; clave = $clave }
           $obj | ConvertTo-Json | Set-Content -Path owner_licencia.json -Encoding UTF8
