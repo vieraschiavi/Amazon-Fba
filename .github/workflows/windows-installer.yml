@@ -447,6 +447,30 @@ jobs:
             portable-dist/MV_FBA_IA_Portable.zip
           make_latest: "false"
 
+      # ---------------- GUARDIA DE VISIBILIDAD ----------------
+      # El Release owner-latest lleva un instalador PRE-ACTIVADO como Pro. Todo
+      # el diseño asume un repositorio PRIVADO: ahi ese Release solo lo ve el
+      # dueño. En un repo PUBLICO los Releases son URLs publicas, asi que
+      # publicarlo equivale a regalar el producto completo a cualquiera que
+      # tenga el link -- y encima en silencio, porque el build queda verde.
+      #
+      # Por eso la visibilidad se chequea ACA y no se confia en que nadie se
+      # olvide: si el repo es publico, el bloque owner entero no corre.
+      - name: Guardia de visibilidad del repositorio
+        id: owner_guard
+        if: github.ref == 'refs/heads/main' || github.event.inputs.owner == 'true'
+        shell: pwsh
+        run: |
+          $privado = "${{ github.event.repository.private }}"
+          if ($privado -eq "true") {
+            Write-Host "Repositorio privado: el instalador owner se puede publicar."
+            "publicar=si" | Out-File -Append $env:GITHUB_OUTPUT
+          } else {
+            "publicar=no" | Out-File -Append $env:GITHUB_OUTPUT
+            Write-Host "::warning::Repositorio PUBLICO: no se publica owner-latest. Un Release publico con el instalador pre-activado como Pro lo puede bajar cualquiera. Pone el repo en privado, o activa tu copia con INSTALADOR\ACTIVAR_OWNER.bat sobre el instalador normal."
+            "- Build **owner** omitido: el repositorio es publico y el instalador pre-activado quedaria al alcance de cualquiera." | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          }
+
       # ----------------------- BLOQUE OWNER -----------------------
       # Corre en CADA push a main (y tambien a mano con owner=true), asi
       # SIEMPRE hay un instalador owner fresco en el Release owner-latest
@@ -469,7 +493,7 @@ jobs:
       #   2. Sin owner_email -> se usan los secrets de siempre (compatibilidad).
       - name: Escribir licencia owner (build interno)
         id: owner_lic
-        if: github.ref == 'refs/heads/main' || github.event.inputs.owner == 'true'
+        if: (github.ref == 'refs/heads/main' || github.event.inputs.owner == 'true') && steps.owner_guard.outputs.publicar == 'si'
         continue-on-error: true
         shell: pwsh
         env:

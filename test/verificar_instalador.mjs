@@ -161,6 +161,31 @@ if (/\$salida = Join-Path \(Get-Location\)\.Path/.test(WF)) {
   ok("  la carpeta de salida del owner es una ruta absoluta");
 } else falla("la salida del .exe owner es relativa: ISCC puede escribirla en otro lado");
 
+// --- 6b-bis) el instalador owner NO puede salir en un repo publico ---
+// owner-latest lleva un .exe PRE-ACTIVADO como Pro. El diseño asume un repo
+// PRIVADO, donde ese Release solo lo ve el dueño. En un repo publico los
+// Releases son URLs publicas: publicarlo es regalar el producto entero a
+// cualquiera con el link, y encima en silencio (el build queda verde).
+if (/name: Guardia de visibilidad del repositorio/.test(WF)) {
+  ok("hay una guardia de visibilidad antes del bloque owner");
+} else {
+  falla("sin guardia de visibilidad: si el repo es publico, owner-latest " +
+        "publicaria el instalador pre-activado al alcance de cualquiera");
+}
+if (/github\.event\.repository\.private/.test(WF)) {
+  ok("  la guardia mira la visibilidad REAL del repositorio");
+} else falla("la guardia no consulta github.event.repository.private");
+{
+  const iGuard = WF.indexOf("- name: Guardia de visibilidad del repositorio");
+  const iLic = WF.indexOf("- name: Escribir licencia owner");
+  if (iGuard >= 0 && iLic >= 0 && iGuard < iLic) {
+    ok("  la guardia corre ANTES de pedir la licencia de dueño");
+  } else falla("la guardia tiene que correr antes del primer paso owner");
+  if (/steps\.owner_guard\.outputs\.publicar == 'si'/.test(WF)) {
+    ok("  el bloque owner solo sigue si la guardia lo habilita");
+  } else falla("el bloque owner no depende de la guardia: la puede saltear");
+}
+
 // --- 6c) el bloque owner NUNCA puede voltear el build ---
 // Corre en CADA push a main y depende de un servidor EXTERNO (le pide la
 // licencia del dueño). Sin esto, un 503 pasajero de ese servidor dejaba main
