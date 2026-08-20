@@ -71,12 +71,19 @@ export default async function handler(req, res) {
     const porAccesoAlRepo = porTokenCompartido
       ? false
       : await accesoAlRepoValido(req.headers["x-mv-github-token"]);
+    // Las dos barreras devuelven 403, pero con un motivo DISTINTO. Antes las
+    // dos decian "no_autorizado" y era imposible saber cual fallo: el build
+    // owner real murio con un 403 y el workflow culpo al email, cuando en
+    // realidad no habia pasado la verificacion del token. Distinguirlas no
+    // filtra nada: a la segunda solo se llega despues de probar acceso de
+    // escritura al repo, o sea que quien la ve ya es el dueño.
     if (!porTokenCompartido && !porAccesoAlRepo) {
-      return res.status(403).json({ error: "no_autorizado" });
+      return res.status(403).json({ error: "no_autorizado_repo" });
     }
     const ownerEmail = String(process.env.OWNER_EMAIL || "").trim().toLowerCase();
     const email = String(q.email || "").trim().toLowerCase();
-    if (!ownerEmail || !email || email !== ownerEmail) return res.status(403).json({ error: "no_autorizado" });
+    if (!ownerEmail) return res.status(403).json({ error: "owner_email_sin_configurar" });
+    if (!email || email !== ownerEmail) return res.status(403).json({ error: "email_no_coincide" });
     let bonoNuevo = null;
     try { bonoNuevo = await otorgarBonoBienvenidaSiNuevo(email); } catch (e) { /* almacen no configurado: no bloquea la licencia */ }
     try { await limpiarRevocacion(email); } catch (e) { /* almacen no configurado: no bloquea */ }
