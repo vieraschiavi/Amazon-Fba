@@ -112,6 +112,24 @@ function mostrarAprobado(d){
       <a class="btn btn-b" href="/api/descarga?tipo=bat&payment_id=${encodeURIComponent(d._pid || "")}${d._proc ? "&proc=" + encodeURIComponent(d._proc) : ""}">↓ PC sin instalador (.zip, si tu empresa bloquea .exe)</a>
     </div>
     <details class="pasos ayuda-win">
+      <summary>En Android dice <b>“no se pueden instalar apps desconocidas”</b>? (es normal)</summary>
+      <div class="ayuda-win-cuerpo">
+        <p>La app no está en Google Play — se descarga directo de nosotros. Android
+        pide un permiso <b>una sola vez</b>:</p>
+        1. Tocá el archivo <code>.apk</code> que acabás de bajar.<br>
+        2. Cuando avise que la fuente es desconocida, tocá <b>Configuración</b>.<br>
+        3. Activá <b>Permitir de esta fuente</b>.<br>
+        4. Volvé atrás y tocá <b>Instalar</b>. Listo.<br>
+        <p style="margin-top:10px"><b>Si no aparece el aviso:</b><br>
+        <b>Android 8+:</b> Ajustes → Aplicaciones → Acceso especial → Instalar apps
+        desconocidas → elegí el navegador que usaste → Permitir de esta fuente.<br>
+        <b>Android 7 o anterior:</b> Ajustes → Seguridad → Orígenes desconocidos.</p>
+        <p>Si Play Protect avisa, tocá <b>Más detalles</b> y después <b>Instalar de
+        todos modos</b>: pasa con toda app que no viene de la tienda. El APK está
+        firmado por nosotros.</p>
+      </div>
+    </details>
+    <details class="pasos ayuda-win">
       <summary>En Windows aparece <b>“Windows protegió tu PC”</b>? (es normal)</summary>
       <div class="ayuda-win-cuerpo">
         <p>El programa es nuevo y todavía no está firmado con un certificado pago,
