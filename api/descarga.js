@@ -64,8 +64,21 @@ export default async function handler(req, res) {
   const tipo = String(q.tipo || "");
   const release = releasePedido(tipo);
 
+  // La demo ABIERTA se dio de baja a proposito. Antes esta rama entregaba el
+  // .exe y el .zip COMPLETOS a cualquiera que abriera la URL: sin pago, sin
+  // dejar rastro de quien se los llevaba, y con el motor de negocio adentro.
+  // Era el activo de ingenieria regalado a la competencia.
+  //
+  // Ahora la demo se pide (formulario -> mail al dueño), se agenda y se
+  // muestra en vivo: ver api/demo-solicitud.js y la seccion #solicitar-demo
+  // de la landing. 410 y no 404 a proposito: el recurso EXISTIO y ya no, que
+  // es exactamente lo que pasa -- y asi un link viejo compartido por ahi no
+  // parece un error del sitio.
   if (String(q.demo || "") === "1") {
-    return redirigirA(tipo === "bat" ? RELEASE_PC_BAT : RELEASE_PC, res);
+    return res.status(410).json({
+      error: "demo_bajo_pedido",
+      mensaje: "La demo ahora es 1:1 y se pide desde mvfbaia.com/#solicitar-demo",
+    });
   }
 
   const paymentId = q.payment_id || q.collection_id;

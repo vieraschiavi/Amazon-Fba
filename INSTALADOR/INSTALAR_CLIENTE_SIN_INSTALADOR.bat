@@ -1,93 +1,73 @@
 @echo off
 setlocal enabledelayedexpansion
 chcp 65001 >nul 2>&1
-title MV FBA IA - Instalador (version sin instalador / portable)
+title MV FBA IA - Instalador (version portable)
 
-set "URL=https://mvfbaia.com/api/descarga?demo=1&tipo=bat"
-set "ZIP=%TEMP%\MV_FBA_IA_Portable.zip"
-set "DESTINO=%USERPROFILE%\Desktop\MV FBA IA"
+rem La demo abierta se dio de baja: /api/descarga?demo=1 ya no entrega nada
+rem (devuelve 410). El instalador se baja con el LINK PROPIO que cada cliente
+rem recibe en la pagina de gracias despues de pagar -- ese link lleva su
+rem payment_id y vence, asi que no puede quedar fijo aca adentro.
+
+set "DESTINO=%TEMP%\MV_FBA_IA_Portable.zip"
+set "COMPRA=https://mvfbaia.com/#precios"
+set "DEMO=https://mvfbaia.com/#solicitar-demo"
 
 echo.
 echo  ============================================================
-echo    MV AMAZON FBA IA - Version SIN INSTALADOR (portable)
-echo    Para PCs donde la empresa bloquea ejecutar .exe
+echo    MV AMAZON FBA IA - Instalador para Windows
+echo    Version PORTABLE (.zip, sin instalador)
 echo  ============================================================
 echo.
-echo  Esto baja un .zip (no un .exe) y lo descomprime en:
-echo    %DESTINO%
+echo  Necesitas el link de descarga de TU compra:
+echo    1. Abri la pagina de gracias que te quedo despues de pagar
+echo       ^(tambien te llego por mail^).
+echo    2. Click derecho en "PC sin instalador (.zip" ^> Copiar direccion del enlace.
+echo    3. Pegalo aca abajo y apreta Enter.
 echo.
+echo  Si todavia no compraste:  %COMPRA%
+echo  Si queres verlo primero:  %DEMO%  ^(demo 1:1, te lo muestro en vivo^)
+echo.
+
+set "URL="
+set /p "URL=Pega aca tu link de descarga: "
+if not defined URL (
+  echo.
+  echo  [X] No pegaste ningun link. Cerra y volve a intentar.
+  pause
+  exit /b 1
+)
+rem Solo https de dominios propios: sin esto, pegar cualquier cosa hace que
+rem este .bat baje y EJECUTE un binario de donde sea.
+echo !URL! | findstr /I /R "^https://mvfbaia\.com/ ^https://github\.com/vieraschiavi/ ^https://release-assets\.githubusercontent\.com/" >nul
+if errorlevel 1 (
+  echo.
+  echo  [X] Ese link no es del sitio oficial. Copialo de nuevo desde tu pagina de compra.
+  pause
+  exit /b 1
+)
 
 where curl >nul 2>&1
 if errorlevel 1 (
-  echo  [X] Este Windows no trae curl (hace falta Windows 10 1803 o mas nuevo^).
-  echo      Descargalo a mano desde:
-  echo      %URL%
-  echo.
+  echo  [X] Este Windows no trae curl ^(hace falta Windows 10 1803 o mas nuevo^).
+  echo      Bajalo a mano pegando tu link en el navegador.
   pause
   exit /b 1
 )
-where tar >nul 2>&1
+
+echo.
+echo  [1/2] Descargando ...
+curl -L --fail -o "%DESTINO%" "!URL!"
 if errorlevel 1 (
-  echo  [X] Este Windows no trae tar (hace falta Windows 10 1803 o mas nuevo^)
-  echo      para descomprimir. Baja el .zip a mano y descomprimilo con
-  echo      cualquier programa ^(el Explorador de Windows tambien puede^):
-  echo      %URL%
   echo.
+  echo  [X] No se pudo descargar. El link puede haber vencido:
+  echo      volve a abrir tu pagina de compra y copia uno nuevo.
   pause
   exit /b 1
 )
 
-echo  [1/4] Descargando desde mvfbaia.com ...
-if exist "%ZIP%" del /f /q "%ZIP%" >nul 2>&1
-curl -L --fail --progress-bar -o "%ZIP%" "%URL%"
-if errorlevel 1 goto :fallo
-if not exist "%ZIP%" goto :fallo
-
-echo  [2/4] Verificando el archivo ...
-rem El .zip portable pesa bastante mas que esto (trae Python embebido con
-rem sus dependencias adentro). Si bajo algo chico, lo que llego es una
-rem pagina de error o un JSON, no el paquete real.
-for %%A in ("%ZIP%") do set "BYTES=%%~zA"
-if !BYTES! LSS 10485760 (
-  echo  [X] Lo que se descargo pesa solo !BYTES! bytes: no es el paquete.
-  echo      Probablemente el servidor respondio un error. Reintenta en un
-  echo      rato o descargalo a mano desde: %URL%
-  del /f /q "%ZIP%" >nul 2>&1
-  echo.
-  pause
-  exit /b 1
-)
-
-echo  [3/4] Descomprimiendo en el Escritorio ...
-if exist "%DESTINO%" (
-  echo.
-  echo  Ya existe "%DESTINO%": se sobreescriben los archivos del programa.
-  echo  Tu base de datos y tu licencia, si ya la habias activado ahi, quedan
-  echo  intactas -- viven en archivos que el paquete nuevo no trae adentro.
-  echo.
-) else (
-  mkdir "%DESTINO%" >nul 2>&1
-)
-tar -xf "%ZIP%" -C "%DESTINO%"
-if errorlevel 1 goto :fallo
-
-echo  [4/4] Listo.
-echo.
-echo  ============================================================
-echo    Carpeta:   %DESTINO%
-echo    Abrir el programa:  doble clic en INICIAR.bat
-echo    Icono de Escritorio y Menu Inicio ^(opcional^):
-echo      doble clic en CREAR_ACCESOS_DIRECTOS.bat
-echo  ============================================================
-echo.
+echo  [2/2] Abriendo ...
 start "" "%DESTINO%"
-exit /b 0
-
-:fallo
 echo.
-echo  [X] Algo fallo bajando o descomprimiendo el paquete.
-echo      Revisa tu conexion y reintenta, o descargalo a mano desde:
-echo      %URL%
-echo.
+echo  Listo. Segui los pasos en pantalla.
 pause
-exit /b 1
+exit /b 0

@@ -373,9 +373,22 @@ const BAT_CLI = fs.existsSync(path.join(DIR_INST, "INSTALAR_CLIENTE.bat"))
   ? fs.readFileSync(path.join(DIR_INST, "INSTALAR_CLIENTE.bat"), "utf8") : "";
 const BAT_OWN = fs.existsSync(path.join(DIR_INST, "INSTALAR_OWNER.bat"))
   ? fs.readFileSync(path.join(DIR_INST, "INSTALAR_OWNER.bat"), "utf8") : "";
-if (/api\/descarga\?demo=1/.test(BAT_CLI)) {
-  ok("  INSTALAR_CLIENTE.bat baja el instalador publico de la web");
-} else falla("INSTALAR_CLIENTE.bat no apunta al endpoint publico de descarga");
+// La demo ABIERTA se dio de baja: /api/descarga?demo=1 devuelve 410 y ya no
+// existe ninguna descarga publica que un .bat pueda usar sin pagar. Ahora el
+// .bat pide el link propio del comprador. Dos cosas que no se pueden aflojar:
+//   - que no quede una URL de descarga fija adentro (seria la demo abierta
+//     otra vez, por la puerta de atras);
+//   - que valide el link pegado contra dominios oficiales, porque si no este
+//     .bat baja y EJECUTA el binario que sea que le peguen.
+if (/set\s+"URL=https?:\/\//i.test(BAT_CLI)) {
+  falla("INSTALAR_CLIENTE.bat deja una URL de descarga fija: reabre la demo abierta");
+} else ok("  INSTALAR_CLIENTE.bat no lleva ninguna URL de descarga fija");
+if (/findstr[^\n]*mvfbaia/i.test(BAT_CLI)) {
+  ok("  INSTALAR_CLIENTE.bat valida que el link pegado sea de un dominio oficial");
+} else {
+  falla("INSTALAR_CLIENTE.bat no valida el link pegado: ejecutaria un binario " +
+        "de cualquier origen");
+}
 if (/owner-latest|Owner_Setup/i.test(BAT_CLI)) {
   falla("INSTALAR_CLIENTE.bat menciona el release OWNER: un cliente lo veria");
 } else ok("  INSTALAR_CLIENTE.bat no menciona el release owner");
@@ -398,9 +411,12 @@ ok("  ningun .bat de INSTALADOR lleva token ni clave hardcodeada");
 // Para empresas que bloquean ejecutar .exe pero permiten .bat/.vbs: mismo
 // motor, misma licencia, sin instalar nada.
 if (BAT_CLI_ZIP) {
-  if (/api\/descarga\?demo=1&tipo=bat/.test(BAT_CLI_ZIP)) {
-    ok("  INSTALAR_CLIENTE_SIN_INSTALADOR.bat pide la version portable (tipo=bat)");
-  } else falla("INSTALAR_CLIENTE_SIN_INSTALADOR.bat no pide ?tipo=bat: bajaria el .exe, no el .zip");
+  if (/MV_FBA_IA_Portable\.zip/.test(BAT_CLI_ZIP)) {
+    ok("  INSTALAR_CLIENTE_SIN_INSTALADOR.bat guarda el .zip portable, no el .exe");
+  } else falla("INSTALAR_CLIENTE_SIN_INSTALADOR.bat ya no apunta al .zip portable");
+  if (/set\s+"URL=https?:\/\//i.test(BAT_CLI_ZIP)) {
+    falla("INSTALAR_CLIENTE_SIN_INSTALADOR.bat deja una URL fija: reabre la demo abierta");
+  } else ok("  INSTALAR_CLIENTE_SIN_INSTALADOR.bat no lleva URL de descarga fija");
   if (/owner-latest|Owner_Setup|Portable_Owner/i.test(BAT_CLI_ZIP)) {
     falla("INSTALAR_CLIENTE_SIN_INSTALADOR.bat menciona el release OWNER: un cliente lo veria");
   } else ok("  INSTALAR_CLIENTE_SIN_INSTALADOR.bat no menciona el release owner");

@@ -275,6 +275,19 @@ section{padding:76px 0}
 .apk-ruta{margin-top:18px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
 .apk-ruta p{margin:0 0 9px;font-size:13.5px;color:var(--slate);line-height:1.6}
 .apk-ruta p:last-child{margin-bottom:0}
+.demo-form{display:grid;gap:13px;margin-top:18px}
+.demo-form label{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:700;color:var(--ink)}
+.demo-form input{padding:11px 13px;border:1px solid var(--line);border-radius:10px;font-size:14.5px;
+  font-family:inherit;background:var(--card);color:var(--ink)}
+.demo-form input:focus{outline:2px solid var(--navy-700);outline-offset:1px;border-color:transparent}
+.demo-form input[aria-invalid="true"]{border-color:#b91c1c}
+.demo-form button{justify-self:start;margin-top:4px}
+.demo-form button:disabled{opacity:.6;cursor:default}
+.demo-msg{font-size:13.5px;margin:2px 0 0;min-height:1.2em}
+.demo-msg.ok{color:#3f9142;font-weight:700}
+.demo-msg.mal{color:#b91c1c}
+@media (min-width:620px){.demo-form{grid-template-columns:1fr 1fr}
+  .demo-form button,.demo-msg{grid-column:1/-1}}
 .flow .ar{align-self:center;color:var(--green-ink);font-weight:800;padding:0 2px}
 
 
@@ -336,6 +349,7 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
       <a href="#video" data-t="nav.video">Video</a>
       <a href="#producto" data-t="nav.product">Producto</a>
       <a href="#precios" data-t="nav.pricing">Precios</a>
+      <a href="#solicitar-demo" data-t="nav.demo1a1">Pedir demo</a>
       <a href="#plataformas" data-t="nav.platforms">Plataformas</a>
       <a href="#instalar-android" data-t="nav.instalar">Instalar en Android</a>
       <a href="#resenas" data-t="nav.reviews">Reseñas</a>
@@ -358,12 +372,11 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
       <p class="sub" data-t="hero.sub">Semáforo de margen, sueldo proyectado y portafolio completo — en español, pago único, sin sorpresas. La investigación de nichos viene incluida.</p>
       <div class="herobtns">
         <a class="btn btn-primary" href="#precios" data-t="hero.ctaPrimary">Ver precios y comprar</a>
-        <a class="btn btn-ghost" href="/api/descarga?demo=1" data-t="hero.ctaGhost">Descargar demo de escritorio (7 días gratis)</a>
+        <a class="btn btn-ghost" href="#solicitar-demo" data-t="hero.ctaGhost">Pedir una demo 1:1</a>
       </div>
       <p style="margin:-16px 0 22px;font-size:12.5px;color:#8ea0cc">
         <span data-t="hero.ctaWebNote">¿Preferís probarlo sin instalar?</span>
-        <a href="/app/" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline;text-underline-offset:2px" data-t="hero.ctaWebLink">Abrí la demo rápida en el navegador</a>
-        · <a href="/api/descarga?demo=1&amp;tipo=bat" style="color:#fff;text-decoration:underline;text-underline-offset:2px" data-t="hero.ctaBatLink">¿La empresa bloquea instalar .exe? Descargá la versión sin instalador</a>
+        <a href="/app/" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline;text-underline-offset:2px" data-t="hero.ctaWebLink">Mirá una vista de ejemplo en el navegador</a>
       </p>
       <div class="trustrow">
         <span data-t="hero.trust1"><b>10</b><em>marketplaces de keywords</em></span>
@@ -535,9 +548,8 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
     <p class="sublede" data-t="pricing.sub">Pago único o mensual. Descargás la versión que compraste apenas se confirma el pago.</p>
     <p class="klabel" style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--muted);margin:-8px 0 14px" data-t="pricing.monedaAviso">Precio de referencia en USD — MercadoPago procesa el cobro en pesos uruguayos (UYU) al tipo de cambio del día del pago.</p>
     <div class="demo-banner-row">
-      <a class="demo-banner" href="/api/descarga?demo=1" data-t="pricing.demoBanner">Descargá la demo completa de escritorio (Windows) — 7 días gratis, todas las funciones</a>
-      <a class="demo-banner-alt" href="/app/" target="_blank" rel="noopener" data-t="pricing.demoBannerWeb">o probá la vista rápida en el navegador</a>
-      <a class="demo-banner-alt" href="/api/descarga?demo=1&amp;tipo=bat" data-t="pricing.demoBannerBat">o la versión sin instalador (.zip, para PCs que bloquean .exe)</a>
+      <a class="demo-banner" href="#solicitar-demo" data-t="pricing.demoBanner">¿Querés verlo funcionando primero? Pedí una demo 1:1 — te lo muestro en vivo</a>
+      <a class="demo-banner-alt" href="/app/" target="_blank" rel="noopener" data-t="pricing.demoBannerWeb">o mirá una vista de ejemplo en el navegador</a>
     </div>
     <div class="g3">
       <div class="card price-card">
@@ -696,6 +708,27 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
   </div>
 </section>
 
+<section id="solicitar-demo">
+  <div class="wrap" style="max-width:720px">
+    <div class="klabel" data-t="demo.label">Demo 1:1</div>
+    <h2 class="h2" data-t="demo.h2">Pedí una demo y te lo muestro en vivo</h2>
+    <p class="sublede" data-t="demo.sub">No hay descarga de prueba: te muestro el programa funcionando con tus números, respondo lo que quieras y vos decidís. Dejame estos datos y coordinamos por mail.</p>
+    <form id="formDemo" class="demo-form" novalidate>
+      <label><span data-t="demo.f.nombre">Nombre completo</span>
+        <input type="text" id="d_nombre" name="nombre" maxlength="80" autocomplete="name" required></label>
+      <label><span data-t="demo.f.empresa">Empresa</span>
+        <input type="text" id="d_empresa" name="empresa" maxlength="80" autocomplete="organization" required></label>
+      <label><span data-t="demo.f.pais">País</span>
+        <input type="text" id="d_pais" name="pais" maxlength="56" autocomplete="country-name" required></label>
+      <label><span data-t="demo.f.email">Email</span>
+        <input type="email" id="d_email" name="email" maxlength="120" autocomplete="email" required></label>
+      <button type="submit" class="btn btn-primary" id="btnDemo" data-t="demo.f.enviar">Pedir la demo</button>
+      <p id="demoMsg" class="demo-msg" role="status" aria-live="polite"></p>
+    </form>
+    <p class="sublede" style="font-size:12.5px;margin-top:14px" data-t="demo.privacidad">Usamos tus datos solo para coordinar la demo. No se comparten ni se usan para publicidad.</p>
+  </div>
+</section>
+
 <section id="contacto" class="section-alt">
   <div class="wrap" style="max-width:640px">
     <div class="klabel" data-t="contact.label">Contacto</div>
@@ -766,6 +799,10 @@ footer .legal{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
 <script>
 const I18N = {
   es: {
+    "nav.demo1a1":"Pedir demo","demo.label":"Demo 1:1","demo.h2":"Pedí una demo y te lo muestro en vivo","demo.sub":"No hay descarga de prueba: te muestro el programa funcionando con tus números, respondo lo que quieras y vos decidís. Dejame estos datos y coordinamos por mail.",
+    "demo.f.nombre":"Nombre completo","demo.f.empresa":"Empresa","demo.f.pais":"País","demo.f.email":"Email","demo.f.enviar":"Pedir la demo",
+    "demo.msg.falta":"Revisá ese campo: falta completarlo o el email no es válido.","demo.msg.enviando":"Enviando…","demo.msg.enviado":"Pedido enviado","demo.msg.ok":"¡Listo! Te escribo a ese mail para coordinar día y hora.","demo.msg.limite":"Ya enviaste varios pedidos. Probá de nuevo en un rato o escribinos a vieraschiavi@gmail.com.","demo.msg.sinEmail":"No podemos recibir el pedido ahora. Escribinos directo a vieraschiavi@gmail.com.","demo.msg.error":"No pudimos enviar el pedido. Reintentá o escribinos a vieraschiavi@gmail.com.","demo.msg.conexion":"Problema de conexión. Reintentá.",
+    "demo.privacidad":"Usamos tus datos solo para coordinar la demo. No se comparten ni se usan para publicidad.",
     "nav.instalar":"Instalar en Android",
     "apk.label":"Instalación en Android","apk.h2":"Cómo instalar la app en tu Android","apk.sub":"La app no está en Google Play: se descarga directo de nosotros, así no pagás la comisión de la tienda. Android pide un permiso una sola vez — son 30 segundos.",
     "apk.s1k":"Paso 1","apk.s1b":"Descargá el APK","apk.s1s":"Con el link que te llega al comprar",
@@ -854,6 +891,10 @@ const I18N = {
     "contact.noContact":"(no indicado)","contact.bodyContactLine":"Contacto de quien consulta"
   },
   en: {
+    "nav.demo1a1":"Request demo","demo.label":"1:1 demo","demo.h2":"Request a demo and I'll show it to you live","demo.sub":"There is no trial download: I show you the program working with your numbers, answer whatever you want, and you decide. Leave me these details and we'll set it up by email.",
+    "demo.f.nombre":"Full name","demo.f.empresa":"Company","demo.f.pais":"Country","demo.f.email":"Email","demo.f.enviar":"Request the demo",
+    "demo.msg.falta":"Check that field: it's empty or the email isn't valid.","demo.msg.enviando":"Sending…","demo.msg.enviado":"Request sent","demo.msg.ok":"Done! I'll write to that address to agree on a day and time.","demo.msg.limite":"You've already sent several requests. Try again later or write to vieraschiavi@gmail.com.","demo.msg.sinEmail":"We can't receive the request right now. Write directly to vieraschiavi@gmail.com.","demo.msg.error":"We couldn't send the request. Try again or write to vieraschiavi@gmail.com.","demo.msg.conexion":"Connection problem. Try again.",
+    "demo.privacidad":"We use your details only to arrange the demo. They are not shared or used for advertising.",
     "nav.instalar":"Install on Android",
     "apk.label":"Android installation","apk.h2":"How to install the app on your Android","apk.sub":"The app isn't on Google Play: you download it straight from us, so you don't pay the store's commission. Android asks for one permission, once — it takes 30 seconds.",
     "apk.s1k":"Step 1","apk.s1b":"Download the APK","apk.s1s":"With the link you get when you buy",
@@ -942,6 +983,10 @@ const I18N = {
     "contact.noContact":"(not provided)","contact.bodyContactLine":"Contact info of the requester"
   },
   pt: {
+    "nav.demo1a1":"Pedir demo","demo.label":"Demo 1:1","demo.h2":"Peça uma demo e eu mostro ao vivo","demo.sub":"Não há download de teste: eu mostro o programa funcionando com os seus números, respondo o que você quiser e você decide. Deixe estes dados e combinamos por email.",
+    "demo.f.nombre":"Nome completo","demo.f.empresa":"Empresa","demo.f.pais":"País","demo.f.email":"Email","demo.f.enviar":"Pedir a demo",
+    "demo.msg.falta":"Confira esse campo: está vazio ou o email não é válido.","demo.msg.enviando":"Enviando…","demo.msg.enviado":"Pedido enviado","demo.msg.ok":"Pronto! Escrevo para esse email para combinar dia e horário.","demo.msg.limite":"Você já enviou vários pedidos. Tente de novo mais tarde ou escreva para vieraschiavi@gmail.com.","demo.msg.sinEmail":"Não conseguimos receber o pedido agora. Escreva direto para vieraschiavi@gmail.com.","demo.msg.error":"Não conseguimos enviar o pedido. Tente de novo ou escreva para vieraschiavi@gmail.com.","demo.msg.conexion":"Problema de conexão. Tente de novo.",
+    "demo.privacidad":"Usamos seus dados apenas para combinar a demo. Não são compartilhados nem usados para publicidade.",
     "nav.instalar":"Instalar no Android",
     "apk.label":"Instalação no Android","apk.h2":"Como instalar o app no seu Android","apk.sub":"O app não está no Google Play: você baixa direto da gente, assim você não paga a comissão da loja. O Android pede uma permissão uma única vez — leva 30 segundos.",
     "apk.s1k":"Passo 1","apk.s1b":"Baixe o APK","apk.s1s":"Com o link que você recebe ao comprar",
@@ -1286,6 +1331,70 @@ document.querySelectorAll(".comprar").forEach((btn) => {
     .then(r => r.ok ? r.json() : null)
     .then(d => { if (d) { datos = d; render(); } })
     .catch(() => {}); // sin internet/API caida -> la seccion simplemente no se llena, nunca rota la pagina
+})();
+
+// ---------------------------------------------------------------------------
+// Formulario de demo 1:1. Reemplaza a la descarga abierta: no entrega nada,
+// solo avisa al dueño (api/demo-solicitud.js -> mail). El idioma de los
+// mensajes sale del MISMO diccionario I18N que el resto de la landing, para
+// que no queden textos sueltos en español cuando el visitante eligio EN/PT.
+// ---------------------------------------------------------------------------
+(function(){
+  const form = document.getElementById("formDemo");
+  if (!form) return;
+  const msg = document.getElementById("demoMsg");
+  const btn = document.getElementById("btnDemo");
+  const dic = () => I18N[document.documentElement.getAttribute("lang")] || I18N.es;
+  const txt = (k) => (dic()[k] != null ? dic()[k] : I18N.es[k]);
+
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const datos = {
+      nombre:  document.getElementById("d_nombre").value.trim(),
+      empresa: document.getElementById("d_empresa").value.trim(),
+      pais:    document.getElementById("d_pais").value.trim(),
+      email:   document.getElementById("d_email").value.trim(),
+    };
+    msg.className = "demo-msg";
+    // Se marca el primer campo flojo y se le da el foco: sin esto el usuario
+    // ve "revisá los datos" y tiene que adivinar cual.
+    for (const [k, id] of [["nombre","d_nombre"],["empresa","d_empresa"],["pais","d_pais"],["email","d_email"]]) {
+      const el = document.getElementById(id);
+      const corto = datos[k].length < 2;
+      const mailMal = k === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos[k]);
+      el.setAttribute("aria-invalid", (corto || mailMal) ? "true" : "false");
+      if (corto || mailMal) {
+        msg.classList.add("mal"); msg.textContent = txt("demo.msg.falta");
+        el.focus(); return;
+      }
+    }
+    btn.disabled = true; btn.textContent = txt("demo.msg.enviando");
+    try {
+      const r = await fetch("/api/demo-solicitud", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-mv-app": "mvfba-web-1" },
+        body: JSON.stringify(datos),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok && d.ok) {
+        form.reset();
+        msg.classList.add("ok"); msg.textContent = txt("demo.msg.ok");
+        btn.textContent = txt("demo.msg.enviado");
+        return;                       // queda deshabilitado: no reenviar
+      }
+      btn.disabled = false; btn.textContent = txt("demo.f.enviar");
+      msg.classList.add("mal");
+      const errores = {
+        demasiados_intentos: txt("demo.msg.limite"),
+        email_no_configurado: txt("demo.msg.sinEmail"),
+        campo_invalido: txt("demo.msg.falta"),
+      };
+      msg.textContent = errores[d.error] || txt("demo.msg.error");
+    } catch (e) {
+      btn.disabled = false; btn.textContent = txt("demo.f.enviar");
+      msg.classList.add("mal"); msg.textContent = txt("demo.msg.conexion");
+    }
+  });
 })();
 </script>
 

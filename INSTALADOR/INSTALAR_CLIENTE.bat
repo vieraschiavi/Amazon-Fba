@@ -3,64 +3,71 @@ setlocal enabledelayedexpansion
 chcp 65001 >nul 2>&1
 title MV FBA IA - Instalador (version cliente)
 
-set "URL=https://mvfbaia.com/api/descarga?demo=1"
+rem La demo abierta se dio de baja: /api/descarga?demo=1 ya no entrega nada
+rem (devuelve 410). El instalador se baja con el LINK PROPIO que cada cliente
+rem recibe en la pagina de gracias despues de pagar -- ese link lleva su
+rem payment_id y vence, asi que no puede quedar fijo aca adentro.
+
 set "DESTINO=%TEMP%\MV_Amazon_FBA_IA_Setup.exe"
+set "COMPRA=https://mvfbaia.com/#precios"
+set "DEMO=https://mvfbaia.com/#solicitar-demo"
 
 echo.
 echo  ============================================================
 echo    MV AMAZON FBA IA - Instalador para Windows
-echo    Version CLIENTE (demo de 7 dias, se activa con licencia)
+echo    Version CLIENTE (se activa con tu licencia)
 echo  ============================================================
 echo.
-echo  El instalador no viaja dentro del ZIP porque pesa ~126 MB
-echo  (GitHub no acepta archivos de mas de 100 MB en el repo).
-echo  Este paso lo baja del sitio oficial y lo ejecuta.
+echo  Necesitas el link de descarga de TU compra:
+echo    1. Abri la pagina de gracias que te quedo despues de pagar
+echo       ^(tambien te llego por mail^).
+echo    2. Click derecho en "Programa para PC (Windows)" ^> Copiar direccion del enlace.
+echo    3. Pegalo aca abajo y apreta Enter.
 echo.
+echo  Si todavia no compraste:  %COMPRA%
+echo  Si queres verlo primero:  %DEMO%  ^(demo 1:1, te lo muestro en vivo^)
+echo.
+
+set "URL="
+set /p "URL=Pega aca tu link de descarga: "
+if not defined URL (
+  echo.
+  echo  [X] No pegaste ningun link. Cerra y volve a intentar.
+  pause
+  exit /b 1
+)
+rem Solo https de dominios propios: sin esto, pegar cualquier cosa hace que
+rem este .bat baje y EJECUTE un binario de donde sea.
+echo !URL! | findstr /I /R "^https://mvfbaia\.com/ ^https://github\.com/vieraschiavi/ ^https://release-assets\.githubusercontent\.com/" >nul
+if errorlevel 1 (
+  echo.
+  echo  [X] Ese link no es del sitio oficial. Copialo de nuevo desde tu pagina de compra.
+  pause
+  exit /b 1
+)
 
 where curl >nul 2>&1
 if errorlevel 1 (
-  echo  [X] Este Windows no trae curl (hace falta Windows 10 1803 o mas nuevo^).
-  echo      Descargalo a mano desde:
-  echo      %URL%
-  echo.
+  echo  [X] Este Windows no trae curl ^(hace falta Windows 10 1803 o mas nuevo^).
+  echo      Bajalo a mano pegando tu link en el navegador.
   pause
   exit /b 1
 )
 
-echo  [1/3] Descargando desde mvfbaia.com ...
-if exist "%DESTINO%" del /f /q "%DESTINO%" >nul 2>&1
-curl -L --fail --progress-bar -o "%DESTINO%" "%URL%"
-if errorlevel 1 goto :fallo
-if not exist "%DESTINO%" goto :fallo
-
-echo  [2/3] Verificando el archivo ...
-rem Un instalador real de Inno pesa mas de 50 MB. Si bajo algo chico, lo que
-rem llego es una pagina de error o un JSON, no el programa: mejor avisarlo
-rem ahora que dejar que Windows falle con "no es una aplicacion valida".
-for %%A in ("%DESTINO%") do set "BYTES=%%~zA"
-if !BYTES! LSS 52428800 (
-  echo  [X] Lo que se descargo pesa solo !BYTES! bytes: no es el instalador.
-  echo      Probablemente el servidor respondio un error. Reintentá en un rato
-  echo      o descargalo a mano desde: %URL%
-  del /f /q "%DESTINO%" >nul 2>&1
+echo.
+echo  [1/2] Descargando ...
+curl -L --fail -o "%DESTINO%" "!URL!"
+if errorlevel 1 (
   echo.
+  echo  [X] No se pudo descargar. El link puede haber vencido:
+  echo      volve a abrir tu pagina de compra y copia uno nuevo.
   pause
   exit /b 1
 )
 
-echo  [3/3] Abriendo el instalador ...
-echo.
-echo  Si aparece "Windows protegio tu PC": Mas informacion ^> Ejecutar de todas
-echo  formas. Es porque el .exe todavia no tiene firma de codigo.
-echo.
+echo  [2/2] Abriendo ...
 start "" "%DESTINO%"
-exit /b 0
-
-:fallo
 echo.
-echo  [X] No se pudo descargar el instalador.
-echo      Revisá tu conexion y reintentá, o descargalo a mano desde:
-echo      %URL%
-echo.
+echo  Listo. Segui los pasos en pantalla.
 pause
-exit /b 1
+exit /b 0
