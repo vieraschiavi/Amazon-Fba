@@ -84,6 +84,20 @@ if (/mv-demo-aviso/.test(BUILD)) {
         "no simular resultados haciendolos pasar por reales");
 }
 
+// --- 4b) el motor falso NO puede viajar dentro del APK ---
+// El build de Android copia mobile/ ENTERO a assets/www. Sin excluirlo, el
+// motor de mentira quedaria adentro de la app que paga el cliente, al lado
+// del real. Si alguna vez se cargara por error, esa persona veria numeros
+// congelados como si fueran los suyos: una falla silenciosa, sin error a la
+// vista, en un producto pago. Es justo la clase de bug que no se detecta.
+const GRADLE = fs.readFileSync(path.join(RAIZ, "android/app/build.gradle"), "utf8");
+if (/exclude\s+'js\/nucleo-demo\.js'/.test(GRADLE)) {
+  ok("el APK excluye el motor falso (solo viaja el real)");
+} else {
+  falla("android/app/build.gradle no excluye js/nucleo-demo.js: el motor con " +
+        "numeros congelados viajaria dentro del APK del cliente");
+}
+
 // --- 5) la descarga abierta quedo cerrada ---
 const DESCARGA = fs.readFileSync(path.join(RAIZ, "api/descarga.js"), "utf8");
 if (/redirigirA\([^)]*\)\s*;?\s*\n?\s*}\s*\n\s*const paymentId/.test(DESCARGA)) {

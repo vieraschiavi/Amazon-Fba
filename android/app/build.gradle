@@ -85,6 +85,15 @@ android {
 tasks.register('syncWebAssets', Copy) {
     from("${rootProject.projectDir}/../mobile") {
         exclude 'README.md'
+        // nucleo-demo.js es el motor FALSO de la demo web publica: devuelve
+        // numeros congelados de un producto de ejemplo. Existe solo para que
+        // /app/ muestre pantallas sin publicar las formulas reales (ver
+        // scripts/vercel-build.sh). Adentro del APK no tiene ninguna funcion,
+        // y tenerlo ahi es un riesgo: si alguna vez se cargara por error, el
+        // cliente que PAGO veria numeros fijos como si fueran los suyos --
+        // una falla silenciosa, sin error a la vista. La app lleva el motor
+        // de verdad (js/nucleo.js) y nada mas.
+        exclude 'js/nucleo-demo.js'
     }
     into "${projectDir}/src/main/assets/www"
 }
