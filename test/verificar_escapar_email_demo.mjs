@@ -5,11 +5,11 @@
  * POR QUE EXISTE: POST /api/creditos (registro de demo) acepta {email,
  * nombre} sin verificar que quien llama sea el dueño de ese email -- solo
  * "email.includes('@')" + limite de 5/hora por IP. Un dia despues,
- * api/cron-recordatorio-demo.js interpolaba `nombre` CRUDO en el HTML de un
+ * api/demo.js interpolaba `nombre` CRUDO en el HTML de un
  * mail real, firmado por el dominio legitimo (Resend). Un atacante podia
  * registrar el email de la VICTIMA con un `nombre` que en realidad es un
  * link/HTML de phishing, y ese phishing salia con reputacion de envio
- * genuina. Ahora _email.js expone escaparHtml() y cron-recordatorio-demo.js
+ * genuina. Ahora _email.js expone escaparHtml() y demo.js
  * la usa antes de armar el saludo.
  *
  * Uso:   node test/verificar_escapar_email_demo.mjs
@@ -47,13 +47,13 @@ for (const c of ["<", ">", '"', "'", "&"]) {
   else falla(`el caracter "${c}" NO quedo escapado`);
 }
 
-// --- cron-recordatorio-demo.js usa escaparHtml antes de armar el saludo ---
+// --- demo.js usa escaparHtml antes de armar el saludo ---
 {
-  const SRC = fs.readFileSync(path.join(RAIZ, "api/cron-recordatorio-demo.js"), "utf8");
+  const SRC = fs.readFileSync(path.join(RAIZ, "api/demo.js"), "utf8");
   const codigo = SRC.split("\n").filter((l) => !l.trim().startsWith("//")).join("\n");
   if (/import\s*\{[^}]*escaparHtml[^}]*\}\s*from\s*["']\.\/_email\.js["']/.test(codigo))
-    ok("cron-recordatorio-demo.js importa escaparHtml");
-  else falla("cron-recordatorio-demo.js no importa escaparHtml");
+    ok("demo.js importa escaparHtml");
+  else falla("demo.js no importa escaparHtml");
 
   const idxEscapar = codigo.indexOf("escaparHtml(nombre)");
   const idxSaludo = codigo.indexOf("saludo");
@@ -63,10 +63,28 @@ for (const c of ["<", ">", '"', "'", "&"]) {
 
   // no puede quedar NINGUNA interpolacion directa de `nombre` sin pasar por
   // escaparHtml -- solo debe aparecer del lado derecho de "= escaparHtml(nombre)"
+  // Dos destinos distintos, dos protecciones distintas:
+  //   - CUERPO del mail: es HTML -> escaparHtml.
+  //   - ASUNTO: es una cabecera, no HTML. Escaparlo dejaria "&amp;" a la
+  //     vista; lo que hay que impedir ahi es el salto de linea (inyeccion de
+  //     cabeceras) -> unaLinea().
+  // Se exige que TODA interpolacion de un dato del visitante use una de las
+  // dos, para que la proteccion se vea en el punto de interpolacion y no
+  // haya que abrir un helper para saber si es segura.
   const usosDeNombre = [...codigo.matchAll(/\$\{[^}]*\bnombre\b[^}]*\}/g)].map((m) => m[0]);
-  const crudos = usosDeNombre.filter((u) => !/escaparHtml/.test(u));
-  if (crudos.length === 0) ok("  ninguna interpolacion de `nombre` queda sin pasar por escaparHtml");
+  const crudos = usosDeNombre.filter((u) => !/escaparHtml|unaLinea/.test(u));
+  if (crudos.length === 0) ok("  ninguna interpolacion de `nombre` queda sin proteger");
   else falla(`quedan interpolaciones crudas de nombre: ${crudos.join(", ")}`);
+
+  // El asunto tiene que aplanar saltos de linea de verdad, no solo llamarse asi.
+  const defUnaLinea = codigo.match(/const unaLinea = [^;]+;/);
+  if (!defUnaLinea) {
+    falla("no existe unaLinea(): el asunto del mail podria llevar saltos de linea");
+  } else if (/replace\(\/\[\\r\\n\]\+\/g/.test(defUnaLinea[0])) {
+    ok("  unaLinea() aplana \\r y \\n (sin inyeccion de cabeceras en el asunto)");
+  } else {
+    falla("unaLinea() no saca los saltos de linea: " + defUnaLinea[0]);
+  }
 }
 
 console.log("");
@@ -74,4 +92,4 @@ if (fallas) {
   console.error(`FALLO: ${fallas} problema(s) en el escape del email de recordatorio.`);
   process.exit(1);
 }
-console.log("OK: escaparHtml() cubre los 5 caracteres peligrosos y cron-recordatorio-demo.js la usa antes de armar el mail.");
+console.log("OK: escaparHtml() cubre los 5 caracteres peligrosos y demo.js la usa antes de armar el mail.");

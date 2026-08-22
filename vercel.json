@@ -9,6 +9,6 @@
     { "source": "/api/demo-registro", "destination": "/api/creditos" }
   ],
   "crons": [
-    { "path": "/api/cron-recordatorio-demo", "schedule": "0 15 * * *" }
+    { "path": "/api/demo", "schedule": "0 15 * * *" }
   ]
 }
