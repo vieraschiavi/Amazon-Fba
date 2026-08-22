@@ -13,12 +13,15 @@
 //               ejecutar .exe -- se descomprime y se corre con INICIAR.bat)
 //   apk         app Android
 //
-// ?demo=1: SIN pago (el limite de 7 dias lo controla la propia app al
-// abrirla, no la descarga) -- lo usan los botones "Probar demo" de la
-// landing. Honra ?tipo=bat (demo portable) pero NO ?tipo=apk a proposito: no
-// existe un APK gratis, esa combinacion sigue devolviendo el .exe de PC.
-// Sin ?demo: exige un pago aprobado real (MercadoPago o PayPal, via
-// payment_id/orden + ?proc=paypal si corresponde) y honra los tres ?tipo=.
+// ?demo=1 YA NO ENTREGA NADA (410): la demo dejo de ser una descarga abierta
+// y pasa a ser 1:1 bajo pedido (ver api/demo-solicitud.js).
+//
+// Toda descarga exige DOS cosas, no una:
+//   1. un pago aprobado real (MercadoPago o PayPal, via payment_id/orden
+//      + ?proc=paypal si corresponde), y
+//   2. que el PLAN de ese pago incluya lo que se esta pidiendo (ver INCLUYE).
+// El punto 2 no existia: como el ?tipo= lo elige quien llama, un Starter de
+// US$29 se convertia en el Pro de US$129 sacando "&tipo=apk" de la URL.
 import { obtenerOrden, leerOrden, paypalConfigurado } from "./_paypal.js";
 import { resolverDescargaRelease } from "./_release.js";
 import { limitarPorIp } from "./_seguridad.js";
@@ -31,6 +34,42 @@ function releasePedido(tipo) {
   if (tipo === "apk") return RELEASE_APK;
   if (tipo === "bat") return RELEASE_PC_BAT;
   return RELEASE_PC;
+}
+
+// QUE ENTREGA CADA PLAN
+// ---------------------
+// Un pago aprobado NO alcanza: hay que mirar QUE se compro. El "tipo" lo
+// elige quien llama, en la URL, asi que sin esta tabla alcanzaba con sacar
+// "&tipo=apk" para convertir un Starter de US$29 (celular) en el Pro de
+// US$129 (PC), con el mismo payment_id y sin tocar nada mas. Peor todavia:
+// los packs de CREDITOS de IA tambien son pagos aprobados, asi que comprar
+// creditos habilitaba bajarse el programa entero.
+//
+// Las claves son los ids de PLANES en api/checkout.js, que es lo que viaja
+// en external_reference (MercadoPago) y en reference_id (PayPal).
+// Lo que no figura aca no da derecho a ninguna descarga -- incluidos los
+// packs de recarga, a proposito.
+const INCLUYE = {
+  starter: ["apk"],                 // Starter (Celular)
+  pro:     ["", "bat", "apk"],      // Pro (PC + Android); "" es el .exe
+};
+
+function planIncluye(plan, tipo) {
+  const permitidos = INCLUYE[String(plan || "").trim().toLowerCase()];
+  return Array.isArray(permitidos) && permitidos.includes(tipo);
+}
+
+// Respuesta comun para "pagaste, pero no esto". Se devuelve el plan y el tipo
+// para que el propio comprador entienda que le falta (y para poder
+// diagnosticar sin mirar logs). No expone nada: los dos valores ya los tiene
+// quien hizo la compra.
+function noIncluido(res, plan, tipo) {
+  return res.status(403).json({
+    error: "plan_no_incluye",
+    plan: String(plan || ""),
+    tipo: tipo || "exe",
+    mensaje: "Tu plan no incluye esta version. Escribinos a vieraschiavi@gmail.com si crees que es un error.",
+  });
 }
 
 async function redirigirA(release, res) {
@@ -88,8 +127,9 @@ export default async function handler(req, res) {
     if (!paypalConfigurado()) return res.status(503).json({ error: "pago_no_configurado" });
     try {
       const orden = await obtenerOrden(paymentId);
-      const { completado, estado } = leerOrden(orden);
+      const { completado, estado, plan } = leerOrden(orden);
       if (!completado) return res.status(403).json({ error: "no_pagado", estado });
+      if (!planIncluye(plan, tipo)) return noIncluido(res, plan, tipo);
       return redirigirA(release, res);
     } catch (e) {
       return res.status(502).json({ error: "paypal_error" });
@@ -106,6 +146,9 @@ export default async function handler(req, res) {
     const p = await r.json();
     if (!r.ok) return res.status(502).json({ error: "mp_error" });
     if (p.status !== "approved") return res.status(403).json({ error: "no_pagado", estado: p.status });
+    // Mismo origen que usa api/licencia.js para leer el plan del pago.
+    const plan = p.external_reference || (p.metadata && p.metadata.plan) || "";
+    if (!planIncluye(plan, tipo)) return noIncluido(res, plan, tipo);
     return redirigirA(release, res);
   } catch (e) {
     return res.status(502).json({ error: "fetch_fail" });

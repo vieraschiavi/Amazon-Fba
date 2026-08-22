@@ -107,6 +107,26 @@ if (/demo_bajo_pedido/.test(DESCARGA)) {
   ok("  ?demo=1 responde explicando que la demo ahora es 1:1");
 } else falla("?demo=1 no explica que la demo pasa a ser bajo pedido");
 
+// --- 6) el deploy no puede pasarse del limite de funciones ---
+// El plan Hobby de Vercel admite 12 Serverless Functions por deployment. Al
+// pasar a 13 (agregando el endpoint del formulario de demo) NINGUN deploy
+// volvio a salir -- tampoco el de produccion, asi que el sitio se quedo
+// congelado en la version anterior. El build entero se rechaza con
+// "exceeded_serverless_functions_per_deployment": no es un error de codigo,
+// no lo detecta ningun test de logica, y el aviso de Vercel solo dice
+// "Error". Se cuenta aca para que el proximo endpoint avise ANTES.
+const LIMITE_HOBBY = 12;
+const fnDir = path.join(RAIZ, "api");
+const funciones = fs.readdirSync(fnDir)
+  .filter((f) => f.endsWith(".js") && !f.startsWith("_"));   // "_" = no es ruta
+if (funciones.length <= LIMITE_HOBBY) {
+  ok(`api/ expone ${funciones.length} funciones serverless (limite Hobby: ${LIMITE_HOBBY})`);
+} else {
+  falla(`api/ expone ${funciones.length} funciones y el plan Hobby admite ` +
+        `${LIMITE_HOBBY}: NINGUN deploy va a salir, ni el de produccion. ` +
+        `Unificar endpoints en una funcion (ver api/demo.js) o pasar a Pro.`);
+}
+
 console.log(fallos.length
   ? `\nFALLA: ${fallos.length} problema(s) — la demo publica puede estar filtrando el motor.`
   : "\nOK: la demo web muestra pantallas con datos de ejemplo, el motor real no se publica, y la descarga abierta esta cerrada.");

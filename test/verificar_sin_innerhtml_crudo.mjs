@@ -144,7 +144,14 @@ const INVENTARIO = {
       + "email de MercadoPago YA pasa por escaparHtml() mas arriba (variable `email`, no `d.email` directo). "
       + "payment_id/proc van por encodeURIComponent (posicion de atributo href).",
     ok: ["d.licencia", "email",
-      'encodeURIComponent(d._pid || "")', 'd._proc ? "&proc=" + encodeURIComponent(d._proc) : ""'],
+      'encodeURIComponent(d._pid || "")', 'd._proc ? "&proc=" + encodeURIComponent(d._proc) : ""',
+      // botonesDescarga(d) arma los <a> de descarga segun el plan comprado.
+      // No interpola NINGUN dato externo crudo: el texto y las clases son
+      // literales de este archivo, y lo unico variable (payment_id y proc)
+      // ya viene por encodeURIComponent adentro de la propia funcion, en
+      // posicion de atributo href. El plan no se imprime: solo se usa para
+      // elegir que botones mostrar.
+      "botonesDescarga(d)"],
   },
   "landing/gracias.html#mensaje-error": {
     motivo: "mostrarError() siempre se llama con un literal de texto escrito en este archivo, nunca con dato externo",

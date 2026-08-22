@@ -95,6 +95,40 @@ function params(){ const p = new URLSearchParams(location.search); const o={}; f
 // asi que no necesita escape -- pero el email si, antes de ir a innerHTML.
 function escaparHtml(s){ const d = document.createElement("div"); d.textContent = String(s||""); return d.innerHTML; }
 
+// Que descarga habilita cada plan. Es el ESPEJO de INCLUYE en
+// api/descarga.js: el servidor es el que manda (ahi se valida de verdad),
+// pero si aca mostraramos botones que el servidor va a rechazar, el cliente
+// que acaba de pagar recibe un 403 justo despues de darnos la plata. Si los
+// dos lados se desincronizan, gana el servidor y se ve como boton roto: por
+// eso conviene tocar los dos juntos.
+const INCLUYE_PLAN = {
+  starter: ["apk"],
+  pro: ["", "bat", "apk"],
+};
+function botonesDescarga(d){
+  const pid = encodeURIComponent(d._pid || "");
+  const proc = d._proc ? "&proc=" + encodeURIComponent(d._proc) : "";
+  const permitidos = INCLUYE_PLAN[String(d.plan || "").trim().toLowerCase()];
+  // Plan no reconocido (por ejemplo un pack de creditos de IA, que es una
+  // compra valida pero no da derecho a ningun programa): no se inventan
+  // botones, se explica.
+  if (!permitidos) {
+    return `<p class="email-note">Esta compra no incluye descarga de programa.
+      Si esperabas una, escribinos a
+      <a class="link" href="mailto:vieraschiavi@gmail.com">vieraschiavi@gmail.com</a>.</p>`;
+  }
+  const BOTONES = [
+    ["apk", "btn-a", "↓ Descargar app Android (APK)", "tipo=apk&"],
+    ["",    "btn-b", "↓ Programa para PC (Windows)", ""],
+    ["bat", "btn-b", "↓ PC sin instalador (.zip, si tu empresa bloquea .exe)", "tipo=bat&"],
+  ];
+  return BOTONES
+    .filter(([tipo]) => permitidos.includes(tipo))
+    .map(([, clase, texto, qs]) =>
+      `<a class="btn ${clase}" href="/api/descarga?${qs}payment_id=${pid}${proc}">${texto}</a>`)
+    .join("\n      ");
+}
+
 function mostrarAprobado(d){
   $("#titulo").textContent = "¡Gracias por tu compra!";
   $("#sub").innerHTML = "Tu pago se aprobó. Esta es tu <b>licencia</b> — guardala y usala en la app con el <b>mismo email</b> con el que pagaste.";
@@ -106,11 +140,7 @@ function mostrarAprobado(d){
       <button class="copiar" id="btnCopiar">Copiar clave</button>
       ${email}
     </div>
-    <div class="dl">
-      <a class="btn btn-a" href="/api/descarga?tipo=apk&payment_id=${encodeURIComponent(d._pid || "")}${d._proc ? "&proc=" + encodeURIComponent(d._proc) : ""}">↓ Descargar app Android (APK)</a>
-      <a class="btn btn-b" href="/api/descarga?payment_id=${encodeURIComponent(d._pid || "")}${d._proc ? "&proc=" + encodeURIComponent(d._proc) : ""}">↓ Programa para PC (Windows)</a>
-      <a class="btn btn-b" href="/api/descarga?tipo=bat&payment_id=${encodeURIComponent(d._pid || "")}${d._proc ? "&proc=" + encodeURIComponent(d._proc) : ""}">↓ PC sin instalador (.zip, si tu empresa bloquea .exe)</a>
-    </div>
+    <div class="dl">${botonesDescarga(d)}</div>
     <details class="pasos ayuda-win">
       <summary>En Android dice <b>“no se pueden instalar apps desconocidas”</b>? (es normal)</summary>
       <div class="ayuda-win-cuerpo">
